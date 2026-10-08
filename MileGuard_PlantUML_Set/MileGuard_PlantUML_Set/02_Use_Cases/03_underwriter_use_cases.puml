@@ -1,0 +1,32 @@
+@startuml
+!theme plain
+left to right direction
+skinparam shadowing false
+actor "Underwriter" as U
+rectangle "MileGuard — Underwriter Capabilities" {
+  usecase "View Assigned Applications" as U1
+  usecase "Open / Resume Review" as U2
+  usecase "Review Driver Context" as U3
+  usecase "Review Vehicle Context" as U4
+  usecase "Review Insurance Quote" as U5
+  usecase "Review Risk / Checklist" as U6
+  usecase "Record Review Notes" as U7
+  usecase "Approve Application" as U8
+  usecase "Reject Application" as U9
+  usecase "Provide Customer-Visible Rejection Reason" as U10
+}
+U --> U1
+U --> U2
+U --> U8
+U --> U9
+U2 .> U3 : <<include>>
+U2 .> U4 : <<include>>
+U2 .> U5 : <<include>>
+U2 .> U6 : <<include>>
+U2 .> U7 : <<include>>
+U9 .> U10 : <<include>>
+note right of U8
+Approval permitted only after required review/checklist conditions pass.
+Underwriter cannot change premium, plan or coverage.
+end note
+@enduml

@@ -1,0 +1,2258 @@
+
+================================================================================
+FILE: IdentityService.Application\Class1.cs
+================================================================================
+namespace IdentityService.Application
+{
+    public class Class1
+    {
+
+    }
+}
+
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Admin\ApproveInternalRegistrationRequest.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Admin;
+
+public class ApproveInternalRegistrationRequest
+{
+    public string Role { get; set; } = string.Empty;
+}
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Admin\InternalRegistrationActionResult.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Admin;
+
+public class InternalRegistrationActionResult
+{
+    public bool Succeeded { get; init; }
+
+    public bool NotFound { get; init; }
+
+    public bool InvalidState { get; init; }
+
+    public IEnumerable<string> Errors { get; init; } = [];
+
+    public static InternalRegistrationActionResult Success()
+    {
+        return new InternalRegistrationActionResult
+        {
+            Succeeded = true
+        };
+    }
+
+    public static InternalRegistrationActionResult RegistrationNotFound()
+    {
+        return new InternalRegistrationActionResult
+        {
+            NotFound = true
+        };
+    }
+
+    public static InternalRegistrationActionResult InvalidRegistrationState()
+    {
+        return new InternalRegistrationActionResult
+        {
+            InvalidState = true
+        };
+    }
+
+    public static InternalRegistrationActionResult Failed(
+        IEnumerable<string> errors)
+    {
+        return new InternalRegistrationActionResult
+        {
+            Errors = errors
+        };
+    }
+}
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Admin\InternalRegistrationDetailDto.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Admin;
+
+public class InternalRegistrationDetailDto
+{
+    public string Id { get; set; } = string.Empty;
+
+    public string FirstName { get; set; } = string.Empty;
+
+    public string LastName { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
+
+    public string Status { get; set; } = string.Empty;
+
+    public DateTime RegisteredAtUtc { get; set; }
+}
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Admin\InternalUserDetailDto.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Admin;
+
+public class InternalUserDetailDto
+{
+    public string Id { get; set; } = string.Empty;
+
+    public string FirstName { get; set; } = string.Empty;
+
+    public string LastName { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
+
+    public string Role { get; set; } = string.Empty;
+
+    public string Status { get; set; } = string.Empty;
+
+    public string TwoFactorStatus { get; set; } = string.Empty;
+
+    public DateTime CreatedAtUtc { get; set; }
+
+    public DateTime? ApprovedAtUtc { get; set; }
+
+    public DateTime? DeactivatedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Admin\InternalUserListDto.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Admin;
+
+public class InternalUserListDto
+{
+    public string Id { get; set; } = string.Empty;
+
+    public string FirstName { get; set; } = string.Empty;
+
+    public string LastName { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
+
+    public string Role { get; set; } = string.Empty;
+
+    public string Status { get; set; } = string.Empty;
+
+    public string TwoFactorStatus { get; set; } = string.Empty;
+}
+
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Admin\PendingInternalRegistrationDto.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Admin;
+
+public class PendingInternalRegistrationDto
+{
+    public string Id { get; set; } = string.Empty;
+
+    public string FirstName { get; set; } = string.Empty;
+
+    public string LastName { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
+
+    public DateTime RegisteredAtUtc { get; set; }
+}
+
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Authentication\CurrentUserDto.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Authentication;
+
+public class CurrentUserDto
+{
+    public string Id { get; set; } = string.Empty;
+
+    public string FirstName { get; set; } = string.Empty;
+
+    public string LastName { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
+
+    public string Role { get; set; } = string.Empty;
+}
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Authentication\InternalLoginResponse.cs
+================================================================================
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace IdentityService.Application.Dtos.Authentication
+{
+    internal class InternalLoginResponse
+    {
+    }
+}
+
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Authentication\InternalRegisterRequest.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Authentication;
+
+public class InternalRegisterRequest
+{
+    public string FirstName { get; set; } = string.Empty;
+
+    public string LastName { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
+
+    public string Password { get; set; } = string.Empty;
+
+    public string ConfirmPassword { get; set; } = string.Empty;
+}
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Authentication\JwtOptions.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Authentication;
+
+public class JwtOptions
+{
+    public const string SectionName = "Jwt";
+
+    public string Key { get; set; } = string.Empty;
+
+    public string Issuer { get; set; } = string.Empty;
+
+    public string Audience { get; set; } = string.Empty;
+
+    public int AccessTokenMinutes { get; set; }
+
+    public int RefreshSessionDays { get; set; }
+}
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Authentication\LoginRequest.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Authentication;
+
+public class LoginRequest
+{
+    public string Email { get; set; } = string.Empty;
+
+    public string Password { get; set; } = string.Empty;
+}
+
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Authentication\LoginResult.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Authentication;
+
+public class LoginResult
+{
+    public LoginStatus Status { get; init; }
+
+    public string? UserId { get; init; }
+
+    public string? Email { get; init; }
+
+    public string? Role { get; init; }
+
+    public TokenResult? Tokens { get; init; }
+
+    public PreAuthTokenResult? PreAuth { get; init; }
+
+    public static LoginResult InvalidCredentials()
+    {
+        return new LoginResult
+        {
+            Status = LoginStatus.InvalidCredentials
+        };
+    }
+}
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Authentication\LoginStatus.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Authentication;
+
+public enum LoginStatus
+{
+    InvalidCredentials = 1,
+    CustomerAuthenticated = 2,
+    PendingApproval = 3,
+    Rejected = 4,
+    Inactive = 5,
+    TwoFactorSetupRequired = 6,
+    TwoFactorRequired = 7
+}
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Authentication\PreAuthTokenResult.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Authentication;
+
+public class PreAuthTokenResult
+{
+    public string Token { get; init; } = string.Empty;
+
+    public DateTime ExpiresAtUtc { get; init; }
+}
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Authentication\RefreshTokenResult.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Authentication;
+
+public class RefreshTokenResult
+{
+    public bool Succeeded { get; init; }
+
+    public string? AccessToken { get; init; }
+
+    public string? RefreshToken { get; init; }
+
+    public DateTime? AccessTokenExpiresAtUtc { get; init; }
+
+    public DateTime? RefreshSessionExpiresAtUtc { get; init; }
+
+    public static RefreshTokenResult Failed()
+    {
+        return new RefreshTokenResult
+        {
+            Succeeded = false
+        };
+    }
+}
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Authentication\RegisterCustomerRequest.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Authentication;
+
+public class RegisterCustomerRequest
+{
+    public string FirstName { get; set; } = string.Empty;
+
+    public string LastName { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
+
+    public string Password { get; set; } = string.Empty;
+
+    public string ConfirmPassword { get; set; } = string.Empty;
+}
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Authentication\RegistrationResult.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Authentication;
+
+public class RegistrationResult
+{
+    public bool Succeeded { get; init; }
+
+    public bool IsDuplicateEmail { get; init; }
+
+    public IEnumerable<string> Errors { get; init; } = [];
+
+    public static RegistrationResult Success()
+    {
+        return new RegistrationResult
+        {
+            Succeeded = true
+        };
+    }
+
+    public static RegistrationResult DuplicateEmail()
+    {
+        return new RegistrationResult
+        {
+            IsDuplicateEmail = true
+        };
+    }
+
+    public static RegistrationResult Failed(IEnumerable<string> errors)
+    {
+        return new RegistrationResult
+        {
+            Errors = errors
+        };
+    }
+}
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Authentication\TokenResult.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Authentication;
+
+public class TokenResult
+{
+    public string AccessToken { get; init; } = string.Empty;
+
+    public string RefreshToken { get; init; } = string.Empty;
+
+    public DateTime AccessTokenExpiresAtUtc { get; init; }
+
+    public DateTime RefreshSessionExpiresAtUtc { get; init; }
+}
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Authentication\TwoFactorEnrollResult.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Authentication;
+
+public class TwoFactorEnrollResult
+{
+    public string SharedKey { get; init; } = string.Empty;
+
+    public string AuthenticatorUri { get; init; } = string.Empty;
+}
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Authentication\TwoFactorVerificationResult.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Authentication;
+
+public class TwoFactorVerificationResult
+{
+    public bool Succeeded { get; init; }
+
+    public string? Email { get; init; }
+
+    public string? Role { get; init; }
+
+    public TokenResult? Tokens { get; init; }
+
+    public string? Error { get; init; }
+}
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Authentication\TwoFactorVerifyRequest.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Authentication;
+
+public class TwoFactorVerifyRequest
+{
+    public string Code { get; set; } = string.Empty;
+}
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Internal\EligibleAgentDto.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Internal;
+
+public class EligibleAgentDto
+{
+    public string Id { get; set; } = string.Empty;
+
+    public string FirstName { get; set; } = string.Empty;
+
+    public string LastName { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
+}
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Internal\EligibleUnderwriterDto.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Internal;
+
+public class EligibleUnderwriterDto
+{
+    public string Id { get; set; } = string.Empty;
+
+    public string FirstName { get; set; } = string.Empty;
+
+    public string LastName { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
+}
+
+================================================================================
+FILE: IdentityService.Application\Dtos\Internal\IdentityUserSummaryDto.cs
+================================================================================
+namespace IdentityService.Application.Dtos.Internal;
+
+public class IdentityUserSummaryDto
+{
+    public string Id { get; set; } =
+        string.Empty;
+
+    public string FirstName { get; set; } =
+        string.Empty;
+
+    public string LastName { get; set; } =
+        string.Empty;
+
+    public string Email { get; set; } =
+        string.Empty;
+}
+
+================================================================================
+FILE: IdentityService.Application\IdentityService.Application.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IdentityService.Domain\IdentityService.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
+
+
+================================================================================
+FILE: IdentityService.Application\Interfaces\IAdminIdentityService.cs
+================================================================================
+using IdentityService.Application.Dtos.Admin;
+
+namespace IdentityService.Application.Interfaces;
+
+public interface IAdminIdentityService
+{
+    Task<IReadOnlyList<PendingInternalRegistrationDto>>
+        GetPendingRegistrationsAsync();
+
+    Task<InternalRegistrationDetailDto?>
+        GetPendingRegistrationAsync(
+            string id);
+
+    Task<InternalRegistrationActionResult>
+        ApproveAsync(
+            string id,
+            ApproveInternalRegistrationRequest request,
+            string adminUserId);
+
+    Task<InternalRegistrationActionResult>
+        RejectAsync(
+            string id,
+            string adminUserId);
+}
+
+================================================================================
+FILE: IdentityService.Application\Interfaces\IAdminUserService.cs
+================================================================================
+using IdentityService.Application.Dtos.Admin;
+
+namespace IdentityService.Application.Interfaces;
+
+public interface IAdminUserService
+{
+    Task<IReadOnlyList<InternalUserListDto>>
+        GetUsersAsync();
+
+    Task<InternalUserDetailDto?>
+        GetUserAsync(string id);
+}
+
+================================================================================
+FILE: IdentityService.Application\Interfaces\IAuthenticationService.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+
+namespace IdentityService.Application.Interfaces;
+
+public interface IAuthenticationService
+{
+    Task<LoginResult> LoginAsync(LoginRequest request);
+}
+
+================================================================================
+FILE: IdentityService.Application\Interfaces\IAuthSessionService.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Domain.Entities;
+
+namespace IdentityService.Application.Interfaces;
+
+public interface IAuthSessionService
+{
+    Task<TokenResult> CreateSessionAsync(
+        ApplicationUser user,
+        string role);
+}
+
+================================================================================
+FILE: IdentityService.Application\Interfaces\ICurrentUserService.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+
+namespace IdentityService.Application.Interfaces;
+
+public interface ICurrentUserService
+{
+    Task<CurrentUserDto?> GetAsync(string userId);
+}
+
+================================================================================
+FILE: IdentityService.Application\Interfaces\IInternalIdentityQueryService.cs
+================================================================================
+using IdentityService.Application.Dtos.Internal;
+
+namespace IdentityService.Application.Interfaces;
+
+public interface IInternalIdentityQueryService
+{
+    Task<IReadOnlyList<EligibleAgentDto>>
+        GetEligibleAgentsAsync();
+
+    Task<EligibleAgentDto?>
+        GetEligibleAgentAsync(
+            string identityUserId);
+
+    Task<IReadOnlyList<EligibleUnderwriterDto>>
+        GetEligibleUnderwritersAsync();
+
+    Task<EligibleUnderwriterDto?>
+        GetEligibleUnderwriterAsync(
+            string identityUserId);
+
+    Task<IdentityUserSummaryDto?>
+        GetUserSummaryAsync(
+            string identityUserId);
+}
+
+
+================================================================================
+FILE: IdentityService.Application\Interfaces\ILogoutService.cs
+================================================================================
+namespace IdentityService.Application.Interfaces;
+
+public interface ILogoutService
+{
+    Task LogoutAsync(string refreshToken);
+}
+
+================================================================================
+FILE: IdentityService.Application\Interfaces\IPreAuthTokenService.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Domain.Entities;
+
+namespace IdentityService.Application.Interfaces;
+
+public interface IPreAuthTokenService
+{
+    PreAuthTokenResult Create(ApplicationUser user);
+}
+
+================================================================================
+FILE: IdentityService.Application\Interfaces\IRefreshTokenService.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+
+namespace IdentityService.Application.Interfaces;
+
+public interface IRefreshTokenService
+{
+    Task<RefreshTokenResult> RefreshAsync(
+        string refreshToken);
+}
+
+================================================================================
+FILE: IdentityService.Application\Interfaces\IRegistrationService.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+
+namespace IdentityService.Application.Interfaces;
+
+public interface IRegistrationService
+{
+    Task<RegistrationResult> RegisterCustomerAsync(
+        RegisterCustomerRequest request);
+
+    Task<RegistrationResult> RegisterInternalAsync(
+        InternalRegisterRequest request);
+}
+
+================================================================================
+FILE: IdentityService.Application\Interfaces\ITokenHashService.cs
+================================================================================
+namespace IdentityService.Application.Interfaces;
+
+public interface ITokenHashService
+{
+    string Hash(string token);
+}
+
+================================================================================
+FILE: IdentityService.Application\Interfaces\ITokenService.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Domain.Entities;
+
+namespace IdentityService.Application.Interfaces;
+
+public interface ITokenService
+{
+    TokenResult CreateToken(
+        ApplicationUser user,
+        string role);
+
+    TokenResult CreateRefreshedToken(
+        ApplicationUser user,
+        string role,
+        DateTime refreshSessionExpiresAtUtc);
+}
+
+================================================================================
+FILE: IdentityService.Application\Interfaces\ITwoFactorService.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+
+namespace IdentityService.Application.Interfaces;
+
+public interface ITwoFactorService
+{
+    Task<TwoFactorEnrollResult?> BeginEnrollmentAsync(
+        string userId);
+
+    Task<TwoFactorVerificationResult> VerifyAsync(
+        string userId,
+        string code);
+}
+
+================================================================================
+FILE: IdentityService.Application\Interfaces\Repositories\IRefreshSessionRepository.cs
+================================================================================
+using IdentityService.Domain.Entities;
+
+namespace IdentityService.Application.Interfaces.Repositories;
+
+public interface IRefreshSessionRepository
+{
+    Task<RefreshSession?> GetActiveByUserIdAsync(
+        string userId);
+
+    Task<RefreshSession?> GetByTokenHashAsync(
+        string tokenHash);
+
+    Task AddAsync(
+        RefreshSession session);
+
+    Task SaveChangesAsync();
+
+    Task RotateAsync(
+        RefreshSession currentSession,
+        RefreshSession replacementSession);
+
+    Task RevokeAsync(
+        RefreshSession session,
+        DateTime revokedAtUtc);
+}
+
+================================================================================
+FILE: IdentityService.Application\Interfaces\Repositories\IUserRepository.cs
+================================================================================
+using IdentityService.Domain.Entities;
+
+namespace IdentityService.Application.Interfaces.Repositories;
+
+public interface IUserRepository
+{
+    Task<ApplicationUser?> GetByEmailAsync(string email);
+
+    Task<ApplicationUser?>
+    GetByIdAsync(
+        string identityUserId);
+    Task<IReadOnlyList<ApplicationUser>>
+    GetEligibleUnderwritersAsync();
+    Task<UserOperationResult> CreateAsync(
+        ApplicationUser user,
+        string password);
+    Task<IReadOnlyList<ApplicationUser>>
+    GetEligibleAgentsAsync();
+    Task<UserOperationResult> AddToRoleAsync(
+        ApplicationUser user,
+        string role);
+
+    Task<UserOperationResult> DeleteAsync(
+        ApplicationUser user);
+
+    Task<bool> CheckPasswordAsync(
+        ApplicationUser user,
+        string password);
+
+    Task<IList<string>> GetRolesAsync(
+        ApplicationUser user);
+
+    Task<bool> GetTwoFactorEnabledAsync(
+        ApplicationUser user);
+
+    Task<string?> GetAuthenticatorKeyAsync(
+        ApplicationUser user);
+
+    Task ResetAuthenticatorKeyAsync(
+        ApplicationUser user);
+
+    Task<bool> VerifyAuthenticatorCodeAsync(
+        ApplicationUser user,
+        string code);
+
+    Task<IReadOnlyList<ApplicationUser>>
+    GetEstablishedInternalUsersAsync();
+    Task<UserOperationResult> SetTwoFactorEnabledAsync(
+        ApplicationUser user,
+        bool enabled);
+
+    Task<IReadOnlyList<ApplicationUser>>
+    GetPendingInternalUsersAsync();
+
+    Task<UserOperationResult> UpdateAsync(
+        ApplicationUser user);
+    Task<UserOperationResult> ApproveInternalUserAsync(
+    ApplicationUser user,
+    string role,
+    string adminUserId,
+    DateTime approvedAtUtc);
+}
+
+================================================================================
+FILE: IdentityService.Application\Interfaces\Repositories\UserOperationResult.cs
+================================================================================
+namespace IdentityService.Application.Interfaces.Repositories;
+
+public class UserOperationResult
+{
+    public bool Succeeded { get; init; }
+
+    public IEnumerable<string> Errors { get; init; } = [];
+
+    public static UserOperationResult Success()
+    {
+        return new UserOperationResult
+        {
+            Succeeded = true
+        };
+    }
+
+    public static UserOperationResult Failed(
+        IEnumerable<string> errors)
+    {
+        return new UserOperationResult
+        {
+            Succeeded = false,
+            Errors = errors
+        };
+    }
+}
+
+================================================================================
+FILE: IdentityService.Application\Services\AdminIdentityService.cs
+================================================================================
+using IdentityService.Application.Dtos.Admin;
+using IdentityService.Application.Interfaces;
+using IdentityService.Application.Interfaces.Repositories;
+using IdentityService.Domain.Constants;
+using IdentityService.Domain.Enums;
+
+namespace IdentityService.Application.Services;
+
+public class AdminIdentityService : IAdminIdentityService
+{
+    private readonly IUserRepository _userRepository;
+
+    public AdminIdentityService(
+        IUserRepository userRepository)
+    {
+        _userRepository = userRepository;
+    }
+
+    public async Task<IReadOnlyList<PendingInternalRegistrationDto>>
+        GetPendingRegistrationsAsync()
+    {
+        var users =
+            await _userRepository
+                .GetPendingInternalUsersAsync();
+
+        return users
+            .Select(user =>
+                new PendingInternalRegistrationDto
+                {
+                    Id = user.Id,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Email = user.Email ?? string.Empty,
+                    RegisteredAtUtc = user.CreatedAtUtc
+                })
+            .ToList();
+    }
+
+    public async Task<InternalRegistrationDetailDto?>
+        GetPendingRegistrationAsync(
+            string id)
+    {
+        var user =
+            await _userRepository.GetByIdAsync(id);
+
+        if (user is null ||
+            user.AccountType != AccountType.Internal ||
+            user.AccountStatus != AccountStatus.Pending)
+        {
+            return null;
+        }
+
+        return new InternalRegistrationDetailDto
+        {
+            Id = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email ?? string.Empty,
+            Status = user.AccountStatus.ToString(),
+            RegisteredAtUtc = user.CreatedAtUtc
+        };
+    }
+
+    public async Task<InternalRegistrationActionResult>
+        ApproveAsync(
+            string id,
+            ApproveInternalRegistrationRequest request,
+            string adminUserId)
+    {
+        var user =
+            await _userRepository.GetByIdAsync(id);
+
+        if (user is null)
+        {
+            return InternalRegistrationActionResult
+                .RegistrationNotFound();
+        }
+
+        if (user.AccountType != AccountType.Internal ||
+            user.AccountStatus != AccountStatus.Pending)
+        {
+            return InternalRegistrationActionResult
+                .InvalidRegistrationState();
+        }
+
+        if (!IsPermittedOperationalRole(request.Role))
+        {
+            return InternalRegistrationActionResult.Failed(
+                ["The selected role is not permitted."]);
+        }
+
+        var result =
+    await _userRepository.ApproveInternalUserAsync(
+        user,
+        request.Role,
+        adminUserId,
+        DateTime.UtcNow);
+
+        if (!result.Succeeded)
+        {
+            return InternalRegistrationActionResult.Failed(
+                result.Errors);
+        }
+
+        return InternalRegistrationActionResult.Success();
+    }
+
+    public async Task<InternalRegistrationActionResult>
+        RejectAsync(
+            string id,
+            string adminUserId)
+    {
+        var user =
+            await _userRepository.GetByIdAsync(id);
+
+        if (user is null)
+        {
+            return InternalRegistrationActionResult
+                .RegistrationNotFound();
+        }
+
+        if (user.AccountType != AccountType.Internal ||
+            user.AccountStatus != AccountStatus.Pending)
+        {
+            return InternalRegistrationActionResult
+                .InvalidRegistrationState();
+        }
+
+        user.AccountStatus = AccountStatus.Rejected;
+        user.RejectedAtUtc = DateTime.UtcNow;
+        user.RejectedByUserId = adminUserId;
+
+        var updateResult =
+            await _userRepository.UpdateAsync(user);
+
+        if (!updateResult.Succeeded)
+        {
+            return InternalRegistrationActionResult.Failed(
+                updateResult.Errors);
+        }
+
+        return InternalRegistrationActionResult.Success();
+    }
+
+    private static bool IsPermittedOperationalRole(
+        string role)
+    {
+        return role == ApplicationRoles.Agent ||
+               role == ApplicationRoles.Underwriter ||
+               role == ApplicationRoles.ClaimsAdjuster;
+    }
+}
+
+================================================================================
+FILE: IdentityService.Application\Services\AdminUserService.cs
+================================================================================
+using IdentityService.Application.Dtos.Admin;
+using IdentityService.Application.Interfaces;
+using IdentityService.Application.Interfaces.Repositories;
+using IdentityService.Domain.Enums;
+
+namespace IdentityService.Application.Services;
+
+public class AdminUserService : IAdminUserService
+{
+    private readonly IUserRepository _userRepository;
+
+    public AdminUserService(
+        IUserRepository userRepository)
+    {
+        _userRepository = userRepository;
+    }
+
+    public async Task<IReadOnlyList<InternalUserListDto>>
+        GetUsersAsync()
+    {
+        var users =
+            await _userRepository
+                .GetEstablishedInternalUsersAsync();
+
+        var result = new List<InternalUserListDto>();
+
+        foreach (var user in users)
+        {
+            var roles =
+                await _userRepository.GetRolesAsync(user);
+
+            var role =
+                roles.FirstOrDefault();
+
+            if (string.IsNullOrWhiteSpace(role))
+            {
+                continue;
+            }
+
+            result.Add(
+                new InternalUserListDto
+                {
+                    Id = user.Id,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Email = user.Email ?? string.Empty,
+                    Role = role,
+                    Status = user.AccountStatus.ToString(),
+                    TwoFactorStatus =
+                        GetTwoFactorStatus(user)
+                });
+        }
+
+        return result;
+    }
+
+    public async Task<InternalUserDetailDto?>
+        GetUserAsync(string id)
+    {
+        var user =
+            await _userRepository.GetByIdAsync(id);
+
+        if (user is null ||
+            user.AccountType != AccountType.Internal ||
+            user.AccountStatus == AccountStatus.Pending ||
+            user.AccountStatus == AccountStatus.Rejected)
+        {
+            return null;
+        }
+
+        var roles =
+            await _userRepository.GetRolesAsync(user);
+
+        var role =
+            roles.FirstOrDefault();
+
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            return null;
+        }
+
+        return new InternalUserDetailDto
+        {
+            Id = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email ?? string.Empty,
+            Role = role,
+            Status = user.AccountStatus.ToString(),
+            TwoFactorStatus =
+                GetTwoFactorStatus(user),
+            CreatedAtUtc = user.CreatedAtUtc,
+            ApprovedAtUtc = user.ApprovedAtUtc,
+            DeactivatedAtUtc = user.DeactivatedAtUtc
+        };
+    }
+
+    private static string GetTwoFactorStatus(
+        IdentityService.Domain.Entities.ApplicationUser user)
+    {
+        return user.TwoFactorEnabled
+            ? "Enabled"
+            : "Pending enrollment";
+    }
+}
+
+================================================================================
+FILE: IdentityService.Application\Services\AuthenticationService.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Application.Interfaces;
+using IdentityService.Application.Interfaces.Repositories;
+using IdentityService.Domain.Enums;
+
+namespace IdentityService.Application.Services;
+
+public class AuthenticationService : IAuthenticationService
+{
+    private readonly IUserRepository _userRepository;
+    private readonly IAuthSessionService _authSessionService;
+    private readonly IPreAuthTokenService _preAuthTokenService;
+
+    public AuthenticationService(
+        IUserRepository userRepository,
+        IAuthSessionService authSessionService,
+        IPreAuthTokenService preAuthTokenService)
+    {
+        _userRepository = userRepository;
+        _authSessionService = authSessionService;
+        _preAuthTokenService = preAuthTokenService;
+    }
+
+    public async Task<LoginResult> LoginAsync(
+        LoginRequest request)
+    {
+        var email = request.Email.Trim();
+
+        var user = await _userRepository.GetByEmailAsync(email);
+
+        if (user is null)
+        {
+            return LoginResult.InvalidCredentials();
+        }
+
+        var passwordValid =
+            await _userRepository.CheckPasswordAsync(
+                user,
+                request.Password);
+
+        if (!passwordValid)
+        {
+            return LoginResult.InvalidCredentials();
+        }
+
+        if (user.AccountType == AccountType.Customer)
+        {
+            if (user.AccountStatus != AccountStatus.Active)
+            {
+                return LoginResult.InvalidCredentials();
+            }
+
+            var roles_ =
+                await _userRepository.GetRolesAsync(user);
+
+            var role = roles_.FirstOrDefault();
+
+            if (string.IsNullOrWhiteSpace(role))
+            {
+                return LoginResult.InvalidCredentials();
+            }
+
+            var tokens =
+                await _authSessionService.CreateSessionAsync(
+                    user,
+                    role);
+
+            return new LoginResult
+            {
+                Status = LoginStatus.CustomerAuthenticated,
+                UserId = user.Id,
+                Email = user.Email,
+                Role = role,
+                Tokens = tokens
+            };
+        }
+
+        if (user.AccountStatus == AccountStatus.Pending)
+        {
+            return new LoginResult
+            {
+                Status = LoginStatus.PendingApproval
+            };
+        }
+
+        if (user.AccountStatus == AccountStatus.Rejected)
+        {
+            return new LoginResult
+            {
+                Status = LoginStatus.Rejected
+            };
+        }
+
+        if (user.AccountStatus == AccountStatus.Inactive)
+        {
+            return new LoginResult
+            {
+                Status = LoginStatus.Inactive
+            };
+        }
+
+        if (user.AccountStatus != AccountStatus.Active)
+        {
+            return LoginResult.InvalidCredentials();
+        }
+
+        var roles =
+            await _userRepository.GetRolesAsync(user);
+
+        var internalRole = roles.FirstOrDefault();
+
+        if (string.IsNullOrWhiteSpace(internalRole))
+        {
+            return LoginResult.InvalidCredentials();
+        }
+
+        var twoFactorEnabled =
+            await _userRepository
+                .GetTwoFactorEnabledAsync(user);
+
+        var preAuth =
+            _preAuthTokenService.Create(user);
+
+        return new LoginResult
+        {
+            Status = twoFactorEnabled
+                ? LoginStatus.TwoFactorRequired
+                : LoginStatus.TwoFactorSetupRequired,
+
+            UserId = user.Id,
+            Email = user.Email,
+            Role = internalRole,
+            PreAuth = preAuth
+        };
+    }
+}
+
+================================================================================
+FILE: IdentityService.Application\Services\AuthSessionService.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Application.Interfaces;
+using IdentityService.Application.Interfaces.Repositories;
+using IdentityService.Domain.Entities;
+
+namespace IdentityService.Application.Services;
+
+public class AuthSessionService : IAuthSessionService
+{
+    private readonly IRefreshSessionRepository
+        _refreshSessionRepository;
+
+    private readonly ITokenService _tokenService;
+    private readonly ITokenHashService _tokenHashService;
+
+    public AuthSessionService(
+        IRefreshSessionRepository refreshSessionRepository,
+        ITokenService tokenService,
+        ITokenHashService tokenHashService)
+    {
+        _refreshSessionRepository =
+            refreshSessionRepository;
+
+        _tokenService = tokenService;
+        _tokenHashService = tokenHashService;
+    }
+
+    public async Task<TokenResult> CreateSessionAsync(
+        ApplicationUser user,
+        string role)
+    {
+        var existingSession =
+            await _refreshSessionRepository
+                .GetActiveByUserIdAsync(user.Id);
+
+        if (existingSession is not null)
+        {
+            existingSession.RevokedAtUtc = DateTime.UtcNow;
+        }
+
+        var tokens =
+            _tokenService.CreateToken(user, role);
+
+        var refreshSession = new RefreshSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            TokenHash = _tokenHashService.Hash(
+                tokens.RefreshToken),
+            SessionStartedAtUtc = DateTime.UtcNow,
+            AbsoluteExpiresAtUtc =
+                tokens.RefreshSessionExpiresAtUtc
+        };
+
+        await _refreshSessionRepository.AddAsync(
+            refreshSession);
+
+        await _refreshSessionRepository.SaveChangesAsync();
+
+        return tokens;
+    }
+}
+
+================================================================================
+FILE: IdentityService.Application\Services\CurrentUserService.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Application.Interfaces;
+using IdentityService.Application.Interfaces.Repositories;
+using IdentityService.Domain.Enums;
+
+namespace IdentityService.Application.Services;
+
+public class CurrentUserService : ICurrentUserService
+{
+    private readonly IUserRepository _userRepository;
+
+    public CurrentUserService(
+        IUserRepository userRepository)
+    {
+        _userRepository = userRepository;
+    }
+
+    public async Task<CurrentUserDto?> GetAsync(
+        string userId)
+    {
+        var user =
+            await _userRepository.GetByIdAsync(userId);
+
+        if (user is null ||
+            user.AccountStatus != AccountStatus.Active)
+        {
+            return null;
+        }
+
+        var roles =
+            await _userRepository.GetRolesAsync(user);
+
+        var role = roles.FirstOrDefault();
+
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            return null;
+        }
+
+        return new CurrentUserDto
+        {
+            Id = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email ?? string.Empty,
+            Role = role
+        };
+    }
+}
+
+================================================================================
+FILE: IdentityService.Application\Services\InternalIdentityQueryService.cs
+================================================================================
+using IdentityService.Application.Dtos.Internal;
+using IdentityService.Application.Interfaces;
+using IdentityService.Application.Interfaces.Repositories;
+
+namespace IdentityService.Application.Services;
+
+public class InternalIdentityQueryService
+    : IInternalIdentityQueryService
+{
+    private readonly IUserRepository
+        _userRepository;
+
+    public InternalIdentityQueryService(
+        IUserRepository userRepository)
+    {
+        _userRepository =
+            userRepository;
+    }
+
+    public async Task<IReadOnlyList<EligibleAgentDto>>
+        GetEligibleAgentsAsync()
+    {
+        var agents =
+            await _userRepository
+                .GetEligibleAgentsAsync();
+
+        return agents
+            .Select(agent =>
+                new EligibleAgentDto
+                {
+                    Id =
+                        agent.Id,
+
+                    FirstName =
+                        agent.FirstName,
+
+                    LastName =
+                        agent.LastName,
+
+                    Email =
+                        agent.Email
+                        ?? string.Empty
+                })
+            .ToList();
+    }
+
+    public async Task<EligibleAgentDto?>
+        GetEligibleAgentAsync(
+            string identityUserId)
+    {
+        var agents =
+            await _userRepository
+                .GetEligibleAgentsAsync();
+
+        var agent =
+            agents.SingleOrDefault(
+                user =>
+                    user.Id ==
+                    identityUserId);
+
+        if (agent is null)
+        {
+            return null;
+        }
+
+        return new EligibleAgentDto
+        {
+            Id =
+                agent.Id,
+
+            FirstName =
+                agent.FirstName,
+
+            LastName =
+                agent.LastName,
+
+            Email =
+                agent.Email
+                ?? string.Empty
+        };
+    }
+    public async Task<IReadOnlyList<EligibleUnderwriterDto>>
+    GetEligibleUnderwritersAsync()
+    {
+        var underwriters =
+            await _userRepository
+                .GetEligibleUnderwritersAsync();
+
+        return underwriters
+            .Select(underwriter =>
+                new EligibleUnderwriterDto
+                {
+                    Id =
+                        underwriter.Id,
+
+                    FirstName =
+                        underwriter.FirstName,
+
+                    LastName =
+                        underwriter.LastName,
+
+                    Email =
+                        underwriter.Email ??
+                        string.Empty
+                })
+            .ToList();
+    }
+
+    public async Task<EligibleUnderwriterDto?>
+        GetEligibleUnderwriterAsync(
+            string identityUserId)
+    {
+        var underwriters =
+            await _userRepository
+                .GetEligibleUnderwritersAsync();
+
+        var underwriter =
+            underwriters.SingleOrDefault(
+                user =>
+                    user.Id ==
+                    identityUserId);
+
+        if (underwriter is null)
+        {
+            return null;
+        }
+
+        return new EligibleUnderwriterDto
+        {
+            Id =
+                underwriter.Id,
+
+            FirstName =
+                underwriter.FirstName,
+
+            LastName =
+                underwriter.LastName,
+
+            Email =
+                underwriter.Email ??
+                string.Empty
+        };
+    }
+
+
+    public async Task<IdentityUserSummaryDto?>
+        GetUserSummaryAsync(
+            string identityUserId)
+    {
+        if (
+            string.IsNullOrWhiteSpace(
+                identityUserId))
+        {
+            return null;
+        }
+
+        var user =
+            await _userRepository
+                .GetByIdAsync(
+                    identityUserId);
+
+        if (user is null)
+        {
+            return null;
+        }
+
+        return new IdentityUserSummaryDto
+        {
+            Id =
+                user.Id,
+
+            FirstName =
+                user.FirstName,
+
+            LastName =
+                user.LastName,
+
+            Email =
+                user.Email
+                ?? string.Empty
+        };
+    }
+}
+
+================================================================================
+FILE: IdentityService.Application\Services\LogoutService.cs
+================================================================================
+using IdentityService.Application.Interfaces;
+using IdentityService.Application.Interfaces.Repositories;
+
+namespace IdentityService.Application.Services;
+
+public class LogoutService : ILogoutService
+{
+    private readonly IRefreshSessionRepository
+        _refreshSessionRepository;
+
+    private readonly ITokenHashService
+        _tokenHashService;
+
+    public LogoutService(
+        IRefreshSessionRepository refreshSessionRepository,
+        ITokenHashService tokenHashService)
+    {
+        _refreshSessionRepository =
+            refreshSessionRepository;
+
+        _tokenHashService =
+            tokenHashService;
+    }
+
+    public async Task LogoutAsync(
+        string refreshToken)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            return;
+        }
+
+        var tokenHash =
+            _tokenHashService.Hash(refreshToken);
+
+        var session =
+            await _refreshSessionRepository
+                .GetByTokenHashAsync(tokenHash);
+
+        if (session is null ||
+            session.RevokedAtUtc is not null)
+        {
+            return;
+        }
+
+        await _refreshSessionRepository.RevokeAsync(
+            session,
+            DateTime.UtcNow);
+    }
+}
+
+================================================================================
+FILE: IdentityService.Application\Services\RefreshTokenService.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Application.Interfaces;
+using IdentityService.Application.Interfaces.Repositories;
+using IdentityService.Domain.Entities;
+using IdentityService.Domain.Enums;
+
+namespace IdentityService.Application.Services;
+
+public class RefreshTokenService : IRefreshTokenService
+{
+    private readonly IRefreshSessionRepository
+        _refreshSessionRepository;
+
+    private readonly IUserRepository _userRepository;
+    private readonly ITokenHashService _tokenHashService;
+    private readonly ITokenService _tokenService;
+
+    public RefreshTokenService(
+        IRefreshSessionRepository refreshSessionRepository,
+        IUserRepository userRepository,
+        ITokenHashService tokenHashService,
+        ITokenService tokenService)
+    {
+        _refreshSessionRepository =
+            refreshSessionRepository;
+
+        _userRepository = userRepository;
+        _tokenHashService = tokenHashService;
+        _tokenService = tokenService;
+    }
+
+    public async Task<RefreshTokenResult> RefreshAsync(
+        string refreshToken)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            return RefreshTokenResult.Failed();
+        }
+
+        var tokenHash =
+            _tokenHashService.Hash(refreshToken);
+
+        var session =
+            await _refreshSessionRepository
+                .GetByTokenHashAsync(tokenHash);
+
+        if (session is null)
+        {
+            return RefreshTokenResult.Failed();
+        }
+
+        if (session.RevokedAtUtc is not null)
+        {
+            return RefreshTokenResult.Failed();
+        }
+
+        if (session.AbsoluteExpiresAtUtc <= DateTime.UtcNow)
+        {
+            await _refreshSessionRepository.RevokeAsync(
+                session,
+                DateTime.UtcNow);
+
+            return RefreshTokenResult.Failed();
+        }
+
+        var user =
+            await _userRepository.GetByIdAsync(
+                session.UserId);
+
+        if (user is null ||
+            user.AccountStatus != AccountStatus.Active)
+        {
+            await _refreshSessionRepository.RevokeAsync(
+                session,
+                DateTime.UtcNow);
+
+            return RefreshTokenResult.Failed();
+        }
+
+        var roles =
+            await _userRepository.GetRolesAsync(user);
+
+        var role = roles.FirstOrDefault();
+
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            await _refreshSessionRepository.RevokeAsync(
+                session,
+                DateTime.UtcNow);
+
+            return RefreshTokenResult.Failed();
+        }
+
+        if (user.AccountType == AccountType.Internal)
+        {
+            var twoFactorEnabled =
+                await _userRepository
+                    .GetTwoFactorEnabledAsync(user);
+
+            if (!twoFactorEnabled)
+            {
+                await _refreshSessionRepository.RevokeAsync(
+                    session,
+                    DateTime.UtcNow);
+
+                return RefreshTokenResult.Failed();
+            }
+        }
+
+        var tokens =
+            _tokenService.CreateRefreshedToken(
+                user,
+                role,
+                session.AbsoluteExpiresAtUtc);
+
+        var replacementSession =
+            new RefreshSession
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+
+                TokenHash =
+                    _tokenHashService.Hash(
+                        tokens.RefreshToken),
+
+                SessionStartedAtUtc =
+                    session.SessionStartedAtUtc,
+
+                AbsoluteExpiresAtUtc =
+                    session.AbsoluteExpiresAtUtc
+            };
+
+        await _refreshSessionRepository.RotateAsync(
+            session,
+            replacementSession);
+
+        return new RefreshTokenResult
+        {
+            Succeeded = true,
+
+            AccessToken =
+                tokens.AccessToken,
+
+            RefreshToken =
+                tokens.RefreshToken,
+
+            AccessTokenExpiresAtUtc =
+                tokens.AccessTokenExpiresAtUtc,
+
+            RefreshSessionExpiresAtUtc =
+                session.AbsoluteExpiresAtUtc
+        };
+    }
+}
+
+================================================================================
+FILE: IdentityService.Application\Services\RegistrationService.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Application.Interfaces;
+using IdentityService.Application.Interfaces.Repositories;
+using IdentityService.Domain.Constants;
+using IdentityService.Domain.Entities;
+using IdentityService.Domain.Enums;
+
+namespace IdentityService.Infrastructure.Identity;
+
+public class RegistrationService : IRegistrationService
+{
+    private readonly IUserRepository _userRepository;
+
+    public RegistrationService(
+        IUserRepository userRepository)
+    {
+        _userRepository = userRepository;
+    }
+
+    public async Task<RegistrationResult> RegisterCustomerAsync(
+        RegisterCustomerRequest request)
+    {
+        var email = request.Email.Trim();
+
+        var existingUser =
+            await _userRepository.GetByEmailAsync(email);
+
+        if (existingUser is not null)
+        {
+            return RegistrationResult.DuplicateEmail();
+        }
+
+        var user = new ApplicationUser
+        {
+            FirstName = request.FirstName.Trim(),
+            LastName = request.LastName.Trim(),
+            Email = email,
+            UserName = email,
+            AccountType = AccountType.Customer,
+            AccountStatus = AccountStatus.Active,
+            CreatedAtUtc = DateTime.UtcNow
+        };
+
+        var createResult =
+            await _userRepository.CreateAsync(
+                user,
+                request.Password);
+
+        if (!createResult.Succeeded)
+        {
+            return RegistrationResult.Failed(
+                createResult.Errors);
+        }
+
+        var roleResult =
+            await _userRepository.AddToRoleAsync(
+                user,
+                ApplicationRoles.Customer);
+
+        if (!roleResult.Succeeded)
+        {
+            await _userRepository.DeleteAsync(user);
+
+            return RegistrationResult.Failed(
+                roleResult.Errors);
+        }
+
+        return RegistrationResult.Success();
+    }
+
+    public async Task<RegistrationResult> RegisterInternalAsync(
+        InternalRegisterRequest request)
+    {
+        var email = request.Email.Trim();
+
+        var existingUser =
+            await _userRepository.GetByEmailAsync(email);
+
+        if (existingUser is not null)
+        {
+            return RegistrationResult.DuplicateEmail();
+        }
+
+        var user = new ApplicationUser
+        {
+            FirstName = request.FirstName.Trim(),
+            LastName = request.LastName.Trim(),
+            Email = email,
+            UserName = email,
+            AccountType = AccountType.Internal,
+            AccountStatus = AccountStatus.Pending,
+            CreatedAtUtc = DateTime.UtcNow
+        };
+
+        var createResult =
+            await _userRepository.CreateAsync(
+                user,
+                request.Password);
+
+        if (!createResult.Succeeded)
+        {
+            return RegistrationResult.Failed(
+                createResult.Errors);
+        }
+
+        return RegistrationResult.Success();
+    }
+}
+
+================================================================================
+FILE: IdentityService.Application\Services\TwoFactorService.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Application.Interfaces;
+using IdentityService.Application.Interfaces.Repositories;
+using IdentityService.Domain.Enums;
+
+namespace IdentityService.Application.Services;
+
+public class TwoFactorService : ITwoFactorService
+{
+    private readonly IUserRepository _userRepository;
+    private readonly IAuthSessionService _authSessionService;
+
+    public TwoFactorService(
+        IUserRepository userRepository,
+        IAuthSessionService authSessionService)
+    {
+        _userRepository = userRepository;
+        _authSessionService = authSessionService;
+    }
+
+    public async Task<TwoFactorEnrollResult?>
+        BeginEnrollmentAsync(string userId)
+    {
+        var user =
+            await _userRepository.GetByIdAsync(userId);
+
+        if (user is null ||
+            user.AccountType != AccountType.Internal ||
+            user.AccountStatus != AccountStatus.Active)
+        {
+            return null;
+        }
+
+        var twoFactorEnabled =
+            await _userRepository
+                .GetTwoFactorEnabledAsync(user);
+
+        if (twoFactorEnabled)
+        {
+            return null;
+        }
+
+        var key =
+            await _userRepository
+                .GetAuthenticatorKeyAsync(user);
+
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            await _userRepository
+                .ResetAuthenticatorKeyAsync(user);
+
+            key =
+                await _userRepository
+                    .GetAuthenticatorKeyAsync(user);
+        }
+
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return null;
+        }
+
+        var email = user.Email ?? string.Empty;
+
+        var authenticatorUri = GenerateAuthenticatorUri(
+            email,
+            key);
+
+        return new TwoFactorEnrollResult
+        {
+            SharedKey = FormatKey(key),
+            AuthenticatorUri = authenticatorUri
+        };
+    }
+
+    public async Task<TwoFactorVerificationResult>
+        VerifyAsync(
+            string userId,
+            string code)
+    {
+        var user =
+            await _userRepository.GetByIdAsync(userId);
+
+        if (user is null ||
+            user.AccountType != AccountType.Internal ||
+            user.AccountStatus != AccountStatus.Active)
+        {
+            return new TwoFactorVerificationResult
+            {
+                Error = "Two-factor verification is unavailable."
+            };
+        }
+
+        var roles =
+            await _userRepository.GetRolesAsync(user);
+
+        var role = roles.FirstOrDefault();
+
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            return new TwoFactorVerificationResult
+            {
+                Error = "Two-factor verification is unavailable."
+            };
+        }
+
+        var normalizedCode =
+            code.Replace(" ", string.Empty)
+                .Replace("-", string.Empty);
+
+        var valid =
+            await _userRepository
+                .VerifyAuthenticatorCodeAsync(
+                    user,
+                    normalizedCode);
+
+        if (!valid)
+        {
+            return new TwoFactorVerificationResult
+            {
+                Error = "Invalid verification code."
+            };
+        }
+
+        var twoFactorEnabled =
+            await _userRepository
+                .GetTwoFactorEnabledAsync(user);
+
+        if (!twoFactorEnabled)
+        {
+            var enableResult =
+                await _userRepository
+                    .SetTwoFactorEnabledAsync(
+                        user,
+                        true);
+
+            if (!enableResult.Succeeded)
+            {
+                return new TwoFactorVerificationResult
+                {
+                    Error =
+                        "Unable to enable two-factor authentication."
+                };
+            }
+        }
+
+        var tokens =
+            await _authSessionService.CreateSessionAsync(
+                user,
+                role);
+
+        return new TwoFactorVerificationResult
+        {
+            Succeeded = true,
+            Email = user.Email,
+            Role = role,
+            Tokens = tokens
+        };
+    }
+
+    private static string GenerateAuthenticatorUri(
+        string email,
+        string unformattedKey)
+    {
+        const string issuer = "AutoInsurance";
+
+        return
+            $"otpauth://totp/" +
+            $"{Uri.EscapeDataString(issuer)}:" +
+            $"{Uri.EscapeDataString(email)}" +
+            $"?secret={unformattedKey}" +
+            $"&issuer={Uri.EscapeDataString(issuer)}" +
+            $"&digits=6";
+    }
+
+    private static string FormatKey(string unformattedKey)
+    {
+        var result = new System.Text.StringBuilder();
+
+        var currentPosition = 0;
+
+        while (currentPosition + 4 < unformattedKey.Length)
+        {
+            result
+                .Append(
+                    unformattedKey.AsSpan(
+                        currentPosition,
+                        4))
+                .Append(' ');
+
+            currentPosition += 4;
+        }
+
+        if (currentPosition < unformattedKey.Length)
+        {
+            result.Append(
+                unformattedKey.AsSpan(currentPosition));
+        }
+
+        return result.ToString().ToLowerInvariant();
+    }
+}
+
+================================================================================
+FILE: IdentityService.Application\Validators\Admin\ApproveInternalRegistrationRequestValidator.cs
+================================================================================
+using FluentValidation;
+using IdentityService.Application.Dtos.Admin;
+using IdentityService.Domain.Constants;
+
+namespace IdentityService.Application.Validators.Admin;
+
+public class ApproveInternalRegistrationRequestValidator
+    : AbstractValidator<ApproveInternalRegistrationRequest>
+{
+    private static readonly string[] AllowedRoles =
+    [
+        ApplicationRoles.Agent,
+        ApplicationRoles.Underwriter,
+        ApplicationRoles.ClaimsAdjuster
+    ];
+
+    public ApproveInternalRegistrationRequestValidator()
+    {
+        RuleFor(request => request.Role)
+            .NotEmpty()
+            .WithMessage("Role is required.")
+            .Must(role => AllowedRoles.Contains(role))
+            .WithMessage(
+                "Role must be Agent, Underwriter, or Claims Adjuster.");
+    }
+}
+
+
+================================================================================
+FILE: IdentityService.Application\Validators\Authentication\InternalRegisterRequestValidator.cs
+================================================================================
+using FluentValidation;
+using IdentityService.Application.Dtos.Authentication;
+
+namespace IdentityService.Application.Validators.Authentication;
+
+public class InternalRegisterRequestValidator
+    : AbstractValidator<InternalRegisterRequest>
+{
+    public InternalRegisterRequestValidator()
+    {
+        RuleFor(request => request.FirstName)
+            .NotEmpty()
+            .WithMessage("First name is required.")
+            .MaximumLength(100)
+            .WithMessage("First name cannot exceed 100 characters.");
+
+        RuleFor(request => request.LastName)
+            .NotEmpty()
+            .WithMessage("Last name is required.")
+            .MaximumLength(100)
+            .WithMessage("Last name cannot exceed 100 characters.");
+
+        RuleFor(request => request.Email)
+            .NotEmpty()
+            .WithMessage("Email is required.")
+            .EmailAddress()
+            .WithMessage("Enter a valid email address.");
+
+        RuleFor(request => request.Password)
+            .NotEmpty()
+            .WithMessage("Password is required.")
+            .MinimumLength(8)
+            .WithMessage("Password must be at least 8 characters.");
+
+        RuleFor(request => request.ConfirmPassword)
+            .NotEmpty()
+            .WithMessage("Confirm password is required.")
+            .Equal(request => request.Password)
+            .WithMessage("Passwords do not match.");
+    }
+}
+
+================================================================================
+FILE: IdentityService.Application\Validators\Authentication\LoginRequestValidator.cs
+================================================================================
+using FluentValidation;
+using IdentityService.Application.Dtos.Authentication;
+
+namespace IdentityService.Application.Validators.Authentication;
+
+public class LoginRequestValidator : AbstractValidator<LoginRequest>
+{
+    public LoginRequestValidator()
+    {
+        RuleFor(request => request.Email)
+            .NotEmpty()
+            .WithMessage("Email is required.")
+            .EmailAddress()
+            .WithMessage("Enter a valid email address.");
+
+        RuleFor(request => request.Password)
+            .NotEmpty()
+            .WithMessage("Password is required.");
+    }
+}
+
+================================================================================
+FILE: IdentityService.Application\Validators\Authentication\RegisterCustomerRequestValidator.cs
+================================================================================
+using FluentValidation;
+using IdentityService.Application.Dtos.Authentication;
+
+namespace IdentityService.Application.Validators.Authentication;
+
+public class RegisterCustomerRequestValidator
+    : AbstractValidator<RegisterCustomerRequest>
+{
+    public RegisterCustomerRequestValidator()
+    {
+        RuleFor(request => request.FirstName)
+            .NotEmpty()
+            .WithMessage("First name is required.")
+            .MaximumLength(100)
+            .WithMessage("First name cannot exceed 100 characters.");
+
+        RuleFor(request => request.LastName)
+            .NotEmpty()
+            .WithMessage("Last name is required.")
+            .MaximumLength(100)
+            .WithMessage("Last name cannot exceed 100 characters.");
+
+        RuleFor(request => request.Email)
+            .NotEmpty()
+            .WithMessage("Email is required.")
+            .EmailAddress()
+            .WithMessage("Enter a valid email address.");
+
+        RuleFor(request => request.Password)
+            .NotEmpty()
+            .WithMessage("Password is required.")
+            .MinimumLength(8)
+            .WithMessage("Password must be at least 8 characters.");
+
+        RuleFor(request => request.ConfirmPassword)
+            .NotEmpty()
+            .WithMessage("Confirm password is required.")
+            .Equal(request => request.Password)
+            .WithMessage("Passwords do not match.");
+    }
+}
+
+================================================================================
+FILE: IdentityService.Application\Validators\Authentication\TwoFactorVerifyRequestValidator.cs
+================================================================================
+using FluentValidation;
+using IdentityService.Application.Dtos.Authentication;
+
+namespace IdentityService.Application.Validators.Authentication;
+
+// Changed from 'private' to 'public' so it is allowed inside the namespace
+public class TwoFactorVerifyRequestValidator : AbstractValidator<TwoFactorVerifyRequest>
+{
+    public TwoFactorVerifyRequestValidator()
+    {
+        RuleFor(request => request.Code)
+            .NotEmpty()
+            .WithMessage("Verification code is required.")
+            .Matches(@"^\d{6}$")
+            .WithMessage("Verification code must contain 6 digits.");
+    }
+}
+

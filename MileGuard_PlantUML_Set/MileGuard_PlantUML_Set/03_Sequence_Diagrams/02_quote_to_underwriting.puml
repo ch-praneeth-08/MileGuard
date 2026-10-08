@@ -1,0 +1,49 @@
+@startuml
+!theme plain
+skinparam shadowing false
+autonumber
+actor Agent
+participant "Angular App" as UI
+participant "Ocelot Gateway" as GW
+participant "QuoteRatingService" as QR
+participant "CustomerVehicleService" as CV
+participant "ClaimsService" as CL
+participant "UnderwritingService" as UW
+participant "UnderwritingDb" as UDb
+
+Agent -> UI : Select assigned customer + vehicle
+UI -> GW : POST /quotes/api/customers/{customerId}/quotes
+GW -> QR : Start/resume Draft quote
+QR -> CV : GET /internal/customer-risk/{customerId}/vehicles/{vehicleId}
+CV --> QR : Risk/readiness context
+QR -> CL : GET /internal/claims/history
+CL --> QR : Qualifying prior-3-year claim count
+QR --> GW : Draft / comparison context
+GW --> UI : Basic / Standard / Premium
+
+Agent -> UI : Configure plan / limits / deductibles / add-ons
+UI -> GW : PUT /quotes/api/quotes/{quoteId}/configuration
+GW -> QR : Save configuration
+QR --> GW : Updated draft
+GW --> UI : Updated draft
+
+Agent -> UI : Recalculate + finalize
+UI -> GW : POST /quotes/api/quotes/{quoteId}/recalculate
+GW -> QR : Recalculate current risk + pricing
+QR --> GW : Authoritative draft premium
+GW --> UI : Premium
+UI -> GW : POST /quotes/api/quotes/{quoteId}/finalize
+GW -> QR : Freshness check + immutable snapshot
+QR --> GW : Finalized quote
+GW --> UI : Finalized quote / 7-day validity
+
+Agent -> UI : Submit quote
+UI -> GW : POST /quotes/api/quotes/{quoteId}/submit
+GW -> QR : Submit quote
+QR -> UW : POST /internal/underwriting/applications
+UW -> UDb : Create/return application by unique OriginatingQuoteId
+UDb --> UW : ApplicationId + status
+UW --> QR : ApplicationId + status
+QR --> GW : Submission confirmed
+GW --> UI : Underwriting application created
+@enduml

@@ -1,0 +1,120 @@
+@startuml
+!theme plain
+skinparam shadowing false
+autonumber
+actor Customer
+actor Agent
+actor Admin
+actor Underwriter
+participant "Angular 21" as UI
+participant "Ocelot" as GW
+participant "IdentityService" as ID
+participant "CustomerVehicleService" as CV
+participant "QuoteRatingService" as QR
+participant "UnderwritingService" as UW
+participant "PolicyBillingService" as PB
+participant "ClaimsService" as CL
+
+Customer -> UI : Register
+UI -> GW : POST /identity/api/auth/register
+GW -> ID : Register Customer
+ID --> GW : Registered
+GW --> UI : Registration result
+
+Customer -> UI : Complete profile
+UI -> GW : Customer profile API
+GW -> CV : Create/update profile
+CV --> GW : Profile complete
+GW --> UI : Profile complete
+
+Admin -> UI : Assign Customer to Agent
+UI -> GW : POST /customer-vehicle/api/admin/customers/{id}/agent
+GW -> CV : Assign once
+CV --> GW : Assigned
+GW --> UI : Assigned
+
+Agent -> UI : Create Driver + Vehicle
+UI -> GW : Driver/Vehicle APIs
+GW -> CV : Persist risk data
+CV --> GW : Ready for quote
+GW --> UI : Ready
+
+Agent -> UI : Generate / configure / finalize Quote
+UI -> GW : Quote APIs
+GW -> QR : Quote lifecycle
+QR -> CV : Risk contract
+CV --> QR : Risk data
+QR -> CL : Claim history contract
+CL --> QR : Qualifying count
+QR --> GW : Finalized immutable Quote
+GW --> UI : Quote finalized
+
+Agent -> UI : Submit Quote for underwriting
+UI -> GW : POST /quotes/api/quotes/{id}/submit
+GW -> QR : Submit
+QR -> UW : POST /internal/underwriting/applications
+UW --> QR : Application created
+QR --> GW : Submitted
+GW --> UI : Underwriting created
+
+Admin -> UI : Assign Underwriter
+UI -> GW : POST /underwriting/api/admin/underwriting/{id}/assign
+GW -> UW : Assign once
+UW --> GW : Assigned
+GW --> UI : Assigned
+
+Underwriter -> UI : Review + approve
+UI -> GW : Underwriting review / decision APIs
+GW -> UW : Complete review + approve
+UW --> GW : Approved + 7-day deadline
+GW --> UI : Approved offer
+
+Customer -> UI : Accept offer + choose effective date/frequency
+UI -> GW : Policy purchase configure/accept
+GW -> PB : Validate approved offer
+PB -> UW : Approved offer contract
+UW --> PB : Valid
+PB --> GW : Payment required
+GW --> UI : Payment
+Customer -> UI : First payment
+UI -> GW : POST /policies/api/purchases/{id}/payments
+GW -> PB : Simulated payment + atomic issuance
+PB --> GW : Policy issued + PDF metadata
+GW --> UI : Policy issued
+
+== Claims lifecycle ==
+Agent -> UI : Create FNOL + Claim + evidence
+UI -> GW : Claims APIs
+GW -> CL : Create/submit claim
+CL -> PB : Resolve historical coverage
+PB --> CL : Policy term + coverage
+CL --> GW : Submitted claim
+GW --> UI : Submitted
+Admin -> UI : Assign Claims Adjuster
+UI -> GW : Assign endpoint
+GW -> CL : Assign once
+CL --> GW : Assigned
+GW --> UI : Assigned
+Underwriter -> UI : (No underwriting role here)
+
+actor "Claims Adjuster" as Adjuster
+Adjuster -> UI : Review + assess + decide
+UI -> GW : Adjuster review/decision APIs
+GW -> CL : Review + decision
+CL -> PB : Historical coverage contract
+PB --> CL : Limit + deductible
+CL --> GW : Settlement
+GW --> UI : Settlement
+
+alt Above Adjuster authority
+  Admin -> UI : Approve/reject exact settlement
+  UI -> GW : Admin settlement decision
+  GW -> CL : Authority decision
+end
+
+Customer -> UI : Accept settlement + choose payout
+UI -> GW : Settlement acceptance + payout
+GW -> CL : Simulate payout
+CL --> GW : Paid / Failed
+GW --> UI : Payout result / claim closed when Paid
+@enduml

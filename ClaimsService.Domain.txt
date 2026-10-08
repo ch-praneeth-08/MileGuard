@@ -1,0 +1,110 @@
+
+================================================================================
+FILE: ClaimsService.Domain\ClaimsService.Domain.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
+
+
+================================================================================
+FILE: ClaimsService.Domain\Class1.cs
+================================================================================
+namespace ClaimsService.Domain
+{
+    public class Class1
+    {
+
+    }
+}
+
+
+================================================================================
+FILE: ClaimsService.Domain\Entities\Claim.cs
+================================================================================
+using ClaimsService.Domain.Enums;
+
+namespace ClaimsService.Domain.Entities;
+
+public class Claim
+{
+    public Guid Id { get; set; }
+
+    public string ClaimNumber { get; set; } = string.Empty;
+
+    public Guid PolicyId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public ClaimType ClaimType { get; set; }
+
+    public DateTime IncidentAtUtc { get; set; }
+
+    public string IncidentLocation { get; set; } = string.Empty;
+
+    public string IncidentDescription { get; set; } = string.Empty;
+
+    public decimal EstimatedLossAmount { get; set; }
+
+    public ClaimStatus Status { get; set; }
+
+    public DateTime SubmittedAtUtc { get; set; }
+
+    public string? AssignedClaimsOfficerIdentityUserId { get; set; }
+
+    public string? AssignedByAdminIdentityUserId { get; set; }
+
+    public DateTime? AssignedAtUtc { get; set; }
+
+    public DateTime? ReviewStartedAtUtc { get; set; }
+
+    public string? ReviewedByIdentityUserId { get; set; }
+
+    public DateTime? DecidedAtUtc { get; set; }
+
+    public string? DecisionReason { get; set; }
+
+    public decimal? ApprovedAmount { get; set; }
+
+    public DateTime? SettledAtUtc { get; set; }
+
+    public DateTime? ClosedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: ClaimsService.Domain\Enums\ClaimStatus.cs
+================================================================================
+namespace ClaimsService.Domain.Enums;
+
+public enum ClaimStatus
+{
+    Submitted = 1,
+    InReview = 2,
+    Approved = 3,
+    Rejected = 4,
+    Settled = 5,
+    Closed = 6
+}
+
+================================================================================
+FILE: ClaimsService.Domain\Enums\ClaimType.cs
+================================================================================
+namespace ClaimsService.Domain.Enums;
+
+public enum ClaimType
+{
+    Accident = 1,
+    Theft = 2,
+    Fire = 3,
+    NaturalDisaster = 4,
+    Vandalism = 5,
+    Other = 6
+}   

@@ -1,0 +1,962 @@
+
+================================================================================
+FILE: IdentityService.Tests.Integration\IdentityService.Tests.Integration.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.19" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.19" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IdentityService.API\IdentityService.API.csproj" />
+    <ProjectReference Include="..\IdentityService.Application\IdentityService.Application.csproj" />
+    <ProjectReference Include="..\IdentityService.Domain\IdentityService.Domain.csproj" />
+    <ProjectReference Include="..\IdentityService.Infrastructure\IdentityService.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>
+
+
+================================================================================
+FILE: IdentityService.Tests.Integration\Infrastructure\IdentityApiFactory.cs
+================================================================================
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
+
+namespace IdentityService.Tests.Integration.Infrastructure;
+
+public class IdentityApiFactory
+    : WebApplicationFactory<Program>
+{
+    private const string TestConnectionString =
+        "Server=(localdb)\\MSSQLLocalDB;" +
+        "Database=IdentityDb_IntegrationTests;" +
+        "Trusted_Connection=True;" +
+        "TrustServerCertificate=True;";
+
+    protected override void ConfigureWebHost(
+        IWebHostBuilder builder)
+    {
+        builder.UseEnvironment("IntegrationTesting");
+
+        builder.UseSetting(
+            "ConnectionStrings:IdentityDb",
+            TestConnectionString);
+
+        builder.UseSetting(
+            "BootstrapAdmin:FirstName",
+            "Integration");
+
+        builder.UseSetting(
+            "BootstrapAdmin:LastName",
+            "Admin");
+
+        builder.UseSetting(
+            "BootstrapAdmin:Email",
+            "integration.admin@example.com");
+
+        builder.UseSetting(
+            "BootstrapAdmin:Password",
+            "IntegrationAdmin@123");
+
+        builder.UseSetting(
+            "Jwt:Issuer",
+            "AutoInsurance.IdentityService");
+
+        builder.UseSetting(
+            "Jwt:Audience",
+            "AutoInsurance");
+
+        builder.UseSetting(
+            "Jwt:AccessTokenMinutes",
+            "15");
+
+        builder.UseSetting(
+            "Jwt:RefreshSessionDays",
+            "7");
+
+        builder.UseSetting(
+            "Jwt:Key",
+            "IntegrationTestJwtSigningKey12345678901234567890");
+
+        builder.ConfigureAppConfiguration(
+            (_, configuration) =>
+            {
+                configuration.AddInMemoryCollection(
+                    new Dictionary<string, string?>
+                    {
+                        ["ConnectionStrings:IdentityDb"] =
+                            TestConnectionString,
+
+                        ["BootstrapAdmin:FirstName"] =
+                            "Integration",
+
+                        ["BootstrapAdmin:LastName"] =
+                            "Admin",
+
+                        ["BootstrapAdmin:Email"] =
+                            "integration.admin@example.com",
+
+                        ["BootstrapAdmin:Password"] =
+                            "IntegrationAdmin@123",
+
+                        ["Jwt:Issuer"] =
+                            "AutoInsurance.IdentityService",
+
+                        ["Jwt:Audience"] =
+                            "AutoInsurance",
+
+                        ["Jwt:AccessTokenMinutes"] =
+                            "15",
+
+                        ["Jwt:RefreshSessionDays"] =
+                            "7",
+
+                        ["Jwt:Key"] =
+                            "IntegrationTestJwtSigningKey12345678901234567890"
+                    });
+            });
+    }
+}
+
+================================================================================
+FILE: IdentityService.Tests.Integration\Infrastructure\IntegrationTestBase.cs
+================================================================================
+using IdentityService.Infrastructure.Identity;
+using IdentityService.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace IdentityService.Tests.Integration.Infrastructure;
+
+public abstract class IntegrationTestBase
+    : IAsyncLifetime
+{
+    protected readonly IdentityApiFactory Factory;
+
+    protected IntegrationTestBase()
+    {
+        Factory = new IdentityApiFactory();
+    }
+
+    public async Task InitializeAsync()
+    {
+        using var scope =
+            Factory.Services.CreateScope();
+
+        var dbContext =
+            scope.ServiceProvider
+                .GetRequiredService<IdentityDbContext>();
+
+        await dbContext.Database.EnsureDeletedAsync();
+
+        await dbContext.Database.MigrateAsync();
+
+        var seeder =
+            scope.ServiceProvider
+                .GetRequiredService<IdentitySeeder>();
+
+        await seeder.SeedAsync();
+    }
+
+    public async Task DisposeAsync()
+    {
+        using var scope =
+            Factory.Services.CreateScope();
+
+        var dbContext =
+            scope.ServiceProvider
+                .GetRequiredService<IdentityDbContext>();
+
+        await dbContext.Database.EnsureDeletedAsync();
+
+        await Factory.DisposeAsync();
+    }
+}
+
+================================================================================
+FILE: IdentityService.Tests.Integration\Persistence\AdminApprovalPersistenceTests.cs
+================================================================================
+using IdentityService.Application.Dtos.Admin;
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Application.Interfaces;
+using IdentityService.Domain.Constants;
+using IdentityService.Domain.Enums;
+using IdentityService.Infrastructure.Persistence;
+using IdentityService.Tests.Integration.Infrastructure;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace IdentityService.Tests.Integration.Persistence;
+
+public class AdminApprovalPersistenceTests
+    : IntegrationTestBase
+{
+    [Fact]
+    public async Task ApprovePendingInternalUser_PersistsActiveStatusRoleAndApprovalMetadata()
+    {
+        using var scope =
+            Factory.Services.CreateScope();
+
+        var registrationService =
+            scope.ServiceProvider.GetRequiredService<
+                IRegistrationService>();
+
+        var adminIdentityService =
+            scope.ServiceProvider.GetRequiredService<
+                IAdminIdentityService>();
+
+        var dbContext =
+            scope.ServiceProvider.GetRequiredService<
+                IdentityDbContext>();
+
+        var userManager =
+            scope.ServiceProvider.GetRequiredService<
+                UserManager<
+                    IdentityService.Domain.Entities.ApplicationUser>>();
+
+        var registrationRequest =
+            new InternalRegisterRequest
+            {
+                FirstName = "Integration",
+                LastName = "Agent",
+                Email = "approval.agent@example.com",
+                Password = "Agent@123",
+                ConfirmPassword = "Agent@123"
+            };
+
+        var registrationResult =
+            await registrationService.RegisterInternalAsync(
+                registrationRequest);
+
+        Assert.True(registrationResult.Succeeded);
+
+        var pendingUser =
+            await dbContext.Users
+                .SingleAsync(user =>
+                    user.Email ==
+                        registrationRequest.Email);
+
+        Assert.Equal(
+            AccountStatus.Pending,
+            pendingUser.AccountStatus);
+
+        var approvalRequest =
+            new ApproveInternalRegistrationRequest
+            {
+                Role = ApplicationRoles.Agent
+            };
+
+        var approvalResult =
+            await adminIdentityService.ApproveAsync(
+                pendingUser.Id,
+                approvalRequest,
+                "test-admin-id");
+
+        Assert.True(approvalResult.Succeeded);
+
+        dbContext.ChangeTracker.Clear();
+
+        var approvedUser =
+            await dbContext.Users
+                .SingleAsync(user =>
+                    user.Id == pendingUser.Id);
+
+        Assert.Equal(
+            AccountType.Internal,
+            approvedUser.AccountType);
+
+        Assert.Equal(
+            AccountStatus.Active,
+            approvedUser.AccountStatus);
+
+        Assert.NotNull(
+            approvedUser.ApprovedAtUtc);
+
+        Assert.Equal(
+            "test-admin-id",
+            approvedUser.ApprovedByUserId);
+
+        var roles =
+            await userManager.GetRolesAsync(
+                approvedUser);
+
+        Assert.Single(roles);
+
+        Assert.Equal(
+            ApplicationRoles.Agent,
+            roles[0]);
+    }
+
+    [Fact]
+    public async Task ApproveAlreadyActiveInternalUser_IsRejected()
+    {
+        using var scope =
+            Factory.Services.CreateScope();
+
+        var registrationService =
+            scope.ServiceProvider.GetRequiredService<
+                IRegistrationService>();
+
+        var adminIdentityService =
+            scope.ServiceProvider.GetRequiredService<
+                IAdminIdentityService>();
+
+        var dbContext =
+            scope.ServiceProvider.GetRequiredService<
+                IdentityDbContext>();
+
+        var registrationRequest =
+            new InternalRegisterRequest
+            {
+                FirstName = "Integration",
+                LastName = "Underwriter",
+                Email = "approval.underwriter@example.com",
+                Password = "Underwriter@123",
+                ConfirmPassword = "Underwriter@123"
+            };
+
+        var registrationResult =
+            await registrationService.RegisterInternalAsync(
+                registrationRequest);
+
+        Assert.True(registrationResult.Succeeded);
+
+        var user =
+            await dbContext.Users
+                .SingleAsync(item =>
+                    item.Email ==
+                        registrationRequest.Email);
+
+        var firstApproval =
+            await adminIdentityService.ApproveAsync(
+                user.Id,
+                new ApproveInternalRegistrationRequest
+                {
+                    Role = ApplicationRoles.Underwriter
+                },
+                "test-admin-id");
+
+        Assert.True(firstApproval.Succeeded);
+
+        var secondApproval =
+            await adminIdentityService.ApproveAsync(
+                user.Id,
+                new ApproveInternalRegistrationRequest
+                {
+                    Role = ApplicationRoles.Agent
+                },
+                "another-admin-id");
+
+        Assert.False(
+            secondApproval.Succeeded);
+
+        Assert.True(
+            secondApproval.InvalidState);
+
+        dbContext.ChangeTracker.Clear();
+
+        var persistedUser =
+            await dbContext.Users
+                .SingleAsync(item =>
+                    item.Id == user.Id);
+
+        Assert.Equal(
+            AccountStatus.Active,
+            persistedUser.AccountStatus);
+    }
+
+    [Fact]
+    public async Task RejectPendingInternalUser_PersistsRejectedStateWithoutRole()
+    {
+        using var scope =
+            Factory.Services.CreateScope();
+
+        var registrationService =
+            scope.ServiceProvider.GetRequiredService<
+                IRegistrationService>();
+
+        var adminIdentityService =
+            scope.ServiceProvider.GetRequiredService<
+                IAdminIdentityService>();
+
+        var dbContext =
+            scope.ServiceProvider.GetRequiredService<
+                IdentityDbContext>();
+
+        var userManager =
+            scope.ServiceProvider.GetRequiredService<
+                UserManager<
+                    IdentityService.Domain.Entities.ApplicationUser>>();
+
+        var registrationRequest =
+            new InternalRegisterRequest
+            {
+                FirstName = "Integration",
+                LastName = "Rejected",
+                Email = "rejected.integration@example.com",
+                Password = "Rejected@123",
+                ConfirmPassword = "Rejected@123"
+            };
+
+        var registrationResult =
+            await registrationService.RegisterInternalAsync(
+                registrationRequest);
+
+        Assert.True(registrationResult.Succeeded);
+
+        var user =
+            await dbContext.Users
+                .SingleAsync(item =>
+                    item.Email ==
+                        registrationRequest.Email);
+
+        var rejectionResult =
+            await adminIdentityService.RejectAsync(
+                user.Id,
+                "test-admin-id");
+
+        Assert.True(
+            rejectionResult.Succeeded);
+
+        dbContext.ChangeTracker.Clear();
+
+        var rejectedUser =
+            await dbContext.Users
+                .SingleAsync(item =>
+                    item.Id == user.Id);
+
+        Assert.Equal(
+            AccountStatus.Rejected,
+            rejectedUser.AccountStatus);
+
+        Assert.NotNull(
+            rejectedUser.RejectedAtUtc);
+
+        Assert.Equal(
+            "test-admin-id",
+            rejectedUser.RejectedByUserId);
+
+        var roles =
+            await userManager.GetRolesAsync(
+                rejectedUser);
+
+        Assert.Empty(roles);
+    }
+}
+
+================================================================================
+FILE: IdentityService.Tests.Integration\Persistence\RefreshSessionPersistenceTests.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Application.Interfaces;
+using IdentityService.Application.Interfaces.Repositories;
+using IdentityService.Domain.Constants;
+using IdentityService.Domain.Entities;
+using IdentityService.Domain.Enums;
+using IdentityService.Infrastructure.Persistence;
+using IdentityService.Tests.Integration.Infrastructure;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace IdentityService.Tests.Integration.Persistence;
+
+public class RefreshSessionPersistenceTests
+    : IntegrationTestBase
+{
+    [Fact]
+    public async Task CreateSession_PersistsHashedRefreshToken()
+    {
+        using var scope =
+            Factory.Services.CreateScope();
+
+        var userManager =
+            scope.ServiceProvider.GetRequiredService<
+                UserManager<ApplicationUser>>();
+
+        var authSessionService =
+            scope.ServiceProvider.GetRequiredService<
+                IAuthSessionService>();
+
+        var tokenHashService =
+            scope.ServiceProvider.GetRequiredService<
+                ITokenHashService>();
+
+        var dbContext =
+            scope.ServiceProvider.GetRequiredService<
+                IdentityDbContext>();
+
+        var user =
+            await CreateCustomerAsync(
+                userManager,
+                "session.customer@example.com");
+
+        var tokens =
+            await authSessionService.CreateSessionAsync(
+                user,
+                ApplicationRoles.Customer);
+
+        dbContext.ChangeTracker.Clear();
+
+        var session =
+            await dbContext.RefreshSessions
+                .SingleAsync(item =>
+                    item.UserId == user.Id);
+
+        Assert.Equal(
+            tokenHashService.Hash(tokens.RefreshToken),
+            session.TokenHash);
+
+        Assert.NotEqual(
+            tokens.RefreshToken,
+            session.TokenHash);
+
+        Assert.Null(
+            session.RevokedAtUtc);
+
+        Assert.Null(
+            session.ReplacementTokenHash);
+    }
+
+    [Fact]
+    public async Task Refresh_RotatesSessionAndPreservesAbsoluteExpiry()
+    {
+        using var scope =
+            Factory.Services.CreateScope();
+
+        var userManager =
+            scope.ServiceProvider.GetRequiredService<
+                UserManager<ApplicationUser>>();
+
+        var authSessionService =
+            scope.ServiceProvider.GetRequiredService<
+                IAuthSessionService>();
+
+        var refreshTokenService =
+            scope.ServiceProvider.GetRequiredService<
+                IRefreshTokenService>();
+
+        var dbContext =
+            scope.ServiceProvider.GetRequiredService<
+                IdentityDbContext>();
+
+        var user =
+            await CreateCustomerAsync(
+                userManager,
+                "rotation.customer@example.com");
+
+        var loginTokens =
+            await authSessionService.CreateSessionAsync(
+                user,
+                ApplicationRoles.Customer);
+
+        var originalSession =
+            await dbContext.RefreshSessions
+                .SingleAsync(item =>
+                    item.UserId == user.Id &&
+                    item.RevokedAtUtc == null);
+
+        var originalId =
+            originalSession.Id;
+
+        var originalStartedAt =
+            originalSession.SessionStartedAtUtc;
+
+        var originalAbsoluteExpiry =
+            originalSession.AbsoluteExpiresAtUtc;
+
+        var originalHash =
+            originalSession.TokenHash;
+
+        var refreshResult =
+            await refreshTokenService.RefreshAsync(
+                loginTokens.RefreshToken);
+
+        Assert.True(
+            refreshResult.Succeeded);
+
+        Assert.NotNull(
+            refreshResult.RefreshToken);
+
+        dbContext.ChangeTracker.Clear();
+
+        var sessions =
+            await dbContext.RefreshSessions
+                .Where(item =>
+                    item.UserId == user.Id)
+                .OrderBy(item =>
+                    item.SessionStartedAtUtc)
+                .ToListAsync();
+
+        Assert.Equal(
+            2,
+            sessions.Count);
+
+        var revokedSession =
+            sessions.Single(item =>
+                item.Id == originalId);
+
+        var replacementSession =
+            sessions.Single(item =>
+                item.Id != originalId);
+
+        Assert.NotNull(
+            revokedSession.RevokedAtUtc);
+
+        Assert.NotNull(
+            revokedSession.ReplacementTokenHash);
+
+        Assert.Equal(
+            replacementSession.TokenHash,
+            revokedSession.ReplacementTokenHash);
+
+        Assert.NotEqual(
+            originalHash,
+            replacementSession.TokenHash);
+
+        Assert.Null(
+            replacementSession.RevokedAtUtc);
+
+        Assert.Equal(
+            originalStartedAt,
+            replacementSession.SessionStartedAtUtc);
+
+        Assert.Equal(
+            originalAbsoluteExpiry,
+            replacementSession.AbsoluteExpiresAtUtc);
+
+        Assert.Equal(
+            originalAbsoluteExpiry,
+            refreshResult.RefreshSessionExpiresAtUtc);
+    }
+
+    [Fact]
+    public async Task NewCompletedLogin_RevokesPreviousActiveSession()
+    {
+        using var scope =
+            Factory.Services.CreateScope();
+
+        var userManager =
+            scope.ServiceProvider.GetRequiredService<
+                UserManager<ApplicationUser>>();
+
+        var authSessionService =
+            scope.ServiceProvider.GetRequiredService<
+                IAuthSessionService>();
+
+        var dbContext =
+            scope.ServiceProvider.GetRequiredService<
+                IdentityDbContext>();
+
+        var user =
+            await CreateCustomerAsync(
+                userManager,
+                "replacement.customer@example.com");
+
+        await authSessionService.CreateSessionAsync(
+            user,
+            ApplicationRoles.Customer);
+
+        dbContext.ChangeTracker.Clear();
+
+        var firstSession =
+            await dbContext.RefreshSessions
+                .SingleAsync(item =>
+                    item.UserId == user.Id);
+
+        var firstSessionId =
+            firstSession.Id;
+
+        await authSessionService.CreateSessionAsync(
+            user,
+            ApplicationRoles.Customer);
+
+        dbContext.ChangeTracker.Clear();
+
+        var sessions =
+            await dbContext.RefreshSessions
+                .Where(item =>
+                    item.UserId == user.Id)
+                .ToListAsync();
+
+        Assert.Equal(
+            2,
+            sessions.Count);
+
+        var previousSession =
+            sessions.Single(item =>
+                item.Id == firstSessionId);
+
+        Assert.NotNull(
+            previousSession.RevokedAtUtc);
+
+        var activeSessions =
+            sessions.Where(item =>
+                item.RevokedAtUtc == null)
+                .ToList();
+
+        Assert.Single(
+            activeSessions);
+    }
+
+    private static async Task<ApplicationUser>
+        CreateCustomerAsync(
+            UserManager<ApplicationUser> userManager,
+            string email)
+    {
+        var user = new ApplicationUser
+        {
+            FirstName = "Integration",
+            LastName = "Customer",
+            Email = email,
+            UserName = email,
+            AccountType = AccountType.Customer,
+            AccountStatus = AccountStatus.Active,
+            CreatedAtUtc = DateTime.UtcNow
+        };
+
+        var createResult =
+            await userManager.CreateAsync(
+                user,
+                "Customer@123");
+
+        Assert.True(
+            createResult.Succeeded);
+
+        var roleResult =
+            await userManager.AddToRoleAsync(
+                user,
+                ApplicationRoles.Customer);
+
+        Assert.True(
+            roleResult.Succeeded);
+
+        return user;
+    }
+}
+
+================================================================================
+FILE: IdentityService.Tests.Integration\Persistence\RegistrationPersistenceTests.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Application.Interfaces;
+using IdentityService.Domain.Constants;
+using IdentityService.Domain.Enums;
+using IdentityService.Infrastructure.Persistence;
+using IdentityService.Tests.Integration.Infrastructure;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace IdentityService.Tests.Integration.Persistence;
+
+public class RegistrationPersistenceTests
+    : IntegrationTestBase
+{
+    [Fact]
+    public async Task CustomerRegistration_PersistsActiveCustomerAndRole()
+    {
+        using var scope =
+            Factory.Services.CreateScope();
+
+        var registrationService =
+            scope.ServiceProvider.GetRequiredService<
+                IRegistrationService>();
+
+        var dbContext =
+            scope.ServiceProvider.GetRequiredService<
+                IdentityDbContext>();
+
+        var userManager =
+            scope.ServiceProvider.GetRequiredService<
+                UserManager<
+                    IdentityService.Domain.Entities.ApplicationUser>>();
+
+        var request =
+            new RegisterCustomerRequest
+            {
+                FirstName = "Integration",
+                LastName = "Customer",
+                Email =
+                    "integration.customer@example.com",
+                Password = "Customer@123",
+                ConfirmPassword = "Customer@123"
+            };
+
+        var result =
+            await registrationService
+                .RegisterCustomerAsync(request);
+
+        Assert.True(result.Succeeded);
+
+        var user =
+            await dbContext.Users
+                .SingleAsync(item =>
+                    item.Email == request.Email);
+
+        Assert.Equal(
+            AccountType.Customer,
+            user.AccountType);
+
+        Assert.Equal(
+            AccountStatus.Active,
+            user.AccountStatus);
+
+        var roles =
+            await userManager.GetRolesAsync(user);
+
+        Assert.Single(roles);
+
+        Assert.Equal(
+            ApplicationRoles.Customer,
+            roles[0]);
+    }
+
+    [Fact]
+    public async Task InternalRegistration_PersistsPendingUserWithoutRole()
+    {
+        using var scope =
+            Factory.Services.CreateScope();
+
+        var registrationService =
+            scope.ServiceProvider.GetRequiredService<
+                IRegistrationService>();
+
+        var dbContext =
+            scope.ServiceProvider.GetRequiredService<
+                IdentityDbContext>();
+
+        var userManager =
+            scope.ServiceProvider.GetRequiredService<
+                UserManager<
+                    IdentityService.Domain.Entities.ApplicationUser>>();
+
+        var request =
+            new InternalRegisterRequest
+            {
+                FirstName = "Integration",
+                LastName = "Agent",
+                Email =
+                    "integration.agent@example.com",
+                Password = "Agent@123",
+                ConfirmPassword = "Agent@123"
+            };
+
+        var result =
+            await registrationService
+                .RegisterInternalAsync(request);
+
+        Assert.True(result.Succeeded);
+
+        var user =
+            await dbContext.Users
+                .SingleAsync(item =>
+                    item.Email == request.Email);
+
+        Assert.Equal(
+            AccountType.Internal,
+            user.AccountType);
+
+        Assert.Equal(
+            AccountStatus.Pending,
+            user.AccountStatus);
+
+        var roles =
+            await userManager.GetRolesAsync(user);
+
+        Assert.Empty(roles);
+    }
+
+    [Fact]
+    public async Task DuplicateEmail_DoesNotCreateSecondAccount()
+    {
+        using var scope =
+            Factory.Services.CreateScope();
+
+        var registrationService =
+            scope.ServiceProvider.GetRequiredService<
+                IRegistrationService>();
+
+        var dbContext =
+            scope.ServiceProvider.GetRequiredService<
+                IdentityDbContext>();
+
+        var firstRequest =
+            new RegisterCustomerRequest
+            {
+                FirstName = "First",
+                LastName = "Customer",
+                Email = "duplicate@example.com",
+                Password = "Customer@123",
+                ConfirmPassword = "Customer@123"
+            };
+
+        var secondRequest =
+            new InternalRegisterRequest
+            {
+                FirstName = "Second",
+                LastName = "Applicant",
+                Email = "duplicate@example.com",
+                Password = "Internal@123",
+                ConfirmPassword = "Internal@123"
+            };
+
+        var firstResult =
+            await registrationService
+                .RegisterCustomerAsync(firstRequest);
+
+        var secondResult =
+            await registrationService
+                .RegisterInternalAsync(secondRequest);
+
+        Assert.True(firstResult.Succeeded);
+
+        Assert.False(secondResult.Succeeded);
+        Assert.True(secondResult.IsDuplicateEmail);
+
+        var numberOfUsers =
+            await dbContext.Users
+                .CountAsync(user =>
+                    user.Email ==
+                        "duplicate@example.com");
+
+        Assert.Equal(1, numberOfUsers);
+    }
+}
+
+================================================================================
+FILE: IdentityService.Tests.Integration\UnitTest1.cs
+================================================================================
+namespace IdentityService.Tests.Integration
+{
+    public class UnitTest1
+    {
+        [Fact]
+        public void Test1()
+        {
+
+        }
+    }
+}

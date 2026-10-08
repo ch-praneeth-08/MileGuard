@@ -1,0 +1,1416 @@
+
+================================================================================
+FILE: models\admin-identity.models.ts
+================================================================================
+export interface PendingInternalRegistration {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  registeredAtUtc: string;
+}
+
+export interface InternalUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  status: string;
+  twoFactorStatus: string;
+}
+
+export interface InternalRegistrationDetail {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  status: string;
+  registeredAtUtc: string;
+}
+
+export interface ApproveInternalRegistrationRequest {
+  role: string;
+}
+
+export interface AdminActionResponse {
+  message: string;
+}
+
+export interface InternalUserDetail {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  status: string;
+  twoFactorStatus: string;
+  createdAtUtc: string;
+  approvedAtUtc: string | null;
+  deactivatedAtUtc: string | null;
+}
+
+================================================================================
+FILE: models\agent-assignment.models.ts
+================================================================================
+export interface UnassignedCustomer {
+  customerProfileId: string;
+  identityUserId: string;
+  profileStatus: string;
+  completedAtUtc: string;
+}
+
+export interface EligibleAgent {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+export interface AssignAgentRequest {
+  agentIdentityUserId: string;
+}
+
+export interface AgentAssignment {
+  id: string;
+  customerProfileId: string;
+  agentIdentityUserId: string;
+  assignedByIdentityUserId: string;
+  assignedAtUtc: string;
+}
+export interface AssignmentReviewCustomer {
+  customerProfileId: string;
+  identityUserId: string;
+  dateOfBirth: string | null;
+  phone: string | null;
+  city: string | null;
+  state: string | null;
+  postalCode: string | null;
+  areaType: string | null;
+  profileStatus: string;
+  completedAtUtc: string | null;
+  isAssigned: boolean;
+}
+
+================================================================================
+FILE: models\agent-customer.models.ts
+================================================================================
+export interface AgentCustomerListItem {
+  customerProfileId: string;
+  identityUserId: string;
+
+  email : string |null;
+  firstName : string |null;
+  lastName : string |null;
+  profileStatus : string ;
+  profileCompletedAtUtc: string | null;
+
+  assignedAtUtc: string;
+}
+
+export interface AgentCustomerWorkspace {
+  customerProfileId: string;
+
+  identityUserId: string;
+
+  /*
+   * Identity-owned read-only display data.
+   */
+  firstName: string | null;
+
+  lastName: string | null;
+
+  email: string | null;
+
+  /*
+   * CustomerVehicle-owned profile data.
+   */
+  dateOfBirth: string | null;
+
+  phone: string | null;
+
+  addressLine1: string | null;
+
+  addressLine2: string | null;
+
+  city: string | null;
+
+  state: string | null;
+
+  postalCode: string | null;
+
+  areaType: string | null;
+
+  profileStatus: string;
+
+  profileCompletedAtUtc: string | null;
+
+  assignedAtUtc: string;
+}
+
+================================================================================
+FILE: models\auth.models.ts
+================================================================================
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export type LoginStatus =
+  | 'Authenticated'
+  | 'Pending'
+  | 'Rejected'
+  | 'Inactive'
+  | 'TwoFactorSetupRequired'
+  | 'TwoFactorRequired';
+
+export interface LoginResponse {
+  status: LoginStatus;
+  accessToken?: string;
+  accessTokenExpiresAtUtc?: string;
+  preAuthToken?: string;
+  preAuthTokenExpiresAtUtc?: string;
+  email?: string;
+  role?: string;
+  message?: string;
+}
+
+export interface RegisterRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
+export interface ApiMessageResponse {
+  message: string;
+}
+
+export interface CurrentUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+}
+
+export interface RefreshResponse {
+  accessToken: string;
+  accessTokenExpiresAtUtc: string;
+}
+
+export interface TwoFactorEnrollmentResponse {
+  sharedKey: string;
+  authenticatorUri: string;
+}
+
+================================================================================
+FILE: models\claims\admin-claim.models.ts
+================================================================================
+import {
+  ClaimStatus,
+  ClaimType
+} from './claim.models';
+
+export interface AdminClaimListItem {
+  claimId: string;
+  claimNumber: string;
+  policyId: string;
+  customerProfileId: string;
+  vehicleId: string;
+  claimType: ClaimType;
+  incidentAtUtc: string;
+  estimatedLossAmount: number;
+  status: ClaimStatus;
+  submittedAtUtc: string;
+  assignedClaimsOfficerIdentityUserId: string | null;
+  assignedAtUtc: string | null;
+}
+
+export interface AdminClaimDetail {
+  claimId: string;
+  claimNumber: string;
+  policyId: string;
+  customerProfileId: string;
+  vehicleId: string;
+  claimType: ClaimType;
+  incidentAtUtc: string;
+  incidentLocation: string;
+  incidentDescription: string;
+  estimatedLossAmount: number;
+  status: ClaimStatus;
+  submittedAtUtc: string;
+  assignedClaimsOfficerIdentityUserId: string | null;
+  assignedByAdminIdentityUserId: string | null;
+  assignedAtUtc: string | null;
+  reviewStartedAtUtc: string | null;
+  reviewedByIdentityUserId: string | null;
+  decidedAtUtc: string | null;
+  decisionReason: string | null;
+  approvedAmount: number | null;
+  settledAtUtc: string | null;
+  closedAtUtc: string | null;
+}
+
+export interface EligibleClaimsOfficer {
+  identityUserId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  actionableClaimCount: number;
+}
+
+export interface AssignClaimsOfficerRequest {
+  claimsOfficerIdentityUserId: string;
+}
+
+================================================================================
+FILE: models\claims\agent-claim.models.ts
+================================================================================
+import {
+  ClaimStatus,
+  ClaimType
+} from './claim.models';
+
+export interface SubmitClaimRequest {
+  policyId: string;
+  claimType: ClaimType;
+  incidentAtUtc: string;
+  incidentLocation: string;
+  incidentDescription: string;
+  estimatedLossAmount: number;
+}
+
+export interface AgentClaimListItem {
+  claimId: string;
+  claimNumber: string;
+  policyId: string;
+  customerProfileId: string;
+  vehicleId: string;
+  claimType: ClaimType;
+  incidentAtUtc: string;
+  estimatedLossAmount: number;
+  status: ClaimStatus;
+  submittedAtUtc: string;
+  approvedAmount: number | null;
+  closedAtUtc: string | null;
+}
+
+export interface AgentClaimDetail {
+  claimId: string;
+  claimNumber: string;
+  policyId: string;
+  customerProfileId: string;
+  vehicleId: string;
+  claimType: ClaimType;
+  incidentAtUtc: string;
+  incidentLocation: string;
+  incidentDescription: string;
+  estimatedLossAmount: number;
+  status: ClaimStatus;
+  submittedAtUtc: string;
+  reviewStartedAtUtc: string | null;
+  decidedAtUtc: string | null;
+  decisionReason: string | null;
+  approvedAmount: number | null;
+  settledAtUtc: string | null;
+  closedAtUtc: string | null;
+}
+
+================================================================================
+FILE: models\claims\claim.models.ts
+================================================================================
+export type ClaimStatus =
+  | 'Submitted'
+  | 'InReview'
+  | 'Approved'
+  | 'Rejected'
+  | 'Settled'
+  | 'Closed';
+
+export type ClaimType =
+  | 'Accident'
+  | 'Theft'
+  | 'Fire'
+  | 'NaturalDisaster'
+  | 'Vandalism'
+  | 'Other';
+
+export interface ClaimListItem {
+  claimId: string;
+  claimNumber: string;
+  policyId: string;
+  vehicleId: string;
+  claimType: ClaimType;
+  incidentAtUtc: string;
+  estimatedLossAmount: number;
+  status: ClaimStatus;
+  submittedAtUtc: string;
+  approvedAmount: number | null;
+  closedAtUtc: string | null;
+}
+
+export interface ClaimDetail {
+  claimId: string;
+  claimNumber: string;
+  policyId: string;
+  vehicleId: string;
+  claimType: ClaimType;
+  incidentAtUtc: string;
+  incidentLocation: string;
+  incidentDescription: string;
+  estimatedLossAmount: number;
+  status: ClaimStatus;
+  submittedAtUtc: string;
+  reviewStartedAtUtc: string | null;
+  decidedAtUtc: string | null;
+  decisionReason: string | null;
+  approvedAmount: number | null;
+  settledAtUtc: string | null;
+  closedAtUtc: string | null;
+}
+
+================================================================================
+FILE: models\claims\claims-officer.models.ts
+================================================================================
+import {
+  ClaimStatus,
+  ClaimType
+} from './claim.models';
+
+export interface ClaimsOfficerClaimListItem {
+  claimId: string;
+  claimNumber: string;
+  policyId: string;
+  customerProfileId: string;
+  vehicleId: string;
+  claimType: ClaimType;
+  incidentAtUtc: string;
+  estimatedLossAmount: number;
+  status: ClaimStatus;
+  submittedAtUtc: string;
+  assignedAtUtc: string | null;
+  reviewStartedAtUtc: string | null;
+}
+
+export interface ClaimsOfficerClaimDetail {
+  claimId: string;
+  claimNumber: string;
+  policyId: string;
+  customerProfileId: string;
+  vehicleId: string;
+  claimType: ClaimType;
+  incidentAtUtc: string;
+  incidentLocation: string;
+  incidentDescription: string;
+  estimatedLossAmount: number;
+  status: ClaimStatus;
+  submittedAtUtc: string;
+  assignedAtUtc: string | null;
+  reviewStartedAtUtc: string | null;
+  decidedAtUtc: string | null;
+  decisionReason: string | null;
+  approvedAmount: number | null;
+  settledAtUtc: string | null;
+  closedAtUtc: string | null;
+}
+
+export interface ApproveClaimRequest {
+  decisionReason: string;
+}
+
+export interface RejectClaimRequest {
+  rejectionReason: string;
+}
+
+export interface SettleClaimRequest {
+  approvedAmount: number;
+}
+
+================================================================================
+FILE: models\customer-profile.models.ts
+================================================================================
+export type AreaType =
+  | 1
+  | 2;
+
+export interface CreateCustomerProfileRequest {
+  dateOfBirth: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  state: string;
+  postalCode: string;
+  areaType: AreaType;
+}
+
+export interface UpdateCustomerProfileRequest {
+  phone: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  state: string;
+  postalCode: string;
+}
+
+export interface CustomerProfile {
+  id: string;
+  identityUserId: string;
+  dateOfBirth: string | null;
+  phone: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  state: string | null;
+  postalCode: string | null;
+  areaType: string | null;
+  profileStatus: string;
+  createdAtUtc: string;
+  updatedAtUtc: string | null;
+  completedAtUtc: string | null;
+}
+
+================================================================================
+FILE: models\customer-readiness.models.ts
+================================================================================
+export interface ReadinessStage {
+  complete: boolean;
+  issues: string[];
+}
+
+export interface CustomerReadiness {
+  readyForQuote: boolean;
+
+  profile: ReadinessStage;
+  agent: ReadinessStage;
+  driver: ReadinessStage;
+  vehicle: ReadinessStage;
+
+  readinessIssues: string[];
+}
+
+================================================================================
+FILE: models\driver.models.ts
+================================================================================
+export interface Driver {
+  id: string;
+  customerProfileId: string;
+
+  licenceNumber: string;
+  licenceState: string;
+
+  licenceIssueDate: string;
+  licenceExpiryDate: string;
+
+  age: number;
+  drivingExperienceYears: number;
+
+  licenceValid: boolean;
+  ready: boolean;
+
+  readinessIssues: string[];
+
+  createdAtUtc: string;
+  updatedAtUtc: string | null;
+}
+
+export interface UpsertDriverRequest {
+  licenceNumber: string;
+  licenceState: string;
+  licenceIssueDate: string;
+  licenceExpiryDate: string;
+}
+
+================================================================================
+FILE: models\policy-billing\payment.models.ts
+================================================================================
+export enum PaymentMethod {
+  Card = 1,
+  Upi = 2
+}
+
+export interface MakePaymentRequest {
+  method: PaymentMethod;
+
+  cardNumber?: string;
+  cardExpiry?: string;
+  cardCvv?: string;
+  cardholderName?: string;
+
+  upiId?: string;
+}
+
+export interface FirstPaymentResponse {
+  purchaseId: string;
+  paymentReference: string;
+  paymentResult: string;
+  amount: number;
+  paymentMethod: string;
+  attemptedAtUtc: string;
+  failureCode: string | null;
+  failureMessage: string | null;
+  policyId: string | null;
+  policyNumber: string | null;
+}
+
+export interface InstallmentPaymentResponse {
+  installmentId: string;
+  installmentNumber: number;
+  paymentReference: string;
+  paymentResult: string;
+  amount: number;
+  paymentMethod: string;
+  attemptedAtUtc: string;
+  paidAtUtc: string | null;
+  failureCode: string | null;
+  failureMessage: string | null;
+}
+
+
+
+================================================================================
+FILE: models\policy-billing\policy.models.ts
+================================================================================
+export type PolicyEffectiveStatus =
+  | 'Issued'
+  | 'Active'
+  | 'Expired'
+  | 'Cancelled';
+
+export type InstallmentStatus =
+  | 'Paid'
+  | 'Due'
+  | 'Overdue'
+  | 'Upcoming'
+  | 'NoLongerDue';
+
+export interface PolicyListItem {
+  policyId: string;
+  policyNumber: string;
+  vehicleId: string;
+  vehicleDescription: string;
+  planName: string;
+  annualPremium: number;
+  effectiveDate: string;
+  expirationDate: string;
+  effectiveStatus: PolicyEffectiveStatus;
+  issuedAtUtc: string;
+  cancellationEffectiveAtUtc: string | null;
+}
+
+export interface PolicyCoverage {
+  coverageName: string;
+  resolvedLimitAmount: number;
+  deductibleAmount: number | null;
+}
+
+export interface PolicyAddOn {
+  addOnName: string;
+  annualPrice: number;
+}
+
+export interface PolicyDetail {
+  policyId: string;
+  policyNumber: string;
+  underwritingApplicationId: string;
+  customerProfileId: string;
+  vehicleId: string;
+
+  effectiveStatus: PolicyEffectiveStatus;
+
+  issuedAtUtc: string;
+  effectiveDate: string;
+  expirationDate: string;
+
+  cancellationEffectiveAtUtc:
+    string | null;
+
+  predecessorPolicyId:
+    string | null;
+
+  successorPolicyId:
+    string | null;
+
+  planName: string;
+  annualPremium: number;
+  paymentFrequency: string;
+
+  vehicleVin: string;
+  vehicleMake: string;
+  vehicleModel: string;
+  vehicleManufacturingYear: number;
+  vehicleType: string;
+  fuelType: string;
+  vehicleValue: number;
+
+  driverId: string;
+  driverAge: number;
+  drivingExperienceYears: number;
+  licenceValid: boolean;
+
+  hasDocument: boolean;
+
+  coverages: PolicyCoverage[];
+  addOns: PolicyAddOn[];
+}
+
+export interface PolicyInstallment {
+  installmentId: string;
+  installmentNumber: number;
+  amount: number;
+  dueDate: string;
+  status: InstallmentStatus;
+  paidAtUtc: string | null;
+  canPayNow: boolean;
+}
+
+export interface PolicyPayments {
+  policyId: string;
+  policyNumber: string;
+  annualPremium: number;
+  paymentFrequency: string;
+  totalPaid: number;
+  remainingAmount: number;
+  installments: PolicyInstallment[];
+}
+
+export interface CancelPolicyResponse {
+  policyId: string;
+  policyNumber: string;
+  effectiveStatus: string;
+  cancellationEffectiveAtUtc: string;
+  noLongerDueInstallmentCount: number;
+}
+
+================================================================================
+FILE: models\policy-billing\purchase.models.ts
+================================================================================
+export enum PaymentFrequency {
+  Annual = 1,
+  SemiAnnual = 2,
+  Quarterly = 3,
+  Monthly = 4
+}
+
+export interface ConfigurePurchaseRequest {
+  effectiveDate: string;
+  paymentFrequency: PaymentFrequency;
+}
+
+export interface AcceptPurchaseRequest {
+  effectiveDate: string;
+  paymentFrequency: PaymentFrequency;
+}
+
+export interface ScheduleInstallment {
+  installmentNumber: number;
+  amount: number;
+  dueDate: string;
+}
+
+export interface PaymentSchedulePreview {
+  annualPremium: number;
+  paymentFrequency: string;
+  installmentCount: number;
+  amountDueNow: number;
+  installments: ScheduleInstallment[];
+}
+
+export interface ConfigurePurchaseResponse {
+  underwritingApplicationId: string;
+  customerProfileId: string;
+  vehicleId: string;
+  planName: string;
+  annualPremium: number;
+  effectiveDate: string;
+  expirationDate: string;
+  offerValidUntilUtc: string;
+  paymentSchedule: PaymentSchedulePreview;
+}
+export interface PurchaseLifecycle {
+  underwritingApplicationId: string;
+  hasPurchase: boolean;
+  purchaseId: string | null;
+  policyIssued: boolean;
+  policyId: string | null;
+}
+export interface AcceptPurchaseResponse {
+  purchaseId: string;
+  underwritingApplicationId: string;
+  customerProfileId: string;
+  vehicleId: string;
+  planName: string;
+  annualPremium: number;
+  effectiveDate: string;
+  expirationDate: string;
+  paymentFrequency: string;
+  acceptedAtUtc: string;
+  amountDueNow: number;
+  installmentCount: number;
+  issuedPolicyId: string | null;
+}
+
+================================================================================
+FILE: models\policy-billing\renewal.models.ts
+================================================================================
+export type AgentRenewalStatus =
+  | 'Cancelled'
+  | 'PolicyIssued'
+  | 'QuoteInProgress'
+  | 'Started'
+  | 'NotRenewable'
+  | 'TooEarly'
+  | 'Eligible';
+
+export interface AgentPolicyRenewal {
+  policyId: string;
+  policyNumber: string;
+  renewalEligible: boolean;
+  renewalWindowStarts: string;
+  renewalEffectiveDate: string;
+  renewalStatus: AgentRenewalStatus;
+  renewalId: string | null;
+  renewalQuoteId: string | null;
+  renewedPolicyId: string | null;
+}
+
+export interface StartRenewalResponse {
+  renewalId: string;
+  sourcePolicyId: string;
+  sourcePolicyNumber: string;
+  customerProfileId: string;
+  vehicleId: string;
+  startedAtUtc: string;
+  currentPolicyExpirationDate: string;
+  renewalEffectiveDate: string;
+  renewalQuoteId: string | null;
+}
+
+================================================================================
+FILE: models\pricing.ts
+================================================================================
+export interface PricingConfiguration {
+  plans: PlanPricing[];
+  ratingAdjustments: RatingAdjustment[];
+  coverageOptions: CoverageOptionPricing[];
+  deductibles: DeductiblePricing[];
+  addOns: AddOnPricing[];
+}
+
+export interface PlanPricing {
+  planId: string;
+  planCode: string;
+  planName: string;
+  basePremium: number;
+  mandatoryCoverages: string[];
+}
+
+export interface RatingAdjustment {
+  ratingRuleId: string;
+  factor: string;
+  bandCode: string;
+  bandLabel: string;
+  surchargePercent: number;
+}
+
+export interface CoverageOptionPricing {
+  coverageLimitOptionId: string;
+  coverageId: string;
+  coverageName: string;
+  tier: string;
+  limitAmount: number | null;
+  isVehicleValueOption: boolean;
+  isDefault: boolean;
+  annualCharge: number;
+}
+
+export interface DeductiblePricing {
+  deductibleOptionId: string;
+  coverageId: string;
+  coverageName: string;
+  deductibleAmount: number;
+  isDefault: boolean;
+  annualCharge: number;
+}
+
+export interface AddOnPricing {
+  addOnId: string;
+  addOnCode: string;
+  addOnName: string;
+  annualPrice: number;
+  eligiblePlans: string[];
+}
+
+export interface UpdateBasePremiumRequest {
+  planId: string;
+  basePremium: number;
+}
+
+export interface UpdateRatingAdjustmentRequest {
+  ratingRuleId: string;
+  surchargePercent: number;
+}
+
+export interface UpdateCoverageOptionPriceRequest {
+  coverageLimitOptionId: string;
+  annualCharge: number;
+}
+
+export interface UpdateDeductiblePriceRequest {
+  deductibleOptionId: string;
+  annualCharge: number;
+}
+
+export interface UpdateAddOnPriceRequest {
+  addOnId: string;
+  annualPrice: number;
+}
+
+export interface PricingMessageResponse {
+  message: string;
+}
+
+================================================================================
+FILE: models\quote.models.ts
+================================================================================
+export interface StartQuoteRequest {
+  vehicleId: string;
+}
+
+export interface StartQuoteResponse {
+  resumedExistingDraft: boolean;
+  quote: Quote;
+}
+
+export interface Quote {
+  quoteId: string;
+  customerProfileId: string;
+  vehicleId: string;
+
+  status: string;
+
+  selectedPlanId: string | null;
+  selectedPlanName: string | null;
+
+  needsRecalculation: boolean;
+  selectedAnnualPremium: number | null;
+
+  createdAtUtc: string;
+  updatedAtUtc: string | null;
+  lastCalculatedAtUtc: string | null;
+  finalizedAtUtc: string | null;
+  validUntilUtc: string | null;
+
+  underwritingApplicationId: string | null;
+
+  planOptions: QuotePlanOption[];
+  coverages: QuoteCoverage[];
+  addOns: QuoteAddOn[];
+
+  finalizedSnapshot: QuoteSnapshot | null;
+}
+
+export interface QuotePlanOption {
+  planId: string;
+  planCode: string;
+  planName: string;
+
+  coverages: string[];
+
+  basePremium: number;
+  riskAdjustedPremium: number;
+
+  coverageOptionCharges: number;
+  deductibleCharges: number;
+  addOnCharges: number;
+
+  finalAnnualPremium: number;
+
+  isSelected: boolean;
+}
+
+export interface QuoteCoverage {
+  coverageId: string;
+  coverageName: string;
+
+  coverageLimitOptionId: string;
+
+  resolvedLimitAmount: number;
+  coverageLimitCharge: number;
+
+  deductibleOptionId: string | null;
+  deductibleAmount: number | null;
+  deductibleCharge: number;
+}
+
+export interface QuoteAddOn {
+  addOnId: string;
+  addOnName: string;
+  annualPrice: number;
+}
+
+export interface QuoteSnapshot {
+  finalizedAtUtc: string;
+  validUntilUtc: string;
+
+  planName: string;
+  finalAnnualPremium: number;
+
+  coverages: QuoteSnapshotCoverage[];
+  addOns: QuoteSnapshotAddOn[];
+}
+
+export interface QuoteSnapshotCoverage {
+  coverageName: string;
+  resolvedLimitAmount: number;
+  deductibleAmount: number | null;
+}
+
+export interface QuoteSnapshotAddOn {
+  addOnName: string;
+  annualPrice: number;
+}
+
+export interface SelectPlanRequest {
+  planCode: number;
+}
+
+export interface CoverageSelectionRequest {
+  coverageId: string;
+  coverageLimitOptionId: string;
+  deductibleOptionId: string | null;
+}
+
+export interface UpdateQuoteConfigurationRequest {
+  coverages: CoverageSelectionRequest[];
+  addOnIds: string[];
+}
+
+export interface FinalizeQuoteResponse {
+  finalized: boolean;
+  quoteUpdated: boolean;
+  message?: string;
+  quote: Quote;
+}
+
+export interface QuoteConfiguration {
+  quoteId: string;
+
+  planId: string;
+  planCode: string;
+  planName: string;
+
+  coverages: QuoteCoverageConfiguration[];
+
+  addOns: QuoteAddOnOption[];
+}
+
+export interface QuoteCoverageConfiguration {
+  coverageId: string;
+
+  coverageCode: string;
+  coverageName: string;
+
+  selectedCoverageLimitOptionId: string;
+
+  selectedDeductibleOptionId: string | null;
+
+  limitOptions: QuoteCoverageLimitOption[];
+
+  deductibleOptions: QuoteDeductibleOption[];
+}
+
+export interface QuoteCoverageLimitOption {
+  coverageLimitOptionId: string;
+
+  tier: string;
+
+  limitAmount: number | null;
+
+  resolvedLimitAmount: number;
+
+  annualCharge: number;
+
+  isDefault: boolean;
+  isSelected: boolean;
+}
+
+export interface QuoteDeductibleOption {
+  deductibleOptionId: string;
+
+  deductibleAmount: number;
+
+  annualCharge: number;
+
+  isDefault: boolean;
+  isSelected: boolean;
+}
+
+export interface QuoteAddOnOption {
+  addOnId: string;
+
+  addOnCode: string;
+  addOnName: string;
+
+  annualPrice: number;
+
+  isSelected: boolean;
+}
+
+================================================================================
+FILE: models\underwriting.models.ts
+================================================================================
+export interface UnassignedApplication {
+  applicationId: string;
+  originatingQuoteId: string;
+  customerProfileId: string;
+  vehicleId: string;
+  planName: string;
+  annualPremium: number;
+  overallRiskRating: string;
+  createdAtUtc: string;
+}
+
+export interface AdminDriverSnapshot {
+  driverId: string;
+  driverAge: number;
+  drivingExperienceYears: number;
+  licenceIssueDate: string;
+  licenceExpiryDate: string;
+  licenceValid: boolean;
+}
+
+export interface AdminVehicleSnapshot {
+  vin: string;
+  make: string;
+  model: string;
+  manufacturingYear: number;
+  vehicleAge: number;
+  vehicleType: string;
+  fuelType: string;
+  vehicleValue: number;
+  currentOdometer: number;
+  annualMileage: number;
+  ownershipType: string;
+}
+
+export interface AdminQuoteSnapshot {
+  planId: string;
+  planName: string;
+  annualPremium: number;
+  overallRiskRating: string;
+  quoteFinalizedAtUtc: string;
+  quoteValidUntilUtc: string;
+}
+
+export interface AdminApplicationDetail {
+  applicationId: string;
+  originatingQuoteId: string;
+  customerProfileId: string;
+  vehicleId: string;
+  status: string;
+  createdAtUtc: string;
+  driver: AdminDriverSnapshot;
+  vehicle: AdminVehicleSnapshot;
+  quote: AdminQuoteSnapshot;
+}
+
+export interface EligibleUnderwriterWithWorkload {
+  identityUserId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  actionableApplicationCount: number;
+}
+
+export interface AssignUnderwriterRequest {
+  underwriterIdentityUserId: string;
+}
+
+export interface UnderwriterApplicationListItem {
+  applicationId: string;
+  originatingQuoteId: string;
+  customerProfileId: string;
+  vehicleId: string;
+  status: string;
+  planName: string;
+  annualPremium: number;
+  overallRiskRating: string;
+  assignedAtUtc: string | null;
+  reviewStartedAtUtc: string | null;
+}
+
+export interface UnderwriterDriverReview {
+  driverId: string;
+  customerDateOfBirth: string;
+  geography: string;
+  driverAge: number;
+  drivingExperienceYears: number;
+  licenceIssueDate: string;
+  licenceExpiryDate: string;
+  licenceValid: boolean;
+  qualifyingClaimsCount: number;
+}
+
+export interface UnderwriterVehicleReview {
+  vin: string;
+  make: string;
+  model: string;
+  manufacturingYear: number;
+  vehicleAge: number;
+  vehicleType: string;
+  fuelType: string;
+  vehicleValue: number;
+  currentOdometer: number;
+  annualMileage: number;
+  ownershipType: string;
+  purchaseDate: string;
+}
+
+export interface UnderwriterCoverage {
+  coverageName: string;
+  resolvedLimitAmount: number;
+  deductibleAmount: number | null;
+}
+
+export interface UnderwriterAddOn {
+  addOnName: string;
+  annualPrice: number;
+}
+
+export interface UnderwriterQuoteReview {
+  planId: string;
+  planName: string;
+  annualPremium: number;
+  overallRiskRating: string;
+  quoteFinalizedAtUtc: string;
+  quoteValidUntilUtc: string;
+  coverages: UnderwriterCoverage[];
+  addOns: UnderwriterAddOn[];
+}
+
+export interface UnderwriterReviewSection {
+  sectionId: string;
+  sectionType: string;
+  reviewed: boolean;
+  reviewedAtUtc: string | null;
+  notes: string | null;
+}
+
+export interface UnderwriterReview {
+  applicationId: string;
+  originatingQuoteId: string;
+  customerProfileId: string;
+  vehicleId: string;
+  status: string;
+  createdAtUtc: string;
+  assignedAtUtc: string | null;
+  reviewStartedAtUtc: string | null;
+  driver: UnderwriterDriverReview;
+  vehicle: UnderwriterVehicleReview;
+  quote: UnderwriterQuoteReview;
+  reviewSections: UnderwriterReviewSection[];
+}
+
+export interface UpdateReviewSectionRequest {
+  reviewed: boolean;
+  notes: string | null;
+}
+
+export interface MakeUnderwritingDecisionRequest {
+  decision: string;
+  rejectionReason: string | null;
+}
+
+export interface UnderwritingDecision {
+  applicationId: string;
+  status: string;
+  decision: string;
+  decidedAtUtc: string;
+  rejectionReason: string | null;
+  offerValidUntilUtc: string | null;
+}
+
+export interface CustomerUnderwritingListItem {
+  applicationId: string;
+  originatingQuoteId: string;
+  vehicleId: string;
+  status: string;
+  planName: string;
+  annualPremium: number;
+  createdAtUtc: string;
+  decidedAtUtc: string | null;
+  offerValidUntilUtc: string | null;
+}
+
+export interface CustomerCoverage {
+  coverageName: string;
+  resolvedLimitAmount: number;
+  deductibleAmount: number | null;
+}
+
+export interface CustomerAddOn {
+  addOnName: string;
+  annualPrice: number;
+}
+
+export interface CustomerUnderwritingDetail {
+  applicationId: string;
+  originatingQuoteId: string;
+  vehicleId: string;
+  status: string;
+  planName: string;
+  annualPremium: number;
+  quoteFinalizedAtUtc: string;
+  quoteValidUntilUtc: string;
+  decidedAtUtc: string | null;
+  offerValidUntilUtc: string | null;
+  rejectionReason: string | null;
+  customerOutcome: string | null;
+  customerRespondedAtUtc: string | null;
+  coverages: CustomerCoverage[];
+  addOns: CustomerAddOn[];
+}
+
+export interface CustomerOfferResponse {
+  applicationId: string;
+  status: string;
+  outcome: string;
+  respondedAtUtc: string;
+}
+
+export interface AgentUnderwritingListItem {
+  applicationId: string;
+  customerProfileId: string;
+  vehicleId: string;
+  status: string;
+  planName: string;
+  annualPremium: number;
+  vehicleMake: string;
+  vehicleModel: string;
+  vehicleManufacturingYear: number;
+  createdAtUtc: string;
+  decisionAtUtc: string | null;
+  offerValidUntilUtc: string | null;
+  decisionReason: string | null;
+  customerOutcome: string | null;
+  customerRespondedAtUtc: string | null;
+}
+
+export interface AgentUnderwritingDetail {
+  applicationId: string;
+  customerProfileId: string;
+  vehicleId: string;
+  status: string;
+  planName: string;
+  annualPremium: number;
+  vehicleMake: string;
+  vehicleModel: string;
+  vehicleManufacturingYear: number;
+  vehicleType: string;
+  fuelType: string;
+  vehicleValue: number;
+  createdAtUtc: string;
+  quoteFinalizedAtUtc: string | null;
+  offerValidUntilUtc: string | null;
+  decisionAtUtc: string | null;
+  decisionReason: string | null;
+  customerOutcome: string | null;
+  customerRespondedAtUtc: string | null;
+}
+
+
+
+================================================================================
+FILE: models\vehicle.models.ts
+================================================================================
+export type VehicleType =
+  | 1
+  | 2
+  | 3
+  | 4
+  | 5
+  | 6
+  | 7
+  | 8;
+
+export type FuelType =
+  | 1
+  | 2
+  | 3
+  | 4
+  | 5;
+
+export type OwnershipType =
+  | 1
+  | 2;
+
+export interface UpsertVehicleRequest {
+  vin: string;
+  registrationNumber: string;
+
+  make: string;
+  model: string;
+
+  manufacturingYear: number;
+  vehicleType: VehicleType;
+
+  fuelType: FuelType;
+
+  vehicleValue: number;
+
+  currentOdometer: number;
+  annualMileage: number;
+
+  ownershipType: OwnershipType;
+
+  purchaseDate: string;
+}
+
+export interface Vehicle {
+  id: string;
+
+  customerProfileId: string;
+
+  vin: string;
+  registrationNumber: string;
+
+  make: string;
+  model: string;
+
+  manufacturingYear: number;
+
+  vehicleType: string;
+  fuelType: string;
+
+  vehicleValue: number;
+
+  currentOdometer: number;
+  annualMileage: number;
+
+  ownershipType: string;
+
+  purchaseDate: string;
+
+  vehicleAge: number;
+
+  ready: boolean;
+
+  readinessIssues: string[];
+
+  hasImage: boolean;
+
+  imageFileName: string | null;
+  imageContentType: string | null;
+  imageSizeBytes: number | null;
+  imageUpdatedAtUtc: string | null;
+
+  createdAtUtc: string;
+  updatedAtUtc: string | null;
+}
+
+export interface ApiMessageResponse {
+  message: string;
+}

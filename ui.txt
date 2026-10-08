@@ -1,0 +1,158 @@
+
+================================================================================
+FILE: ui\mg-icon\mg-icon.ts
+================================================================================
+import {
+  ChangeDetectionStrategy,
+  Component,
+  input
+} from '@angular/core';
+
+export type MgIconName =
+  | 'home'
+  | 'user'
+  | 'car'
+  | 'shield'
+  | 'document'
+  | 'claim'
+  | 'menu'
+  | 'close'
+  | 'chevron-down'
+  | 'chevron-right'
+  | 'arrow-right'
+  |  'chevron-left'
+  | 'logout'
+  | 'settings';
+
+@Component({
+  selector: 'mg-icon',
+  standalone: true,
+
+  host: {
+    '[class.inline-block]': 'true'
+  },
+
+  template: `
+    <svg
+      [class]="sizeClass()"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.8"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      @switch (name()) {
+
+        @case ('home') {
+          <path d="M3 10.5 12 3l9 7.5"></path>
+          <path d="M5.5 9.5V21h13V9.5"></path>
+          <path d="M9.5 21v-6h5v6"></path>
+        }
+
+        @case ('user') {
+          <circle cx="12" cy="7.5" r="3.5"></circle>
+          <path d="M5 21a7 7 0 0 1 14 0"></path>
+        }
+
+        @case ('car') {
+          <path
+            d="M5 17.5h14l-1.2-6.2a2 2 0 0 0-2-1.6H8.2a2 2 0 0 0-2 1.6L5 17.5Z"
+          ></path>
+          <path d="M4 17.5v2"></path>
+          <path d="M20 17.5v2"></path>
+          <circle cx="8" cy="18" r="1.2"></circle>
+          <circle cx="16" cy="18" r="1.2"></circle>
+        }
+
+        @case ('shield') {
+          <path
+            d="M12 3 19 6v5.5c0 4.7-2.8 7.9-7 9.5-4.2-1.6-7-4.8-7-9.5V6l7-3Z"
+          ></path>
+          <path d="m9 12 2 2 4-4"></path>
+        }
+
+        @case ('document') {
+          <path d="M6 3.5h8l4 4V20.5H6z"></path>
+          <path d="M14 3.5v4h4"></path>
+          <path d="M9 12h6"></path>
+          <path d="M9 15.5h6"></path>
+        }
+
+        @case ('claim') {
+          <path
+            d="M12 3.5 19 7v5c0 4.2-2.4 7.3-7 9-4.6-1.7-7-4.8-7-9V7l7-3.5Z"
+          ></path>
+          <path d="M8.8 12h6.4"></path>
+          <path d="M12 8.8v6.4"></path>
+        }
+
+        @case ('menu') {
+          <path d="M4 6h16"></path>
+          <path d="M4 12h16"></path>
+          <path d="M4 18h16"></path>
+        }
+
+        @case ('close') {
+          <path d="m6 6 12 12"></path>
+          <path d="m18 6-12 12"></path>
+        }
+
+        @case ('chevron-down') {
+          <path d="m6 9 6 6 6-6"></path>
+        }
+
+        @case ('chevron-right') {
+          <path d="m9 6 6 6-6 6"></path>
+        }
+
+        @case ('arrow-right') {
+          <path d="M4 12h15"></path>
+          <path d="m13 6 6 6-6 6"></path>
+        }
+
+        @case ('logout') {
+          <path d="M10 5H6v14h4"></path>
+          <path d="M13 8l4 4-4 4"></path>
+          <path d="M9 12h8"></path>
+        }
+
+        @case ('settings') {
+          <path
+            d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"
+          ></path>
+          <path
+            d="m19 13 .1-1 .9-.7-1.5-2.6-1.1.3-.8-.6-...
+            "
+          ></path>
+        }
+      }
+    </svg>
+  `,
+
+  changeDetection:
+    ChangeDetectionStrategy.OnPush
+})
+export class MgIcon {
+  readonly name =
+    input.required<MgIconName>();
+
+  readonly size =
+    input<'sm' | 'md' | 'lg'>('md');
+
+  protected readonly sizeClass = () => {
+    switch (this.size()) {
+      case 'sm':
+        return 'h-4 w-4';
+
+      case 'lg':
+        return 'h-6 w-6';
+
+      default:
+        return 'h-5 w-5';
+    }
+  };
+}
+
+

@@ -1,0 +1,48 @@
+@startuml
+!theme plain
+left to right direction
+skinparam shadowing false
+actor Customer
+rectangle "MileGuard — Customer Capabilities" {
+  usecase "Register" as UC1
+  usecase "Login / Refresh Session" as UC2
+  usecase "Maintain Own Profile" as UC3
+  usecase "View Driver / Vehicles" as UC4
+  usecase "Review Quote / History" as UC5
+  usecase "View Underwriting Status" as UC6
+  usecase "Review Approved Offer" as UC7
+  usecase "Accept Offer" as UC8
+  usecase "Choose Effective Date" as UC9
+  usecase "Choose Payment Frequency" as UC10
+  usecase "Make Premium Payment" as UC11
+  usecase "View Policies / PDF" as UC12
+  usecase "View Payment Schedule" as UC13
+  usecase "Request Cancellation" as UC14
+  usecase "Request Renewal" as UC15
+  usecase "Track Claim" as UC16
+  usecase "Accept Settlement" as UC17
+  usecase "Select Payout Method" as UC18
+  usecase "Retry Failed Payout" as UC19
+}
+Customer --> UC1
+Customer --> UC2
+Customer --> UC3
+Customer --> UC4
+Customer --> UC5
+Customer --> UC6
+Customer --> UC7
+Customer --> UC8
+Customer --> UC11
+Customer --> UC12
+Customer --> UC13
+Customer --> UC14
+Customer --> UC15
+Customer --> UC16
+Customer --> UC17
+Customer --> UC18
+Customer --> UC19
+UC8 .> UC9 : <<include>>
+UC8 .> UC10 : <<include>>
+UC8 .> UC11 : <<include>>
+UC17 .> UC18 : <<include>>
+@enduml

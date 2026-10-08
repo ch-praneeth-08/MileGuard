@@ -1,0 +1,1017 @@
+
+================================================================================
+FILE: UnderwritingService.API\appsettings.Development.json
+================================================================================
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  
+    "Jwt": {
+      "Key": "YOUR_LOCAL_DEVELOPMENT_SIGNING_KEY_AT_LEAST_32_CHARACTERS"
+    }
+  
+  
+}
+
+
+================================================================================
+FILE: UnderwritingService.API\appsettings.json
+================================================================================
+{
+  "ConnectionStrings": {
+    "UnderwritingDb": "Server=(localdb)\\MSSQLLocalDB;Database=UnderwritingDb;Trusted_Connection=True;TrustServerCertificate=True;"
+  },
+
+  "Services": {
+    "IdentityService": "https://localhost:7130/"
+  },
+
+  "Jwt": {
+    "Issuer": "AutoInsurance.IdentityService",
+    "Audience": "AutoInsurance"
+  },
+
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+
+  "AllowedHosts": "*"
+}
+
+================================================================================
+FILE: UnderwritingService.API\Controllers\AdminUnderwritingController.cs
+================================================================================
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using UnderwritingService.Application.Dtos.Admin;
+using UnderwritingService.Application.Interfaces;
+
+namespace UnderwritingService.API.Controllers;
+
+[ApiController]
+[Route("api/admin/underwriting")]
+[Authorize(Roles = "Admin")]
+
+public class AdminUnderwritingController
+    : ControllerBase
+{
+    private readonly IAdminUnderwritingService
+        _adminUnderwritingService;
+
+    public AdminUnderwritingController(
+        IAdminUnderwritingService adminUnderwritingService)
+    {
+        _adminUnderwritingService =
+            adminUnderwritingService;
+    }
+
+    [HttpGet("unassigned")]
+    public async Task<IActionResult> GetUnassigned()
+    {
+        var applications =
+            await _adminUnderwritingService
+                .GetUnassignedAsync();
+
+        return Ok(applications);
+    }
+
+    [HttpGet("{applicationId:guid}")]
+    public async Task<IActionResult> GetApplication(
+        Guid applicationId)
+    {
+        var result =
+            await _adminUnderwritingService
+                .GetApplicationAsync(
+                    applicationId);
+
+        if (!result.Succeeded ||
+            result.Application is null)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Underwriting application was not found."
+                });
+        }
+
+        return Ok(result.Application);
+    }
+
+    [HttpGet("eligible-underwriters")]
+    public async Task<IActionResult>
+        GetEligibleUnderwriters()
+    {
+        var result =
+            await _adminUnderwritingService
+                .GetEligibleUnderwritersAsync();
+
+        if (!result.Succeeded)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Eligible Underwriters are temporarily unavailable."
+                });
+        }
+
+        return Ok(result.Underwriters);
+    }
+    [HttpPost("{applicationId:guid}/assign")]
+    public async Task<IActionResult> Assign(
+    Guid applicationId,
+    [FromBody] AssignUnderwriterRequest request)
+    {
+        var adminIdentityUserId =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(
+                adminIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _adminUnderwritingService.AssignAsync(
+                applicationId,
+                request,
+                adminIdentityUserId);
+
+        if (result.Succeeded &&
+            result.Application is not null)
+        {
+            return Ok(
+                result.Application);
+        }
+
+        if (result.NotFound)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Underwriting application was not found."
+                });
+        }
+
+        if (result.Conflict)
+        {
+            return Conflict(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Underwriting application has already been assigned."
+                });
+        }
+
+        if (result.UnderwriterNotEligible)
+        {
+            return BadRequest(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Selected Underwriter is not currently eligible."
+                });
+        }
+
+        if (result.DependencyUnavailable)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Underwriter eligibility could not be verified."
+                });
+        }
+
+        return BadRequest(
+            new
+            {
+                message =
+                    result.Message ??
+                    "Underwriting application could not be assigned."
+            });
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.API\Controllers\InternalUnderwritingController.cs
+================================================================================
+using Microsoft.AspNetCore.Mvc;
+using UnderwritingService.Application.Dtos.Applications;
+using UnderwritingService.Application.Interfaces;
+
+namespace UnderwritingService.API.Controllers;
+
+[ApiController]
+[Route("internal/underwriting")]
+public class InternalUnderwritingController
+    : ControllerBase
+{
+    private readonly IUnderwritingApplicationService
+        _applicationService;
+
+    public InternalUnderwritingController(
+        IUnderwritingApplicationService
+            applicationService)
+    {
+        _applicationService =
+            applicationService;
+    }
+
+    [HttpPost("applications")]
+    public async Task<IActionResult>
+        CreateApplication(
+            [FromBody]
+            CreateUnderwritingApplicationRequest request)
+    {
+        var result =
+            await _applicationService
+                .CreateAsync(
+                    request);
+
+        if (!result.Succeeded ||
+            result.Application is null)
+        {
+            return BadRequest(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Underwriting application could not be created."
+                });
+        }
+
+        if (result.ExistingApplication)
+        {
+            return Ok(
+                result.Application);
+        }
+
+        return StatusCode(
+            StatusCodes.Status201Created,
+            result.Application);
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.API\Controllers\UnderwriterController.cs
+================================================================================
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using UnderwritingService.Application.Dtos.Underwriting;
+using UnderwritingService.Application.Interfaces;
+using UnderwritingService.Domain.Enums;
+
+namespace UnderwritingService.API.Controllers;
+
+[ApiController]
+[Route("api/underwriting")]
+[Authorize(Roles = "Underwriter")]
+public class UnderwriterController : ControllerBase
+{
+    private readonly IUnderwriterService
+        _underwriterService;
+
+    public UnderwriterController(
+        IUnderwriterService underwriterService)
+    {
+        _underwriterService =
+            underwriterService;
+    }
+
+    [HttpGet("my-applications")]
+    public async Task<IActionResult>
+        GetMyApplications()
+    {
+        var underwriterIdentityUserId =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(
+                underwriterIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var applications =
+            await _underwriterService
+                .GetMyApplicationsAsync(
+                    underwriterIdentityUserId);
+
+        return Ok(applications);
+    }
+
+    [HttpPut("{applicationId:guid}/sections/driver")]
+    public async Task<IActionResult> UpdateDriverReview(
+    Guid applicationId,
+    [FromBody] UpdateReviewSectionRequest request)
+    {
+        return await UpdateSectionAsync(
+            applicationId,
+            ReviewSectionType.Driver,
+            request);
+    }
+
+    [HttpPut("{applicationId:guid}/sections/vehicle")]
+    public async Task<IActionResult> UpdateVehicleReview(
+    Guid applicationId,
+    [FromBody] UpdateReviewSectionRequest request)
+    {
+        return await UpdateSectionAsync(
+            applicationId,
+            ReviewSectionType.Vehicle,
+            request);
+    }
+    [HttpPut("{applicationId:guid}/sections/insurance-quote")]
+    public async Task<IActionResult> UpdateInsuranceQuoteReview(
+    Guid applicationId,
+    [FromBody] UpdateReviewSectionRequest request)
+    {
+        return await UpdateSectionAsync(
+            applicationId,
+            ReviewSectionType.InsuranceQuote,
+            request);
+    }
+    [HttpPut("{applicationId:guid}/sections/overall-risk")]
+    public async Task<IActionResult> UpdateOverallRiskReview(
+    Guid applicationId,
+    [FromBody] UpdateReviewSectionRequest request)
+    {
+        return await UpdateSectionAsync(
+            applicationId,
+            ReviewSectionType.OverallRisk,
+            request);
+    }
+    [HttpGet("{applicationId:guid}/review")]
+    public async Task<IActionResult> GetReview(
+        Guid applicationId)
+    {
+        var underwriterIdentityUserId =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(
+                underwriterIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _underwriterService
+                .GetReviewAsync(
+                    applicationId,
+                    underwriterIdentityUserId);
+
+        if (result.Succeeded &&
+            result.Application is not null)
+        {
+            return Ok(
+                result.Application);
+        }
+
+        if (result.NotFound)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Underwriting application was not found."
+                });
+        }
+
+        if (result.Forbidden)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Access to the application is forbidden."
+                });
+        }
+
+        if (result.InvalidState)
+        {
+            return Conflict(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Underwriting application is not available for review."
+                });
+        }
+
+        return BadRequest(
+            new
+            {
+                message =
+                    result.Message ??
+                    "Underwriting application could not be loaded."
+            });
+    }
+    private async Task<IActionResult> UpdateSectionAsync(
+    Guid applicationId,
+    ReviewSectionType sectionType,
+    UpdateReviewSectionRequest request)
+    {
+        var underwriterIdentityUserId =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(
+                underwriterIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _underwriterService
+                .UpdateReviewSectionAsync(
+                    applicationId,
+                    sectionType,
+                    request,
+                    underwriterIdentityUserId);
+
+        if (result.Succeeded &&
+            result.Section is not null)
+        {
+            return Ok(
+                result.Section);
+        }
+
+        if (result.NotFound)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Review section was not found."
+                });
+        }
+
+        if (result.Forbidden)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Access to the application is forbidden."
+                });
+        }
+
+        if (result.InvalidState)
+        {
+            return Conflict(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Review section cannot be updated."
+                });
+        }
+
+        return BadRequest(
+            new
+            {
+                message =
+                    result.Message ??
+                    "Review section could not be updated."
+            });
+    }
+
+    [HttpPost("{applicationId:guid}/decision")]
+    public async Task<IActionResult> MakeDecision(
+    Guid applicationId,
+    [FromBody] MakeUnderwritingDecisionRequest request)
+    {
+        var underwriterIdentityUserId =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(
+                underwriterIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _underwriterService
+                .MakeDecisionAsync(
+                    applicationId,
+                    request,
+                    underwriterIdentityUserId);
+
+        if (result.Succeeded &&
+            result.Decision is not null)
+        {
+            return Ok(
+                result.Decision);
+        }
+
+        if (result.NotFound)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Underwriting application was not found."
+                });
+        }
+
+        if (result.Forbidden)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Access to the application is forbidden."
+                });
+        }
+
+        if (result.IncompleteReview)
+        {
+            return Conflict(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Underwriting review is incomplete."
+                });
+        }
+
+        if (result.InvalidState)
+        {
+            return Conflict(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Underwriting decision cannot be recorded."
+                });
+        }
+
+        return BadRequest(
+            new
+            {
+                message =
+                    result.Message ??
+                    "Underwriting decision could not be recorded."
+            });
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.API\Controllers\WeatherForecastController.cs
+================================================================================
+using Microsoft.AspNetCore.Mvc;
+
+namespace UnderwritingService.API.Controllers
+{
+    [ApiController]
+    [Route("[controller]")]
+    public class WeatherForecastController : ControllerBase
+    {
+        private static readonly string[] Summaries = new[]
+        {
+            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+        };
+
+        private readonly ILogger<WeatherForecastController> _logger;
+
+        public WeatherForecastController(ILogger<WeatherForecastController> logger)
+        {
+            _logger = logger;
+        }
+
+        [HttpGet(Name = "GetWeatherForecast")]
+        public IEnumerable<WeatherForecast> Get()
+        {
+            return Enumerable.Range(1, 5).Select(index => new WeatherForecast
+            {
+                Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+                TemperatureC = Random.Shared.Next(-20, 55),
+                Summary = Summaries[Random.Shared.Next(Summaries.Length)]
+            })
+            .ToArray();
+        }
+    }
+}
+
+
+================================================================================
+FILE: UnderwritingService.API\Program.cs
+================================================================================
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using UnderwritingService.Application.Interfaces;
+using UnderwritingService.Application.Interfaces.Clients;
+using UnderwritingService.Application.Interfaces.Repositories;
+using UnderwritingService.Application.Services;
+using UnderwritingService.Infrastructure.Clients;
+using UnderwritingService.Infrastructure.Persistence;
+using UnderwritingService.Infrastructure.Repositories;
+
+var builder = WebApplication.CreateBuilder(args);
+
+/*
+ * ============================================================
+ * CONTROLLERS
+ * ============================================================
+ */
+
+builder.Services.AddControllers();
+
+builder.Services.AddEndpointsApiExplorer();
+
+/*
+ * ============================================================
+ * SWAGGER
+ * ============================================================
+ */
+
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition(
+        "Bearer",
+        new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "Enter the JWT access token."
+        });
+
+    options.AddSecurityRequirement(
+        new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type =
+                            ReferenceType.SecurityScheme,
+
+                        Id =
+                            "Bearer"
+                    }
+                },
+                Array.Empty<string>()
+            }
+        });
+});
+
+/*
+ * ============================================================
+ * DATABASE
+ * ============================================================
+ */
+
+var connectionString =
+    builder.Configuration.GetConnectionString(
+        "UnderwritingDb")
+    ?? throw new InvalidOperationException(
+        "Connection string 'UnderwritingDb' was not found.");
+
+builder.Services.AddDbContext<UnderwritingDbContext>(
+    options =>
+        options.UseSqlServer(
+            connectionString));
+
+/*
+ * ============================================================
+ * REPOSITORIES
+ * ============================================================
+ */
+
+builder.Services.AddScoped<
+    IUnderwritingApplicationRepository,
+    UnderwritingApplicationRepository>();
+builder.Services.AddScoped<
+    IUnderwriterService,
+    UnderwriterService>();
+/*
+ * ============================================================
+ * APPLICATION SERVICES
+ * ============================================================
+ */
+
+builder.Services.AddScoped<
+    IUnderwritingApplicationService,
+    UnderwritingApplicationService>();
+
+builder.Services.AddScoped<
+    IAdminUnderwritingService,
+    AdminUnderwritingService>();
+
+/*
+ * ============================================================
+ * IDENTITY SERVICE CLIENT
+ * ============================================================
+ */
+
+builder.Services.AddHttpClient<
+    IIdentityClient,
+    IdentityClient>(
+        client =>
+        {
+            var baseUrl =
+                builder.Configuration[
+                    "Services:IdentityService"];
+
+            if (string.IsNullOrWhiteSpace(baseUrl))
+            {
+                throw new InvalidOperationException(
+                    "IdentityService URL is not configured.");
+            }
+
+            client.BaseAddress =
+                new Uri(baseUrl);
+
+            client.Timeout =
+                TimeSpan.FromSeconds(10);
+        });
+
+/*
+ * ============================================================
+ * JWT AUTHENTICATION
+ * ============================================================
+ */
+
+var jwtIssuer =
+    builder.Configuration[
+        "Jwt:Issuer"];
+
+var jwtAudience =
+    builder.Configuration[
+        "Jwt:Audience"];
+
+var jwtKey =
+    builder.Configuration[
+        "Jwt:Key"];
+
+if (string.IsNullOrWhiteSpace(jwtIssuer) ||
+    string.IsNullOrWhiteSpace(jwtAudience) ||
+    string.IsNullOrWhiteSpace(jwtKey))
+{
+    throw new InvalidOperationException(
+        "JWT configuration is incomplete.");
+}
+
+builder.Services
+    .AddAuthentication(
+        options =>
+        {
+            options.DefaultAuthenticateScheme =
+                JwtBearerDefaults.AuthenticationScheme;
+
+            options.DefaultChallengeScheme =
+                JwtBearerDefaults.AuthenticationScheme;
+        })
+    .AddJwtBearer(
+        options =>
+        {
+            options.TokenValidationParameters =
+                new TokenValidationParameters
+                {
+                    ValidateIssuer =
+                        true,
+
+                    ValidIssuer =
+                        jwtIssuer,
+
+                    ValidateAudience =
+                        true,
+
+                    ValidAudience =
+                        jwtAudience,
+
+                    ValidateIssuerSigningKey =
+                        true,
+
+                    IssuerSigningKey =
+                        new SymmetricSecurityKey(
+                            Encoding.UTF8.GetBytes(
+                                jwtKey)),
+
+                    ValidateLifetime =
+                        true,
+
+                    ClockSkew =
+                        TimeSpan.Zero
+                };
+        });
+
+builder.Services.AddAuthorization();
+
+/*
+ * ============================================================
+ * HEALTH CHECKS
+ * ============================================================
+ */
+
+builder.Services.AddHealthChecks();
+
+/*
+ * ============================================================
+ * BUILD APPLICATION
+ * ============================================================
+ */
+
+var app =
+    builder.Build();
+
+/*
+ * ============================================================
+ * DATABASE MIGRATIONS
+ * ============================================================
+ */
+
+if (!app.Environment.IsEnvironment(
+        "IntegrationTesting"))
+{
+    using var scope =
+        app.Services.CreateScope();
+
+    var dbContext =
+        scope.ServiceProvider
+            .GetRequiredService<
+                UnderwritingDbContext>();
+
+    await dbContext.Database
+        .MigrateAsync();
+}
+
+/*
+ * ============================================================
+ * DEVELOPMENT
+ * ============================================================
+ */
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+
+    app.UseSwaggerUI();
+}
+
+/*
+ * ============================================================
+ * HTTP PIPELINE
+ * ============================================================
+ */
+
+app.UseHttpsRedirection();
+
+app.UseAuthentication();
+
+app.UseAuthorization();
+
+/*
+ * ============================================================
+ * ENDPOINTS
+ * ============================================================
+ */
+
+app.MapControllers();
+
+app.MapHealthChecks(
+    "/health");
+
+/*
+ * ============================================================
+ * RUN
+ * ============================================================
+ */
+
+app.Run();
+
+public partial class Program
+{
+}
+
+================================================================================
+FILE: UnderwritingService.API\Properties\launchSettings.json
+================================================================================
+{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:22019",
+      "sslPort": 44386
+    }
+  },
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "http://localhost:5005",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "https": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "https://localhost:7025;http://localhost:5005",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
+
+
+================================================================================
+FILE: UnderwritingService.API\UnderwritingService.API.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.19" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.19" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.19">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UnderwritingService.Application\UnderwritingService.Application.csproj" />
+    <ProjectReference Include="..\UnderwritingService.Infrastructure\UnderwritingService.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
+
+
+================================================================================
+FILE: UnderwritingService.API\WeatherForecast.cs
+================================================================================
+namespace UnderwritingService.API
+{
+    public class WeatherForecast
+    {
+        public DateOnly Date { get; set; }
+
+        public int TemperatureC { get; set; }
+
+        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+
+        public string? Summary { get; set; }
+    }
+}
+

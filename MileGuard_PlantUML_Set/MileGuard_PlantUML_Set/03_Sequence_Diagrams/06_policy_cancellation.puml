@@ -1,0 +1,31 @@
+@startuml
+!theme plain
+skinparam shadowing false
+autonumber
+actor Customer
+participant "Angular App" as UI
+participant "Ocelot Gateway" as GW
+participant "PolicyBillingService" as PB
+participant "PolicyBillingDb" as DB
+
+Customer -> UI : Open Policy
+UI -> GW : GET /policies/api/policies/{policyId}
+GW -> PB : Read policy
+PB --> GW : Policy + cancellation eligibility
+GW --> UI : Policy
+
+Customer -> UI : Request cancellation
+UI -> GW : POST /policies/api/policies/{policyId}/cancellation
+GW -> PB : Validate cancellation rules
+PB -> DB : Update lifecycle + future installment states
+DB --> PB : Persisted cancellation
+PB --> GW : Cancellation result
+GW --> UI : Cancelled / scheduled result
+UI --> Customer : Updated policy status
+
+note right of PB
+MVP is intentionally limited:
+no refund, proration, withdrawal,
+reinstatement or collections workflow.
+end note
+@enduml

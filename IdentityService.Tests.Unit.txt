@@ -1,0 +1,1303 @@
+
+================================================================================
+FILE: IdentityService.Tests.Unit\IdentityService.Tests.Unit.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="Moq" Version="4.21.0" />
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IdentityService.Application\IdentityService.Application.csproj" />
+    <ProjectReference Include="..\IdentityService.Domain\IdentityService.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>
+
+
+================================================================================
+FILE: IdentityService.Tests.Unit\Services\AdminIdentityServiceTests.cs
+================================================================================
+using IdentityService.Application.Dtos.Admin;
+using IdentityService.Application.Interfaces.Repositories;
+using IdentityService.Application.Services;
+using IdentityService.Domain.Constants;
+using IdentityService.Domain.Entities;
+using IdentityService.Domain.Enums;
+using Moq;
+
+namespace IdentityService.Tests.Unit.Services;
+
+public class AdminIdentityServiceTests
+{
+    private readonly Mock<IUserRepository>
+        _userRepositoryMock;
+
+    private readonly AdminIdentityService _service;
+
+    public AdminIdentityServiceTests()
+    {
+        _userRepositoryMock =
+            new Mock<IUserRepository>();
+
+        _service =
+            new AdminIdentityService(
+                _userRepositoryMock.Object);
+    }
+
+    [Fact]
+    public async Task ApproveAsync_AdminRole_IsRejected()
+    {
+        var user = CreatePendingInternalUser();
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.GetByIdAsync(user.Id))
+            .ReturnsAsync(user);
+
+        var request =
+            new ApproveInternalRegistrationRequest
+            {
+                Role = ApplicationRoles.Admin
+            };
+
+        var result =
+            await _service.ApproveAsync(
+                user.Id,
+                request,
+                "admin-user-id");
+
+        Assert.False(result.Succeeded);
+
+        _userRepositoryMock.Verify(
+            repository =>
+                repository.ApproveInternalUserAsync(
+                    It.IsAny<ApplicationUser>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<DateTime>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ApproveAsync_AgentRole_ApprovesPendingUser()
+    {
+        var user = CreatePendingInternalUser();
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.GetByIdAsync(user.Id))
+            .ReturnsAsync(user);
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.ApproveInternalUserAsync(
+                    user,
+                    ApplicationRoles.Agent,
+                    "admin-user-id",
+                    It.IsAny<DateTime>()))
+            .ReturnsAsync(
+                UserOperationResult.Success());
+
+        var request =
+            new ApproveInternalRegistrationRequest
+            {
+                Role = ApplicationRoles.Agent
+            };
+
+        var result =
+            await _service.ApproveAsync(
+                user.Id,
+                request,
+                "admin-user-id");
+
+        Assert.True(result.Succeeded);
+
+        _userRepositoryMock.Verify(
+            repository =>
+                repository.ApproveInternalUserAsync(
+                    user,
+                    ApplicationRoles.Agent,
+                    "admin-user-id",
+                    It.IsAny<DateTime>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ApproveAsync_NonPendingUser_IsRejected()
+    {
+        var user = CreatePendingInternalUser();
+
+        user.AccountStatus = AccountStatus.Active;
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.GetByIdAsync(user.Id))
+            .ReturnsAsync(user);
+
+        var request =
+            new ApproveInternalRegistrationRequest
+            {
+                Role = ApplicationRoles.Agent
+            };
+
+        var result =
+            await _service.ApproveAsync(
+                user.Id,
+                request,
+                "admin-user-id");
+
+        Assert.False(result.Succeeded);
+        Assert.True(result.InvalidState);
+
+        _userRepositoryMock.Verify(
+            repository =>
+                repository.ApproveInternalUserAsync(
+                    It.IsAny<ApplicationUser>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<DateTime>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task RejectAsync_PendingUser_ChangesState()
+    {
+        var user = CreatePendingInternalUser();
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.GetByIdAsync(user.Id))
+            .ReturnsAsync(user);
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.UpdateAsync(user))
+            .ReturnsAsync(
+                UserOperationResult.Success());
+
+        var result =
+            await _service.RejectAsync(
+                user.Id,
+                "admin-user-id");
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(
+            AccountStatus.Rejected,
+            user.AccountStatus);
+
+        Assert.Equal(
+            "admin-user-id",
+            user.RejectedByUserId);
+
+        Assert.NotNull(
+            user.RejectedAtUtc);
+    }
+
+    private static ApplicationUser
+        CreatePendingInternalUser()
+    {
+        return new ApplicationUser
+        {
+            Id = "internal-user-id",
+            FirstName = "Test",
+            LastName = "Internal",
+            Email = "internal@example.com",
+            AccountType = AccountType.Internal,
+            AccountStatus = AccountStatus.Pending
+        };
+    }
+}
+
+================================================================================
+FILE: IdentityService.Tests.Unit\Services\AuthenticationServiceTests.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Application.Interfaces;
+using IdentityService.Application.Interfaces.Repositories;
+using IdentityService.Application.Services;
+using IdentityService.Domain.Entities;
+using IdentityService.Domain.Enums;
+using Moq;
+
+namespace IdentityService.Tests.Unit.Services;
+
+public class AuthenticationServiceTests
+{
+    private readonly Mock<IUserRepository>
+        _userRepositoryMock;
+
+    private readonly Mock<IAuthSessionService>
+        _authSessionServiceMock;
+
+    private readonly Mock<IPreAuthTokenService>
+        _preAuthTokenServiceMock;
+
+    private readonly AuthenticationService _service;
+
+    public AuthenticationServiceTests()
+    {
+        _userRepositoryMock =
+            new Mock<IUserRepository>();
+
+        _authSessionServiceMock =
+            new Mock<IAuthSessionService>();
+
+        _preAuthTokenServiceMock =
+            new Mock<IPreAuthTokenService>();
+
+        _service = new AuthenticationService(
+            _userRepositoryMock.Object,
+            _authSessionServiceMock.Object,
+            _preAuthTokenServiceMock.Object);
+    }
+
+    [Fact]
+    public async Task LoginAsync_InvalidPassword_ReturnsInvalidCredentials()
+    {
+        var user = CreateInternalUser(
+            AccountStatus.Active);
+
+        SetupUser(user);
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.CheckPasswordAsync(
+                    user,
+                    It.IsAny<string>()))
+            .ReturnsAsync(false);
+
+        var result =
+            await _service.LoginAsync(
+                CreateLoginRequest());
+
+        Assert.Equal(
+            LoginStatus.InvalidCredentials,
+            result.Status);
+
+        _authSessionServiceMock.Verify(
+            service =>
+                service.CreateSessionAsync(
+                    It.IsAny<ApplicationUser>(),
+                    It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task LoginAsync_PendingInternalUser_DoesNotCreateSession()
+    {
+        var user = CreateInternalUser(
+            AccountStatus.Pending);
+
+        SetupValidCredentials(user);
+
+        var result =
+            await _service.LoginAsync(
+                CreateLoginRequest());
+
+        Assert.Equal(
+            LoginStatus.PendingApproval,
+            result.Status);
+
+        Assert.Null(result.Tokens);
+        Assert.Null(result.PreAuth);
+
+        VerifyNoOperationalSession();
+    }
+
+    [Fact]
+    public async Task LoginAsync_RejectedInternalUser_DoesNotCreateSession()
+    {
+        var user = CreateInternalUser(
+            AccountStatus.Rejected);
+
+        SetupValidCredentials(user);
+
+        var result =
+            await _service.LoginAsync(
+                CreateLoginRequest());
+
+        Assert.Equal(
+            LoginStatus.Rejected,
+            result.Status);
+
+        Assert.Null(result.Tokens);
+        Assert.Null(result.PreAuth);
+
+        VerifyNoOperationalSession();
+    }
+
+    [Fact]
+    public async Task LoginAsync_InactiveInternalUser_DoesNotCreateSession()
+    {
+        var user = CreateInternalUser(
+            AccountStatus.Inactive);
+
+        SetupValidCredentials(user);
+
+        var result =
+            await _service.LoginAsync(
+                CreateLoginRequest());
+
+        Assert.Equal(
+            LoginStatus.Inactive,
+            result.Status);
+
+        Assert.Null(result.Tokens);
+        Assert.Null(result.PreAuth);
+
+        VerifyNoOperationalSession();
+    }
+
+    [Fact]
+    public async Task LoginAsync_ActiveInternalWithoutTwoFactor_ReturnsSetupRequired()
+    {
+        var user = CreateInternalUser(
+            AccountStatus.Active);
+
+        SetupValidCredentials(user);
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.GetRolesAsync(user))
+            .ReturnsAsync(["Agent"]);
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.GetTwoFactorEnabledAsync(user))
+            .ReturnsAsync(false);
+
+        _preAuthTokenServiceMock
+            .Setup(service => service.Create(user))
+            .Returns(
+                new PreAuthTokenResult
+                {
+                    Token = "pre-auth-token",
+                    ExpiresAtUtc =
+                        DateTime.UtcNow.AddMinutes(5)
+                });
+
+        var result =
+            await _service.LoginAsync(
+                CreateLoginRequest());
+
+        Assert.Equal(
+            LoginStatus.TwoFactorSetupRequired,
+            result.Status);
+
+        Assert.NotNull(result.PreAuth);
+        Assert.Null(result.Tokens);
+
+        VerifyNoOperationalSession();
+    }
+
+    [Fact]
+    public async Task LoginAsync_ActiveInternalWithTwoFactor_ReturnsChallengeRequired()
+    {
+        var user = CreateInternalUser(
+            AccountStatus.Active);
+
+        SetupValidCredentials(user);
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.GetRolesAsync(user))
+            .ReturnsAsync(["Agent"]);
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.GetTwoFactorEnabledAsync(user))
+            .ReturnsAsync(true);
+
+        _preAuthTokenServiceMock
+            .Setup(service => service.Create(user))
+            .Returns(
+                new PreAuthTokenResult
+                {
+                    Token = "pre-auth-token",
+                    ExpiresAtUtc =
+                        DateTime.UtcNow.AddMinutes(5)
+                });
+
+        var result =
+            await _service.LoginAsync(
+                CreateLoginRequest());
+
+        Assert.Equal(
+            LoginStatus.TwoFactorRequired,
+            result.Status);
+
+        Assert.NotNull(result.PreAuth);
+        Assert.Null(result.Tokens);
+
+        VerifyNoOperationalSession();
+    }
+
+    private void SetupUser(
+        ApplicationUser user)
+    {
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.GetByEmailAsync(
+                    "internal@example.com"))
+            .ReturnsAsync(user);
+    }
+
+    private void SetupValidCredentials(
+        ApplicationUser user)
+    {
+        SetupUser(user);
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.CheckPasswordAsync(
+                    user,
+                    "Internal@123"))
+            .ReturnsAsync(true);
+    }
+
+    private void VerifyNoOperationalSession()
+    {
+        _authSessionServiceMock.Verify(
+            service =>
+                service.CreateSessionAsync(
+                    It.IsAny<ApplicationUser>(),
+                    It.IsAny<string>()),
+            Times.Never);
+    }
+
+    private static ApplicationUser CreateInternalUser(
+        AccountStatus status)
+    {
+        return new ApplicationUser
+        {
+            Id = "internal-user-id",
+            FirstName = "Test",
+            LastName = "Internal",
+            Email = "internal@example.com",
+            UserName = "internal@example.com",
+            AccountType = AccountType.Internal,
+            AccountStatus = status
+        };
+    }
+
+    private static LoginRequest CreateLoginRequest()
+    {
+        return new LoginRequest
+        {
+            Email = "internal@example.com",
+            Password = "Internal@123"
+        };
+    }
+}
+
+================================================================================
+FILE: IdentityService.Tests.Unit\Services\AuthSessionServiceTests.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Application.Interfaces;
+using IdentityService.Application.Interfaces.Repositories;
+using IdentityService.Application.Services;
+using IdentityService.Domain.Entities;
+using Moq;
+
+namespace IdentityService.Tests.Unit.Services;
+
+public class AuthSessionServiceTests
+{
+    private readonly Mock<IRefreshSessionRepository>
+        _refreshRepositoryMock;
+
+    private readonly Mock<ITokenService>
+        _tokenServiceMock;
+
+    private readonly Mock<ITokenHashService>
+        _tokenHashServiceMock;
+
+    private readonly AuthSessionService _service;
+
+    public AuthSessionServiceTests()
+    {
+        _refreshRepositoryMock =
+            new Mock<IRefreshSessionRepository>();
+
+        _tokenServiceMock =
+            new Mock<ITokenService>();
+
+        _tokenHashServiceMock =
+            new Mock<ITokenHashService>();
+
+        _service = new AuthSessionService(
+            _refreshRepositoryMock.Object,
+            _tokenServiceMock.Object,
+            _tokenHashServiceMock.Object);
+    }
+
+    [Fact]
+    public async Task CreateSessionAsync_RevokesExistingActiveSession()
+    {
+        var user = new ApplicationUser
+        {
+            Id = "user-id"
+        };
+
+        var existingSession =
+            new RefreshSession
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                TokenHash = "old-hash",
+                SessionStartedAtUtc =
+                    DateTime.UtcNow.AddHours(-1),
+                AbsoluteExpiresAtUtc =
+                    DateTime.UtcNow.AddDays(6)
+            };
+
+        var absoluteExpiry =
+            DateTime.UtcNow.AddDays(7);
+
+        _refreshRepositoryMock
+            .Setup(repository =>
+                repository.GetActiveByUserIdAsync(
+                    user.Id))
+            .ReturnsAsync(existingSession);
+
+        _tokenServiceMock
+            .Setup(service =>
+                service.CreateToken(
+                    user,
+                    "Customer"))
+            .Returns(
+                new TokenResult
+                {
+                    AccessToken = "access-token",
+                    RefreshToken = "refresh-token",
+                    AccessTokenExpiresAtUtc =
+                        DateTime.UtcNow.AddMinutes(15),
+                    RefreshSessionExpiresAtUtc =
+                        absoluteExpiry
+                });
+
+        _tokenHashServiceMock
+            .Setup(service =>
+                service.Hash("refresh-token"))
+            .Returns("new-hash");
+
+        await _service.CreateSessionAsync(
+            user,
+            "Customer");
+
+        Assert.NotNull(
+            existingSession.RevokedAtUtc);
+
+        _refreshRepositoryMock.Verify(
+            repository =>
+                repository.AddAsync(
+                    It.Is<RefreshSession>(session =>
+                        session.UserId == user.Id &&
+                        session.TokenHash ==
+                            "new-hash")),
+            Times.Once);
+
+        _refreshRepositoryMock.Verify(
+            repository =>
+                repository.SaveChangesAsync(),
+            Times.Once);
+    }
+}
+
+================================================================================
+FILE: IdentityService.Tests.Unit\Services\LogoutServiceTests.cs
+================================================================================
+using IdentityService.Application.Interfaces;
+using IdentityService.Application.Interfaces.Repositories;
+using IdentityService.Application.Services;
+using IdentityService.Domain.Entities;
+using Moq;
+
+namespace IdentityService.Tests.Unit.Services;
+
+public class LogoutServiceTests
+{
+    private readonly Mock<IRefreshSessionRepository>
+        _refreshRepositoryMock;
+
+    private readonly Mock<ITokenHashService>
+        _tokenHashServiceMock;
+
+    private readonly LogoutService _service;
+
+    public LogoutServiceTests()
+    {
+        _refreshRepositoryMock =
+            new Mock<IRefreshSessionRepository>();
+
+        _tokenHashServiceMock =
+            new Mock<ITokenHashService>();
+
+        _service = new LogoutService(
+            _refreshRepositoryMock.Object,
+            _tokenHashServiceMock.Object);
+    }
+
+    [Fact]
+    public async Task LogoutAsync_ActiveSession_RevokesSession()
+    {
+        var session = new RefreshSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-id",
+            TokenHash = "token-hash",
+            SessionStartedAtUtc =
+                DateTime.UtcNow.AddHours(-1),
+            AbsoluteExpiresAtUtc =
+                DateTime.UtcNow.AddDays(6)
+        };
+
+        _tokenHashServiceMock
+            .Setup(service =>
+                service.Hash("refresh-token"))
+            .Returns("token-hash");
+
+        _refreshRepositoryMock
+            .Setup(repository =>
+                repository.GetByTokenHashAsync(
+                    "token-hash"))
+            .ReturnsAsync(session);
+
+        await _service.LogoutAsync(
+            "refresh-token");
+
+        _refreshRepositoryMock.Verify(
+            repository =>
+                repository.RevokeAsync(
+                    session,
+                    It.IsAny<DateTime>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task LogoutAsync_AlreadyRevokedSession_DoesNothing()
+    {
+        var session = new RefreshSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-id",
+            TokenHash = "token-hash",
+            SessionStartedAtUtc =
+                DateTime.UtcNow.AddHours(-1),
+            AbsoluteExpiresAtUtc =
+                DateTime.UtcNow.AddDays(6),
+            RevokedAtUtc =
+                DateTime.UtcNow.AddMinutes(-5)
+        };
+
+        _tokenHashServiceMock
+            .Setup(service =>
+                service.Hash("refresh-token"))
+            .Returns("token-hash");
+
+        _refreshRepositoryMock
+            .Setup(repository =>
+                repository.GetByTokenHashAsync(
+                    "token-hash"))
+            .ReturnsAsync(session);
+
+        await _service.LogoutAsync(
+            "refresh-token");
+
+        _refreshRepositoryMock.Verify(
+            repository =>
+                repository.RevokeAsync(
+                    It.IsAny<RefreshSession>(),
+                    It.IsAny<DateTime>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task LogoutAsync_NoRefreshToken_DoesNothing()
+    {
+        await _service.LogoutAsync(
+            string.Empty);
+
+        _refreshRepositoryMock.Verify(
+            repository =>
+                repository.GetByTokenHashAsync(
+                    It.IsAny<string>()),
+            Times.Never);
+
+        _refreshRepositoryMock.Verify(
+            repository =>
+                repository.RevokeAsync(
+                    It.IsAny<RefreshSession>(),
+                    It.IsAny<DateTime>()),
+            Times.Never);
+    }
+}
+
+================================================================================
+FILE: IdentityService.Tests.Unit\Services\RefreshTokenServiceTests.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Application.Interfaces;
+using IdentityService.Application.Interfaces.Repositories;
+using IdentityService.Application.Services;
+using IdentityService.Domain.Entities;
+using IdentityService.Domain.Enums;
+using Moq;
+
+namespace IdentityService.Tests.Unit.Services;
+
+public class RefreshTokenServiceTests
+{
+    private readonly Mock<IRefreshSessionRepository> _refreshRepositoryMock;
+    private readonly Mock<IUserRepository> _userRepositoryMock;
+    private readonly Mock<ITokenHashService> _tokenHashServiceMock;
+    private readonly Mock<ITokenService> _tokenServiceMock;
+
+    private readonly RefreshTokenService _service;
+
+    public RefreshTokenServiceTests()
+    {
+        _refreshRepositoryMock =
+            new Mock<IRefreshSessionRepository>();
+
+        _userRepositoryMock =
+            new Mock<IUserRepository>();
+
+        _tokenHashServiceMock =
+            new Mock<ITokenHashService>();
+
+        _tokenServiceMock =
+            new Mock<ITokenService>();
+
+        _service = new RefreshTokenService(
+            _refreshRepositoryMock.Object,
+            _userRepositoryMock.Object,
+            _tokenHashServiceMock.Object,
+            _tokenServiceMock.Object);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_ValidToken_RotatesAndPreservesAbsoluteExpiry()
+    {
+        var sessionStartedAt =
+            DateTime.UtcNow.AddDays(-2);
+
+        var absoluteExpiry =
+            DateTime.UtcNow.AddDays(5);
+
+        var session = new RefreshSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-id",
+            TokenHash = "old-hash",
+            SessionStartedAtUtc = sessionStartedAt,
+            AbsoluteExpiresAtUtc = absoluteExpiry
+        };
+
+        var user = CreateActiveCustomer();
+
+        _tokenHashServiceMock
+            .Setup(service =>
+                service.Hash("old-refresh-token"))
+            .Returns("old-hash");
+
+        _refreshRepositoryMock
+            .Setup(repository =>
+                repository.GetByTokenHashAsync("old-hash"))
+            .ReturnsAsync(session);
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.GetByIdAsync(session.UserId))
+            .ReturnsAsync(user);
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.GetRolesAsync(user))
+            .ReturnsAsync(["Customer"]);
+
+        _tokenServiceMock
+            .Setup(service =>
+                service.CreateRefreshedToken(
+                    user,
+                    "Customer",
+                    absoluteExpiry))
+            .Returns(
+                new TokenResult
+                {
+                    AccessToken = "new-access-token",
+                    RefreshToken = "new-refresh-token",
+                    AccessTokenExpiresAtUtc =
+                        DateTime.UtcNow.AddMinutes(15),
+                    RefreshSessionExpiresAtUtc =
+                        absoluteExpiry
+                });
+
+        _tokenHashServiceMock
+            .Setup(service =>
+                service.Hash("new-refresh-token"))
+            .Returns("new-hash");
+
+        var result =
+            await _service.RefreshAsync(
+                "old-refresh-token");
+
+        Assert.True(result.Succeeded);
+
+        Assert.Equal(
+            "new-access-token",
+            result.AccessToken);
+
+        Assert.Equal(
+            "new-refresh-token",
+            result.RefreshToken);
+
+        Assert.Equal(
+            absoluteExpiry,
+            result.RefreshSessionExpiresAtUtc);
+
+        _refreshRepositoryMock.Verify(
+            repository =>
+                repository.RotateAsync(
+                    session,
+                    It.Is<RefreshSession>(
+                        replacement =>
+                            replacement.UserId == user.Id &&
+                            replacement.TokenHash == "new-hash" &&
+                            replacement.SessionStartedAtUtc ==
+                                sessionStartedAt &&
+                            replacement.AbsoluteExpiresAtUtc ==
+                                absoluteExpiry)),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_RevokedToken_Fails()
+    {
+        var session = new RefreshSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-id",
+            TokenHash = "old-hash",
+            SessionStartedAtUtc =
+                DateTime.UtcNow.AddDays(-1),
+            AbsoluteExpiresAtUtc =
+                DateTime.UtcNow.AddDays(6),
+            RevokedAtUtc =
+                DateTime.UtcNow.AddMinutes(-5)
+        };
+
+        SetupTokenLookup(session);
+
+        var result =
+            await _service.RefreshAsync(
+                "refresh-token");
+
+        Assert.False(result.Succeeded);
+
+        _userRepositoryMock.Verify(
+            repository =>
+                repository.GetByIdAsync(
+                    It.IsAny<string>()),
+            Times.Never);
+
+        _tokenServiceMock.Verify(
+            service =>
+                service.CreateRefreshedToken(
+                    It.IsAny<ApplicationUser>(),
+                    It.IsAny<string>(),
+                    It.IsAny<DateTime>()),
+            Times.Never);
+
+        _refreshRepositoryMock.Verify(
+            repository =>
+                repository.RotateAsync(
+                    It.IsAny<RefreshSession>(),
+                    It.IsAny<RefreshSession>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_ExpiredToken_FailsAndRevokesSession()
+    {
+        var session = new RefreshSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-id",
+            TokenHash = "old-hash",
+            SessionStartedAtUtc =
+                DateTime.UtcNow.AddDays(-8),
+            AbsoluteExpiresAtUtc =
+                DateTime.UtcNow.AddMinutes(-1)
+        };
+
+        SetupTokenLookup(session);
+
+        var result =
+            await _service.RefreshAsync(
+                "refresh-token");
+
+        Assert.False(result.Succeeded);
+
+        _refreshRepositoryMock.Verify(
+            repository =>
+                repository.RevokeAsync(
+                    session,
+                    It.IsAny<DateTime>()),
+            Times.Once);
+
+        _tokenServiceMock.Verify(
+            service =>
+                service.CreateRefreshedToken(
+                    It.IsAny<ApplicationUser>(),
+                    It.IsAny<string>(),
+                    It.IsAny<DateTime>()),
+            Times.Never);
+
+        _refreshRepositoryMock.Verify(
+            repository =>
+                repository.RotateAsync(
+                    It.IsAny<RefreshSession>(),
+                    It.IsAny<RefreshSession>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_InactiveUser_FailsAndRevokesSession()
+    {
+        var session = CreateActiveSession();
+
+        var user = CreateActiveCustomer();
+
+        user.AccountStatus =
+            AccountStatus.Inactive;
+
+        SetupTokenLookup(session);
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.GetByIdAsync(
+                    session.UserId))
+            .ReturnsAsync(user);
+
+        var result =
+            await _service.RefreshAsync(
+                "refresh-token");
+
+        Assert.False(result.Succeeded);
+
+        _refreshRepositoryMock.Verify(
+            repository =>
+                repository.RevokeAsync(
+                    session,
+                    It.IsAny<DateTime>()),
+            Times.Once);
+
+        _userRepositoryMock.Verify(
+            repository =>
+                repository.GetRolesAsync(
+                    It.IsAny<ApplicationUser>()),
+            Times.Never);
+
+        _refreshRepositoryMock.Verify(
+            repository =>
+                repository.RotateAsync(
+                    It.IsAny<RefreshSession>(),
+                    It.IsAny<RefreshSession>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_InternalUserWithoutTwoFactor_FailsAndRevokesSession()
+    {
+        var session = CreateActiveSession();
+
+        var user = new ApplicationUser
+        {
+            Id = session.UserId,
+            FirstName = "Test",
+            LastName = "Agent",
+            Email = "agent@example.com",
+            UserName = "agent@example.com",
+            AccountType = AccountType.Internal,
+            AccountStatus = AccountStatus.Active
+        };
+
+        SetupTokenLookup(session);
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.GetByIdAsync(
+                    session.UserId))
+            .ReturnsAsync(user);
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.GetRolesAsync(user))
+            .ReturnsAsync(["Agent"]);
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.GetTwoFactorEnabledAsync(user))
+            .ReturnsAsync(false);
+
+        var result =
+            await _service.RefreshAsync(
+                "refresh-token");
+
+        Assert.False(result.Succeeded);
+
+        _refreshRepositoryMock.Verify(
+            repository =>
+                repository.RevokeAsync(
+                    session,
+                    It.IsAny<DateTime>()),
+            Times.Once);
+
+        _tokenServiceMock.Verify(
+            service =>
+                service.CreateRefreshedToken(
+                    It.IsAny<ApplicationUser>(),
+                    It.IsAny<string>(),
+                    It.IsAny<DateTime>()),
+            Times.Never);
+
+        _refreshRepositoryMock.Verify(
+            repository =>
+                repository.RotateAsync(
+                    It.IsAny<RefreshSession>(),
+                    It.IsAny<RefreshSession>()),
+            Times.Never);
+    }
+
+    private void SetupTokenLookup(
+        RefreshSession session)
+    {
+        _tokenHashServiceMock
+            .Setup(service =>
+                service.Hash("refresh-token"))
+            .Returns("old-hash");
+
+        _refreshRepositoryMock
+            .Setup(repository =>
+                repository.GetByTokenHashAsync(
+                    "old-hash"))
+            .ReturnsAsync(session);
+    }
+
+    private static RefreshSession CreateActiveSession()
+    {
+        return new RefreshSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = "user-id",
+            TokenHash = "old-hash",
+            SessionStartedAtUtc =
+                DateTime.UtcNow.AddHours(-1),
+            AbsoluteExpiresAtUtc =
+                DateTime.UtcNow.AddDays(6)
+        };
+    }
+
+    private static ApplicationUser CreateActiveCustomer()
+    {
+        return new ApplicationUser
+        {
+            Id = "user-id",
+            FirstName = "Test",
+            LastName = "Customer",
+            Email = "customer@example.com",
+            UserName = "customer@example.com",
+            AccountType = AccountType.Customer,
+            AccountStatus = AccountStatus.Active
+        };
+    }
+}
+
+================================================================================
+FILE: IdentityService.Tests.Unit\Services\RegistrationServiceTests.cs
+================================================================================
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Application.Interfaces.Repositories;
+using IdentityService.Application.Services;
+using IdentityService.Domain.Constants;
+using IdentityService.Domain.Entities;
+using IdentityService.Domain.Enums;
+using IdentityService.Infrastructure.Identity;
+using Moq;
+
+namespace IdentityService.Tests.Unit.Services;
+
+public class RegistrationServiceTests
+{
+    private readonly Mock<IUserRepository> _userRepositoryMock;
+    private readonly RegistrationService _service;
+
+    public RegistrationServiceTests()
+    {
+        _userRepositoryMock = new Mock<IUserRepository>();
+
+        _service = new RegistrationService(
+            _userRepositoryMock.Object);
+    }
+
+    [Fact]
+    public async Task RegisterCustomerAsync_CreatesActiveCustomerWithCustomerRole()
+    {
+        var request = new RegisterCustomerRequest
+        {
+            FirstName = "Test",
+            LastName = "Customer",
+            Email = "customer@example.com",
+            Password = "Customer@123",
+            ConfirmPassword = "Customer@123"
+        };
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.GetByEmailAsync(request.Email))
+            .ReturnsAsync((ApplicationUser?)null);
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.CreateAsync(
+                    It.IsAny<ApplicationUser>(),
+                    request.Password))
+            .ReturnsAsync(UserOperationResult.Success());
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.AddToRoleAsync(
+                    It.IsAny<ApplicationUser>(),
+                    ApplicationRoles.Customer))
+            .ReturnsAsync(UserOperationResult.Success());
+
+        var result =
+            await _service.RegisterCustomerAsync(request);
+
+        Assert.True(result.Succeeded);
+
+        _userRepositoryMock.Verify(
+            repository =>
+                repository.CreateAsync(
+                    It.Is<ApplicationUser>(user =>
+                        user.AccountType ==
+                            AccountType.Customer &&
+                        user.AccountStatus ==
+                            AccountStatus.Active &&
+                        user.FirstName == "Test" &&
+                        user.LastName == "Customer"),
+                    request.Password),
+            Times.Once);
+
+        _userRepositoryMock.Verify(
+            repository =>
+                repository.AddToRoleAsync(
+                    It.IsAny<ApplicationUser>(),
+                    ApplicationRoles.Customer),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task RegisterInternalAsync_CreatesPendingInternalUserWithoutRole()
+    {
+        var request = new InternalRegisterRequest
+        {
+            FirstName = "Test",
+            LastName = "Internal",
+            Email = "internal@example.com",
+            Password = "Internal@123",
+            ConfirmPassword = "Internal@123"
+        };
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.GetByEmailAsync(request.Email))
+            .ReturnsAsync((ApplicationUser?)null);
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.CreateAsync(
+                    It.IsAny<ApplicationUser>(),
+                    request.Password))
+            .ReturnsAsync(UserOperationResult.Success());
+
+        var result =
+            await _service.RegisterInternalAsync(request);
+
+        Assert.True(result.Succeeded);
+
+        _userRepositoryMock.Verify(
+            repository =>
+                repository.CreateAsync(
+                    It.Is<ApplicationUser>(user =>
+                        user.AccountType ==
+                            AccountType.Internal &&
+                        user.AccountStatus ==
+                            AccountStatus.Pending),
+                    request.Password),
+            Times.Once);
+
+        _userRepositoryMock.Verify(
+            repository =>
+                repository.AddToRoleAsync(
+                    It.IsAny<ApplicationUser>(),
+                    It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task RegisterCustomerAsync_DuplicateEmail_DoesNotCreateUser()
+    {
+        var request = new RegisterCustomerRequest
+        {
+            FirstName = "Test",
+            LastName = "Customer",
+            Email = "existing@example.com",
+            Password = "Customer@123",
+            ConfirmPassword = "Customer@123"
+        };
+
+        _userRepositoryMock
+            .Setup(repository =>
+                repository.GetByEmailAsync(request.Email))
+            .ReturnsAsync(
+                new ApplicationUser
+                {
+                    Email = request.Email
+                });
+
+        var result =
+            await _service.RegisterCustomerAsync(request);
+
+        Assert.False(result.Succeeded);
+        Assert.True(result.IsDuplicateEmail);
+
+        _userRepositoryMock.Verify(
+            repository =>
+                repository.CreateAsync(
+                    It.IsAny<ApplicationUser>(),
+                    It.IsAny<string>()),
+            Times.Never);
+    }
+}

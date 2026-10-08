@@ -1,0 +1,125 @@
+
+================================================================================
+FILE: IdentityService.Domain\Class1.cs
+================================================================================
+namespace IdentityService.Domain
+{
+    public class Class1
+    {
+
+    }
+}
+
+
+================================================================================
+FILE: IdentityService.Domain\Constants\ApplicationRoles.cs
+================================================================================
+namespace IdentityService.Domain.Constants;
+
+public static class ApplicationRoles
+{
+    public const string Customer = "Customer";
+    public const string Agent = "Agent";
+    public const string Underwriter = "Underwriter";
+    public const string ClaimsAdjuster = "Claims Adjuster";
+    public const string Admin = "Admin";
+}
+
+================================================================================
+FILE: IdentityService.Domain\Entities\ApplicationUser.cs
+================================================================================
+using IdentityService.Domain.Enums;
+using Microsoft.AspNetCore.Identity;
+
+namespace IdentityService.Domain.Entities;
+
+public class ApplicationUser : IdentityUser
+{
+    public string FirstName { get; set; } = string.Empty;
+
+    public string LastName { get; set; } = string.Empty;
+
+    public AccountType AccountType { get; set; }
+
+    public AccountStatus AccountStatus { get; set; }
+
+    public DateTime CreatedAtUtc { get; set; }
+
+    public DateTime? ApprovedAtUtc { get; set; }
+
+    public string? ApprovedByUserId { get; set; }
+
+    public DateTime? RejectedAtUtc { get; set; }
+
+    public string? RejectedByUserId { get; set; }
+
+    public DateTime? DeactivatedAtUtc { get; set; }
+
+    public string? DeactivatedByUserId { get; set; }
+}
+
+================================================================================
+FILE: IdentityService.Domain\Entities\RefreshSession.cs
+================================================================================
+namespace IdentityService.Domain.Entities;
+
+public class RefreshSession
+{
+    public Guid Id { get; set; }
+
+    public string UserId { get; set; } = string.Empty;
+
+    public string TokenHash { get; set; } = string.Empty;
+
+    public DateTime SessionStartedAtUtc { get; set; }
+
+    public DateTime AbsoluteExpiresAtUtc { get; set; }
+
+    public DateTime? RevokedAtUtc { get; set; }
+
+    public string? ReplacementTokenHash { get; set; }
+
+    public ApplicationUser User { get; set; } = null!;
+}
+
+================================================================================
+FILE: IdentityService.Domain\Enums\AccountStatus.cs
+================================================================================
+namespace IdentityService.Domain.Enums;
+
+public enum AccountStatus
+{
+    Pending = 1,
+    Active = 2,
+    Rejected = 3,
+    Inactive = 4
+}
+
+================================================================================
+FILE: IdentityService.Domain\Enums\AccountType.cs
+================================================================================
+namespace IdentityService.Domain.Enums;
+
+public enum AccountType
+{
+    Customer = 1,
+    Internal = 2
+}
+
+================================================================================
+FILE: IdentityService.Domain\IdentityService.Domain.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="8.0.19" />
+  </ItemGroup>
+
+</Project>
+

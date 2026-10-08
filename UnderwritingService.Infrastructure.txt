@@ -1,0 +1,1007 @@
+
+================================================================================
+FILE: UnderwritingService.Infrastructure\Class1.cs
+================================================================================
+namespace UnderwritingService.Infrastructure
+{
+    public class Class1
+    {
+
+    }
+}
+
+
+================================================================================
+FILE: UnderwritingService.Infrastructure\Client\IdentityClient.cs
+================================================================================
+using System.Net;
+using System.Net.Http.Json;
+using UnderwritingService.Application.Dtos.Identity;
+using UnderwritingService.Application.Interfaces.Clients;
+
+namespace UnderwritingService.Infrastructure.Clients;
+
+public class IdentityClient : IIdentityClient
+{
+    private readonly HttpClient _httpClient;
+
+    public IdentityClient(
+        HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+    }
+
+    public async Task<EligibleUnderwritersResult>
+        GetEligibleUnderwritersAsync()
+    {
+        try
+        {
+            using var response =
+                await _httpClient.GetAsync(
+                    "internal/underwriters/eligible");
+
+            if (response.StatusCode ==
+                HttpStatusCode.OK)
+            {
+                var underwriters =
+                    await response.Content
+                        .ReadFromJsonAsync<
+                            List<EligibleUnderwriterDto>>();
+
+                if (underwriters is null)
+                {
+                    return EligibleUnderwritersResult.Unavailable(
+                        "IdentityService returned an invalid response.");
+                }
+
+                return EligibleUnderwritersResult.Success(
+                    underwriters);
+            }
+
+            return EligibleUnderwritersResult.Unavailable(
+                "Eligible Underwriters are temporarily unavailable.");
+        }
+        catch (HttpRequestException)
+        {
+            return EligibleUnderwritersResult.Unavailable(
+                "IdentityService is temporarily unavailable.");
+        }
+        catch (TaskCanceledException)
+        {
+            return EligibleUnderwritersResult.Unavailable(
+                "IdentityService request timed out.");
+        }
+    }
+
+    public async Task<EligibleUnderwriterResult>
+        GetEligibleUnderwriterAsync(
+            string identityUserId)
+    {
+        if (string.IsNullOrWhiteSpace(
+                identityUserId))
+        {
+            return EligibleUnderwriterResult.Ineligible(
+                "Underwriter Identity User ID is required.");
+        }
+
+        try
+        {
+            var encodedIdentityUserId =
+                Uri.EscapeDataString(
+                    identityUserId);
+
+            using var response =
+                await _httpClient.GetAsync(
+                    $"internal/underwriters/{encodedIdentityUserId}/eligible");
+
+            if (response.StatusCode ==
+                HttpStatusCode.OK)
+            {
+                var underwriter =
+                    await response.Content
+                        .ReadFromJsonAsync<
+                            EligibleUnderwriterDto>();
+
+                if (underwriter is null ||
+                    string.IsNullOrWhiteSpace(
+                        underwriter.Id))
+                {
+                    return EligibleUnderwriterResult.Unavailable(
+                        "IdentityService returned an invalid Underwriter response.");
+                }
+
+                return EligibleUnderwriterResult.Success(
+                    underwriter);
+            }
+
+            if (response.StatusCode ==
+                HttpStatusCode.NotFound)
+            {
+                return EligibleUnderwriterResult.Ineligible(
+                    "Selected Underwriter is not currently eligible.");
+            }
+
+            return EligibleUnderwriterResult.Unavailable(
+                "Underwriter eligibility could not be verified.");
+        }
+        catch (HttpRequestException)
+        {
+            return EligibleUnderwriterResult.Unavailable(
+                "IdentityService is temporarily unavailable.");
+        }
+        catch (TaskCanceledException)
+        {
+            return EligibleUnderwriterResult.Unavailable(
+                "IdentityService request timed out.");
+        }
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Infrastructure\Persistence\Configurations\ApplicationAddOnSnapshotConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using UnderwritingService.Domain.Entities;
+
+namespace UnderwritingService.Infrastructure
+    .Persistence.Configurations;
+
+public class ApplicationAddOnSnapshotConfiguration
+    : IEntityTypeConfiguration<ApplicationAddOnSnapshot>
+{
+    public void Configure(
+        EntityTypeBuilder<ApplicationAddOnSnapshot> builder)
+    {
+        builder.ToTable(
+            "ApplicationAddOnSnapshots",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_ApplicationAddOnSnapshots_Price_NonNegative",
+                    "[AnnualPrice] >= 0");
+            });
+
+        builder.HasKey(
+            addOn => addOn.Id);
+
+        builder.Property(
+                addOn => addOn.AddOnName)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(
+                addOn => addOn.AnnualPrice)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.HasOne(
+                addOn =>
+                    addOn.ApplicationSnapshot)
+            .WithMany(
+                snapshot =>
+                    snapshot.AddOns)
+            .HasForeignKey(
+                addOn =>
+                    addOn.ApplicationSnapshotId)
+            .OnDelete(
+                DeleteBehavior.Cascade);
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Infrastructure\Persistence\Configurations\ApplicationCoverageSnapshotConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using UnderwritingService.Domain.Entities;
+
+namespace UnderwritingService.Infrastructure
+    .Persistence.Configurations;
+
+public class ApplicationCoverageSnapshotConfiguration
+    : IEntityTypeConfiguration<ApplicationCoverageSnapshot>
+{
+    public void Configure(
+        EntityTypeBuilder<ApplicationCoverageSnapshot> builder)
+    {
+        builder.ToTable(
+            "ApplicationCoverageSnapshots",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_ApplicationCoverageSnapshots_Limit_Positive",
+                    "[ResolvedLimitAmount] > 0");
+
+                table.HasCheckConstraint(
+                    "CK_ApplicationCoverageSnapshots_Deductible_Positive",
+                    "[DeductibleAmount] IS NULL OR [DeductibleAmount] > 0");
+            });
+
+        builder.HasKey(
+            coverage => coverage.Id);
+
+        builder.Property(
+                coverage => coverage.CoverageName)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(
+                coverage =>
+                    coverage.ResolvedLimitAmount)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                coverage =>
+                    coverage.DeductibleAmount)
+            .HasPrecision(18, 2);
+
+        builder.HasOne(
+                coverage =>
+                    coverage.ApplicationSnapshot)
+            .WithMany(
+                snapshot =>
+                    snapshot.Coverages)
+            .HasForeignKey(
+                coverage =>
+                    coverage.ApplicationSnapshotId)
+            .OnDelete(
+                DeleteBehavior.Cascade);
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Infrastructure\Persistence\Configurations\ApplicationReviewSectionConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using UnderwritingService.Domain.Entities;
+
+namespace UnderwritingService.Infrastructure
+    .Persistence.Configurations;
+
+public class ApplicationReviewSectionConfiguration
+    : IEntityTypeConfiguration<ApplicationReviewSection>
+{
+    public void Configure(
+        EntityTypeBuilder<ApplicationReviewSection> builder)
+    {
+        builder.ToTable(
+            "ApplicationReviewSections");
+
+        builder.HasKey(
+            section => section.Id);
+
+        builder.Property(
+                section => section.SectionType)
+            .IsRequired();
+
+        builder.Property(
+                section => section.Reviewed)
+            .IsRequired();
+
+        builder.Property(
+                section =>
+                    section.ReviewedByIdentityUserId)
+            .HasMaxLength(450);
+
+        builder.Property(
+                section => section.Notes)
+            .HasMaxLength(2000);
+
+        builder.HasOne(
+                section => section.Application)
+            .WithMany(
+                application =>
+                    application.ReviewSections)
+            .HasForeignKey(
+                section =>
+                    section.UnderwritingApplicationId)
+            .OnDelete(
+                DeleteBehavior.Cascade);
+
+        builder.HasIndex(
+                section =>
+                    new
+                    {
+                        section.UnderwritingApplicationId,
+                        section.SectionType
+                    })
+            .IsUnique();
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Infrastructure\Persistence\Configurations\ApplicationSnapshotConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using UnderwritingService.Domain.Entities;
+
+namespace UnderwritingService.Infrastructure
+    .Persistence.Configurations;
+
+public class ApplicationSnapshotConfiguration
+    : IEntityTypeConfiguration<ApplicationSnapshot>
+{
+    public void Configure(
+        EntityTypeBuilder<ApplicationSnapshot> builder)
+    {
+        builder.ToTable(
+            "ApplicationSnapshots");
+
+        builder.HasKey(
+            snapshot => snapshot.Id);
+
+        builder.Property(
+                snapshot => snapshot.Geography)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                snapshot => snapshot.VehicleVin)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                snapshot => snapshot.VehicleMake)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(
+                snapshot => snapshot.VehicleModel)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(
+                snapshot => snapshot.VehicleType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                snapshot => snapshot.FuelType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                snapshot => snapshot.OwnershipType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                snapshot => snapshot.PlanName)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(
+                snapshot => snapshot.VehicleValue)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                snapshot => snapshot.AnnualPremium)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.HasOne(
+                snapshot => snapshot.Application)
+            .WithOne(
+                application =>
+                    application.Snapshot)
+            .HasForeignKey<ApplicationSnapshot>(
+                snapshot =>
+                    snapshot.UnderwritingApplicationId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+
+        builder.HasIndex(
+                snapshot =>
+                    snapshot.UnderwritingApplicationId)
+            .IsUnique();
+    }
+}
+
+
+================================================================================
+FILE: UnderwritingService.Infrastructure\Persistence\Configurations\ApplicationStatusHistoryConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using UnderwritingService.Domain.Entities;
+
+namespace UnderwritingService.Infrastructure
+    .Persistence.Configurations;
+
+public class ApplicationStatusHistoryConfiguration
+    : IEntityTypeConfiguration<ApplicationStatusHistory>
+{
+    public void Configure(
+        EntityTypeBuilder<ApplicationStatusHistory> builder)
+    {
+        builder.ToTable(
+            "ApplicationStatusHistory");
+
+        builder.HasKey(
+            history => history.Id);
+
+        builder.Property(
+                history => history.FromStatus)
+            .IsRequired();
+
+        builder.Property(
+                history => history.ToStatus)
+            .IsRequired();
+
+        builder.Property(
+                history =>
+                    history.ChangedByIdentityUserId)
+            .IsRequired()
+            .HasMaxLength(450);
+
+        builder.Property(
+                history => history.ChangedAtUtc)
+            .IsRequired();
+
+        builder.HasOne(
+                history => history.Application)
+            .WithMany(
+                application =>
+                    application.StatusHistory)
+            .HasForeignKey(
+                history =>
+                    history.UnderwritingApplicationId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+
+        builder.HasIndex(
+            history =>
+                history.UnderwritingApplicationId);
+
+        builder.HasIndex(
+            history =>
+                history.ChangedAtUtc);
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Infrastructure\Persistence\Configurations\CustomerOfferOutcomeConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using UnderwritingService.Domain.Entities;
+
+namespace UnderwritingService.Infrastructure
+    .Persistence.Configurations;
+
+public class CustomerOfferOutcomeConfiguration
+    : IEntityTypeConfiguration<CustomerOfferOutcome>
+{
+    public void Configure(
+        EntityTypeBuilder<CustomerOfferOutcome> builder)
+    {
+        builder.ToTable(
+            "CustomerOfferOutcomes");
+
+        builder.HasKey(
+            outcome => outcome.Id);
+
+        builder.Property(
+                outcome =>
+                    outcome.DeclinedAtUtc)
+            .IsRequired();
+
+        builder.Property(
+                outcome =>
+                    outcome.DeclinedByIdentityUserId)
+            .IsRequired()
+            .HasMaxLength(450);
+
+        builder.HasOne(
+                outcome => outcome.Application)
+            .WithOne(
+                application =>
+                    application.CustomerOfferOutcome)
+            .HasForeignKey<CustomerOfferOutcome>(
+                outcome =>
+                    outcome.UnderwritingApplicationId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+
+        builder.HasIndex(
+                outcome =>
+                    outcome.UnderwritingApplicationId)
+            .IsUnique();
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Infrastructure\Persistence\Configurations\UnderwritingApplicationConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using UnderwritingService.Domain.Entities;
+
+namespace UnderwritingService.Infrastructure
+    .Persistence.Configurations;
+
+public class UnderwritingApplicationConfiguration
+    : IEntityTypeConfiguration<UnderwritingApplication>
+{
+    public void Configure(
+        EntityTypeBuilder<UnderwritingApplication> builder)
+    {
+        builder.ToTable(
+            "UnderwritingApplications");
+
+        builder.HasKey(
+            application => application.Id);
+
+        builder.Property(
+                application =>
+                    application.OriginatingQuoteId)
+            .IsRequired();
+
+        builder.Property(
+                application =>
+                    application.CustomerProfileId)
+            .IsRequired();
+
+        builder.Property(
+                application =>
+                    application.VehicleId)
+            .IsRequired();
+
+        builder.Property(
+                application =>
+                    application.AgentIdentityUserId)
+            .IsRequired()
+            .HasMaxLength(450);
+
+        builder.Property(
+                application =>
+                    application.AssignedUnderwriterIdentityUserId)
+            .HasMaxLength(450);
+
+        builder.Property(
+                application =>
+                    application.AssignedByIdentityUserId)
+            .HasMaxLength(450);
+
+        builder.Property(
+                application =>
+                    application.Status)
+            .IsRequired();
+
+        builder.Property(
+                application =>
+                    application.CreatedAtUtc)
+            .IsRequired();
+
+        /*
+         * OriginatingQuoteId is the idempotency boundary.
+         * One finalized Quote can create only one
+         * UnderwritingApplication.
+         */
+        builder.HasIndex(
+                application =>
+                    application.OriginatingQuoteId)
+            .IsUnique();
+
+        builder.HasIndex(
+            application =>
+                application.CustomerProfileId);
+
+        builder.HasIndex(
+            application =>
+                application.VehicleId);
+
+        builder.HasIndex(
+            application =>
+                application.AssignedUnderwriterIdentityUserId);
+
+        builder.HasIndex(
+            application =>
+                application.Status);
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Infrastructure\Persistence\Configurations\UnderwritingDecisionConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using UnderwritingService.Domain.Entities;
+
+namespace UnderwritingService.Infrastructure
+    .Persistence.Configurations;
+
+public class UnderwritingDecisionConfiguration
+    : IEntityTypeConfiguration<UnderwritingDecision>
+{
+    public void Configure(
+        EntityTypeBuilder<UnderwritingDecision> builder)
+    {
+        builder.ToTable(
+            "UnderwritingDecisions");
+
+        builder.HasKey(
+            decision => decision.Id);
+
+        builder.Property(
+                decision => decision.DecisionType)
+            .IsRequired();
+
+        builder.Property(
+                decision =>
+                    decision.DecidedByIdentityUserId)
+            .IsRequired()
+            .HasMaxLength(450);
+
+        builder.Property(
+                decision => decision.DecidedAtUtc)
+            .IsRequired();
+
+        builder.Property(
+                decision => decision.RejectionReason)
+            .HasMaxLength(2000);
+
+        builder.HasOne(
+                decision => decision.Application)
+            .WithOne(
+                application =>
+                    application.Decision)
+            .HasForeignKey<UnderwritingDecision>(
+                decision =>
+                    decision.UnderwritingApplicationId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+
+        builder.HasIndex(
+                decision =>
+                    decision.UnderwritingApplicationId)
+            .IsUnique();
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Infrastructure\Persistence\UnderwritingDbContext.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using UnderwritingService.Domain.Entities;
+
+namespace UnderwritingService.Infrastructure.Persistence;
+
+public class UnderwritingDbContext : DbContext
+{
+    public UnderwritingDbContext(
+        DbContextOptions<UnderwritingDbContext> options)
+        : base(options)
+    {
+    }
+
+    public DbSet<UnderwritingApplication>
+        UnderwritingApplications =>
+            Set<UnderwritingApplication>();
+
+    public DbSet<ApplicationSnapshot>
+        ApplicationSnapshots =>
+            Set<ApplicationSnapshot>();
+
+    public DbSet<ApplicationCoverageSnapshot>
+        ApplicationCoverageSnapshots =>
+            Set<ApplicationCoverageSnapshot>();
+
+    public DbSet<ApplicationAddOnSnapshot>
+        ApplicationAddOnSnapshots =>
+            Set<ApplicationAddOnSnapshot>();
+
+    public DbSet<ApplicationReviewSection>
+        ApplicationReviewSections =>
+            Set<ApplicationReviewSection>();
+
+    public DbSet<UnderwritingDecision>
+        UnderwritingDecisions =>
+            Set<UnderwritingDecision>();
+
+    public DbSet<CustomerOfferOutcome>
+        CustomerOfferOutcomes =>
+            Set<CustomerOfferOutcome>();
+
+    public DbSet<ApplicationStatusHistory>
+        ApplicationStatusHistories =>
+            Set<ApplicationStatusHistory>();
+
+    protected override void OnModelCreating(
+        ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(
+            modelBuilder);
+
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            typeof(UnderwritingDbContext)
+                .Assembly);
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Infrastructure\Repositories\UnderwritingApplicationRepository.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using UnderwritingService.Application.Interfaces.Repositories;
+using UnderwritingService.Domain.Entities;
+using UnderwritingService.Domain.Enums;
+using UnderwritingService.Infrastructure.Persistence;
+
+namespace UnderwritingService.Infrastructure.Repositories;
+
+public class UnderwritingApplicationRepository
+    : IUnderwritingApplicationRepository
+{
+    private readonly UnderwritingDbContext _dbContext;
+
+    public UnderwritingApplicationRepository(
+        UnderwritingDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<UnderwritingApplication?>
+        GetByOriginatingQuoteIdAsync(
+            Guid originatingQuoteId)
+    {
+        return await _dbContext
+            .UnderwritingApplications
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                application =>
+                    application.OriginatingQuoteId ==
+                    originatingQuoteId);
+    }
+
+    public async Task<IReadOnlyList<ApplicationReviewSection>>
+    GetReviewSectionsAsync(
+        Guid applicationId)
+    {
+        return await _dbContext
+            .ApplicationReviewSections
+            .AsNoTracking()
+            .Where(
+                section =>
+                    section.UnderwritingApplicationId ==
+                    applicationId)
+            .ToListAsync();
+    }
+    public async Task<bool> DecisionExistsAsync(
+    Guid applicationId)
+    {
+        return await _dbContext
+            .UnderwritingDecisions
+            .AsNoTracking()
+            .AnyAsync(
+                decision =>
+                    decision.UnderwritingApplicationId ==
+                    applicationId);
+    }
+    public async Task AddDecisionAsync(
+    UnderwritingDecision decision)
+    {
+        await _dbContext
+            .UnderwritingDecisions
+            .AddAsync(
+                decision);
+    }
+    public async Task<ApplicationReviewSection?>
+    GetReviewSectionForUpdateAsync(
+        Guid applicationId,
+        ReviewSectionType sectionType)
+    {
+        return await _dbContext
+            .ApplicationReviewSections
+            .SingleOrDefaultAsync(
+                section =>
+                    section.UnderwritingApplicationId ==
+                        applicationId &&
+                    section.SectionType ==
+                        sectionType);
+    }
+    public async Task AddStatusHistoryAsync(
+    ApplicationStatusHistory history)
+    {
+        await _dbContext
+            .ApplicationStatusHistories
+            .AddAsync(history);
+    }
+    public async Task<UnderwritingApplication?>
+    GetByIdForUpdateAsync(
+        Guid applicationId)
+    {
+        return await _dbContext
+            .UnderwritingApplications
+            .SingleOrDefaultAsync(
+                application =>
+                    application.Id == applicationId);
+    }
+    public async Task<UnderwritingApplication?>
+    GetAssignedByIdForUpdateAsync(
+        Guid applicationId,
+        string underwriterIdentityUserId)
+    {
+        return await _dbContext
+            .UnderwritingApplications
+            .SingleOrDefaultAsync(
+                application =>
+                    application.Id ==
+                        applicationId &&
+                    application.AssignedUnderwriterIdentityUserId ==
+                        underwriterIdentityUserId);
+    }
+    public async Task<int>
+    GetActionableCountForUnderwriterAsync(
+        string underwriterIdentityUserId)
+    {
+        return await _dbContext
+            .UnderwritingApplications
+            .AsNoTracking()
+            .CountAsync(
+                application =>
+                    application.AssignedUnderwriterIdentityUserId ==
+                        underwriterIdentityUserId &&
+                    (
+                        application.Status ==
+                            ApplicationStatus.PendingReview ||
+                        application.Status ==
+                            ApplicationStatus.InReview
+                    ));
+    }
+    public async Task<IReadOnlyList<UnderwritingApplication>>
+    GetUnassignedAsync()
+    {
+        return await _dbContext
+            .UnderwritingApplications
+            .AsNoTracking()
+            .Include(
+                application =>
+                    application.Snapshot)
+            .Where(
+                application =>
+                    application.Status ==
+                    ApplicationStatus.Unassigned)
+            .OrderBy(
+                application =>
+                    application.CreatedAtUtc)
+            .ToListAsync();
+    }
+    public async Task<UnderwritingApplication?>
+        GetByIdAsync(
+            Guid applicationId)
+    {
+        return await _dbContext
+            .UnderwritingApplications
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(
+                application =>
+                    application.Snapshot)
+                .ThenInclude(
+                    snapshot =>
+                        snapshot.Coverages)
+            .Include(
+                application =>
+                    application.Snapshot)
+                .ThenInclude(
+                    snapshot =>
+                        snapshot.AddOns)
+            .Include(
+                application =>
+                    application.ReviewSections)
+            .Include(
+                application =>
+                    application.Decision)
+            .Include(
+                application =>
+                    application.CustomerOfferOutcome)
+            .Include(
+                application =>
+                    application.StatusHistory)
+            .SingleOrDefaultAsync(
+                application =>
+                    application.Id ==
+                    applicationId);
+    }
+
+    public async Task AddAsync(
+        UnderwritingApplication application)
+    {
+        await _dbContext
+            .UnderwritingApplications
+            .AddAsync(
+                application);
+    }
+
+    public async Task SaveChangesAsync()
+    {
+        await _dbContext
+            .SaveChangesAsync();
+    }
+
+    public async Task<IReadOnlyList<UnderwritingApplication>>
+    GetAssignedToUnderwriterAsync(
+        string underwriterIdentityUserId)
+    {
+        return await _dbContext
+            .UnderwritingApplications
+            .AsNoTracking()
+            .Include(
+                application =>
+                    application.Snapshot)
+            .Where(
+                application =>
+                    application.AssignedUnderwriterIdentityUserId ==
+                        underwriterIdentityUserId &&
+                    (
+                        application.Status ==
+                            ApplicationStatus.PendingReview ||
+                        application.Status ==
+                            ApplicationStatus.InReview
+                    ))
+            .OrderBy(
+                application =>
+                    application.AssignedAtUtc)
+            .ToListAsync();
+    }
+    public async Task ExecuteInTransactionAsync(
+        Func<Task> operation)
+    {
+        ArgumentNullException.ThrowIfNull(
+            operation);
+
+        await using var transaction =
+            await _dbContext.Database
+                .BeginTransactionAsync();
+
+        try
+        {
+            await operation();
+
+            await transaction
+                .CommitAsync();
+        }
+        catch
+        {
+            await transaction
+                .RollbackAsync();
+
+            throw;
+        }
+    }
+}
+
+
+================================================================================
+FILE: UnderwritingService.Infrastructure\UnderwritingService.Infrastructure.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.19" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.19">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.19" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UnderwritingService.Application\UnderwritingService.Application.csproj" />
+    <ProjectReference Include="..\UnderwritingService.Domain\UnderwritingService.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
+

@@ -1,0 +1,53 @@
+@startuml
+!theme plain
+left to right direction
+skinparam shadowing false
+actor Admin
+rectangle "MileGuard — Admin Capabilities" {
+  usecase "Review Internal Registrations" as AD1
+  usecase "Approve Internal User + Role" as AD2
+  usecase "Reject Internal Registration" as AD3
+  usecase "View Internal Users" as AD4
+  usecase "Deactivate Internal User" as AD5
+  usecase "View Unassigned Customers" as AD6
+  usecase "Assign Customer to Agent" as AD7
+  usecase "View Unassigned Underwriting" as AD8
+  usecase "Assign Underwriter" as AD9
+  usecase "View Unassigned Claims" as AD10
+  usecase "Assign Claims Adjuster" as AD11
+  usecase "Configure Plan Pricing" as AD12
+  usecase "Configure Coverage Options" as AD13
+  usecase "Configure Rating Rules" as AD14
+  usecase "Configure Add-ons" as AD15
+  usecase "Review Above-Authority Settlement" as AD16
+  usecase "Approve Escalated Settlement" as AD17
+  usecase "Reject Escalated Settlement" as AD18
+}
+Admin --> AD1
+Admin --> AD2
+Admin --> AD3
+Admin --> AD4
+Admin --> AD5
+Admin --> AD6
+Admin --> AD7
+Admin --> AD8
+Admin --> AD9
+Admin --> AD10
+Admin --> AD11
+Admin --> AD12
+Admin --> AD13
+Admin --> AD14
+Admin --> AD15
+Admin --> AD16
+Admin --> AD17
+Admin --> AD18
+AD2 .> AD1 : <<include>>
+AD7 .> AD6 : <<include>>
+AD9 .> AD8 : <<include>>
+AD11 .> AD10 : <<include>>
+AD17 .> AD16 : <<include>>
+AD18 .> AD16 : <<include>>
+note right of AD9
+Assignments are permanent / assign-once in the MVP.
+end note
+@enduml

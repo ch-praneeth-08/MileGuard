@@ -1,0 +1,80 @@
+@startuml
+!theme plain
+hide methods
+hide stereotypes
+skinparam linetype ortho
+skinparam shadowing false
+entity "CustomerProfiles" as CP {
+  * Id : GUID
+  --
+  IdentityUserId
+  FirstName
+  LastName
+  DateOfBirth
+  Email
+  Phone
+  AddressLine1
+  AddressLine2
+  City
+  State
+  PostalCode
+  Country
+  AreaType
+  Status
+}
+entity "AgentAssignments" as AA {
+  * Id : GUID
+  --
+  CustomerId : FK
+  AgentIdentityUserId
+  AssignedAt
+  AssignedBy
+}
+entity "DriverProfiles" as DP {
+  * Id : GUID
+  --
+  CustomerId : FK
+  LicenceNumber
+  LicenceIssuingState
+  LicenceIssueDate
+  LicenceExpirationDate
+}
+entity "Vehicles" as V {
+  * Id : GUID
+  --
+  CustomerId : FK
+  VIN
+  Make
+  Model
+  ModelYear
+  VehicleType
+  VehicleValue
+  FuelType
+  CurrentMileage
+  EstimatedAnnualMileage
+  OwnershipStatus
+  PurchaseDate
+  Status
+}
+entity "VehicleImage" as VI {
+  * Id : GUID
+  --
+  VehicleId : FK
+  FileName
+  StorageReference
+  ContentType
+  FileSize
+  CreatedAt
+}
+CP ||--o| AA
+CP ||--|| DP
+CP ||--o{ V
+V ||--o| VI
+note right of AA
+CustomerId is unique for MVP.
+Permanent assign-once relationship.
+end note
+note right of DP
+Exactly one primary Driver per Customer.
+end note
+@enduml

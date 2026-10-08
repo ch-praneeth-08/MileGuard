@@ -1,0 +1,1822 @@
+
+================================================================================
+FILE: agent-shell\agent-shell.css
+================================================================================
+:host {
+  display: block;
+}
+
+
+.agent-shell {
+  --agent-sidebar-width: 252px;
+  --agent-sidebar-collapsed-width: 76px;
+  --agent-topbar-height: 76px;
+
+  min-height: 100vh;
+
+  background:
+    var(--mg-cream-50, #f8f7f2);
+
+  color:
+    var(--mg-green-950, #0b211b);
+}
+
+
+/* ========================================================= */
+/* SIDEBAR */
+/* ========================================================= */
+
+.agent-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+
+  z-index: 40;
+
+  display: flex;
+  width: var(--agent-sidebar-width);
+  min-height: 100vh;
+
+  flex-direction: column;
+
+  padding:
+    22px 14px 16px;
+
+  background:
+    var(--mg-green-950, #0b211b);
+
+  color: white;
+
+  border-right:
+    1px solid rgba(255, 255, 255, 0.06);
+
+  transition:
+    width 180ms ease;
+}
+
+
+.agent-sidebar--collapsed {
+  width:
+    var(--agent-sidebar-collapsed-width);
+
+  align-items:
+    center;
+}
+
+
+/* ========================================================= */
+/* BRAND */
+/* ========================================================= */
+
+.agent-sidebar__brand {
+  display: flex;
+
+  min-height: 48px;
+
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 30px;
+}
+
+
+.agent-brand__link {
+  display: inline-flex;
+
+  align-items: center;
+
+  text-decoration: none;
+}
+
+
+.agent-brand__logo {
+  display: block;
+
+  width: 142px;
+  height: auto;
+
+  object-fit: contain;
+}
+
+
+.agent-brand__compact {
+  display: flex;
+
+  width: 42px;
+  height: 42px;
+
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  border-radius: 12px;
+
+  background:
+    rgba(255, 255, 255, 0.08);
+}
+
+
+.agent-brand__compact-logo {
+  width: 34px;
+  height: 34px;
+
+  object-fit: contain;
+}
+
+
+/* ========================================================= */
+/* NAVIGATION */
+/* ========================================================= */
+
+.agent-navigation {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 6px;
+}
+
+
+.agent-navigation__item {
+  position: relative;
+
+  display: flex;
+
+  min-height: 48px;
+
+  align-items: center;
+
+  gap: 12px;
+
+  padding:
+    0 13px;
+
+  border-radius: 14px;
+
+  color:
+    rgba(255, 255, 255, 0.62);
+
+  text-decoration: none;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
+}
+
+
+.agent-navigation__item:hover {
+  color: white;
+
+  background:
+    rgba(255, 255, 255, 0.07);
+
+  transform:
+    translateX(1px);
+}
+
+
+.agent-navigation__item--active {
+  color: white;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.13),
+      rgba(255, 255, 255, 0.06)
+    );
+
+  box-shadow:
+    inset 3px 0 0
+    var(--mg-orange-500, #ef7d22);
+}
+
+
+.agent-navigation__item--active
+.agent-navigation__icon {
+  color:
+    var(--mg-orange-500, #ef7d22);
+}
+
+
+.agent-navigation__icon {
+  display: inline-flex;
+
+  width: 24px;
+  height: 24px;
+
+  flex:
+    0 0 24px;
+
+  align-items: center;
+  justify-content: center;
+
+  color:
+    rgba(255, 255, 255, 0.58);
+}
+
+
+.agent-navigation__label {
+  min-width: 0;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* Collapsed navigation */
+
+.agent-sidebar--collapsed
+.agent-navigation {
+  width: 100%;
+}
+
+
+.agent-sidebar--collapsed
+.agent-navigation__item {
+  width: 48px;
+
+  justify-content: center;
+
+  padding: 0;
+
+  margin-inline: auto;
+}
+
+
+.agent-sidebar--collapsed
+.agent-navigation__item--active {
+  box-shadow: none;
+
+  background:
+    rgba(255, 255, 255, 0.10);
+}
+
+
+/* ========================================================= */
+/* SIDEBAR FOOTER */
+/* ========================================================= */
+
+.agent-sidebar__footer {
+  margin-top: auto;
+
+  padding:
+    16px;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.08);
+
+  border-radius:
+    16px;
+
+  background:
+    rgba(255, 255, 255, 0.045);
+}
+
+
+.agent-sidebar__footer-eyebrow {
+  margin: 0;
+
+  color:
+    rgba(255, 255, 255, 0.42);
+
+  font-size: 9px;
+  font-weight: 700;
+
+  letter-spacing:
+    0.13em;
+
+  text-transform:
+    uppercase;
+}
+
+
+.agent-sidebar__footer-title {
+  margin:
+    8px 0 0;
+
+  color: white;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+
+.agent-sidebar__footer-copy {
+  margin:
+    6px 0 0;
+
+  color:
+    rgba(255, 255, 255, 0.48);
+
+  font-size: 11px;
+
+  line-height:
+    1.55;
+}
+
+
+/* ========================================================= */
+/* COLLAPSE BUTTON */
+/* ========================================================= */
+
+.agent-sidebar__collapse {
+  display: flex;
+
+  width: 100%;
+
+  min-height: 42px;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  margin-top: 14px;
+
+  padding: 0;
+
+  border: 0;
+
+  border-radius: 12px;
+
+  background:
+    transparent;
+
+  color:
+    rgba(255, 255, 255, 0.48);
+
+  font-size: 11px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 150ms ease,
+    color 150ms ease;
+}
+
+
+.agent-sidebar__collapse:hover {
+  color: white;
+
+  background:
+    rgba(255, 255, 255, 0.06);
+}
+
+
+.agent-sidebar--collapsed
+.agent-sidebar__collapse {
+  width: 48px;
+}
+
+
+/* ========================================================= */
+/* MAIN */
+/* ========================================================= */
+
+.agent-main {
+  min-width: 0;
+
+  min-height: 100vh;
+
+  margin-left:
+    var(--agent-sidebar-width);
+}
+
+
+.agent-shell--collapsed
+.agent-main {
+  margin-left:
+    var(--agent-sidebar-collapsed-width);
+}
+
+
+.agent-main__content {
+  min-width: 0;
+
+  min-height:
+    calc(
+      100vh -
+      var(--agent-topbar-height)
+    );
+}
+
+
+/* ========================================================= */
+/* TOPBAR */
+/* ========================================================= */
+
+.agent-topbar {
+  position: sticky;
+  top: 0;
+
+  z-index: 30;
+
+  display: flex;
+
+  height:
+    var(--agent-topbar-height);
+
+  align-items: center;
+  justify-content: space-between;
+
+  padding:
+    0 30px;
+
+  background:
+    rgba(255, 255, 255, 0.94);
+
+  border-bottom:
+    1px solid
+    var(--mg-border, #e5e2d9);
+
+  backdrop-filter:
+    blur(16px);
+}
+
+
+.agent-topbar__left {
+  display: flex;
+
+  min-width: 0;
+
+  align-items: center;
+
+  gap: 14px;
+}
+
+
+.agent-topbar__context {
+  display: flex;
+
+  min-width: 0;
+
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+
+.agent-topbar__eyebrow {
+  color:
+    var(--mg-orange-600, #d96612);
+
+  font-size: 9px;
+  font-weight: 800;
+
+  letter-spacing:
+    0.14em;
+
+  text-transform:
+    uppercase;
+}
+
+
+.agent-topbar__title {
+  color:
+    var(--mg-green-950, #0b211b);
+
+  font-size: 15px;
+  font-weight: 700;
+}
+
+
+/* ========================================================= */
+/* ICON BUTTON */
+/* ========================================================= */
+
+.icon-button {
+  display: inline-flex;
+
+  width: 40px;
+  height: 40px;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border:
+    1px solid
+    var(--mg-border, #e5e2d9);
+
+  border-radius: 12px;
+
+  background:
+    white;
+
+  color:
+    var(--mg-green-900, #17382d);
+
+  cursor: pointer;
+
+  transition:
+    background 150ms ease,
+    border-color 150ms ease;
+}
+
+
+.icon-button:hover {
+  background:
+    var(--mg-cream-100, #f3f1e9);
+}
+
+
+.icon-button--dark {
+  border-color:
+    rgba(255, 255, 255, 0.10);
+
+  background:
+    rgba(255, 255, 255, 0.07);
+
+  color: white;
+}
+
+
+.icon-button--dark:hover {
+  background:
+    rgba(255, 255, 255, 0.12);
+}
+
+
+.agent-topbar__collapse {
+  display: inline-flex;
+}
+
+
+.agent-topbar__mobile-menu {
+  display: none;
+}
+
+
+/* ========================================================= */
+/* ACCOUNT */
+/* ========================================================= */
+
+.agent-account {
+  position: relative;
+}
+
+
+.agent-account__trigger {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  padding:
+    5px 7px;
+
+  border: 0;
+
+  border-radius: 14px;
+
+  background: transparent;
+
+  cursor: pointer;
+
+  transition:
+    background 150ms ease;
+}
+
+
+.agent-account__trigger:hover {
+  background:
+    var(--mg-cream-100, #f3f1e9);
+}
+
+
+.agent-account__avatar {
+  display: inline-flex;
+
+  width: 38px;
+  height: 38px;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  background:
+    var(--mg-green-900, #17382d);
+
+  color: white;
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+
+.agent-account__identity {
+  display: flex;
+
+  min-width: 90px;
+
+  flex-direction: column;
+
+  align-items: flex-start;
+
+  gap: 1px;
+}
+
+
+.agent-account__name {
+  color:
+    var(--mg-green-950, #0b211b);
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+
+.agent-account__role {
+  color:
+    var(--mg-text-muted, #788078);
+
+  font-size: 10px;
+  font-weight: 600;
+}
+
+
+.agent-account__menu {
+  position: absolute;
+
+  top:
+    calc(100% + 10px);
+
+  right: 0;
+
+  z-index: 60;
+
+  width: 205px;
+
+  padding: 7px;
+
+  border:
+    1px solid
+    var(--mg-border, #e5e2d9);
+
+  border-radius: 16px;
+
+  background: white;
+
+  box-shadow:
+    0 20px 50px rgba(11, 33, 27, 0.12);
+}
+
+
+.agent-account__menu-item {
+  display: flex;
+
+  width: 100%;
+
+  align-items: center;
+
+  gap: 10px;
+
+  min-height: 42px;
+
+  padding:
+    0 11px;
+
+  border: 0;
+
+  border-radius: 11px;
+
+  background: transparent;
+
+  color:
+    var(--mg-green-900, #17382d);
+
+  text-align: left;
+
+  font-size: 12px;
+  font-weight: 650;
+
+  cursor: pointer;
+
+  transition:
+    background 150ms ease;
+}
+
+
+.agent-account__menu-item:hover {
+  background:
+    var(--mg-cream-100, #f3f1e9);
+}
+
+
+.agent-account__menu-item--danger {
+  color:
+    var(--mg-danger, #a63d3d);
+}
+
+
+.agent-account__menu-item--danger:hover {
+  background:
+    #fff2f2;
+}
+
+
+.agent-account__menu-item:disabled {
+  cursor: not-allowed;
+
+  opacity: 0.5;
+}
+
+
+/* ========================================================= */
+/* MOBILE DRAWER */
+/* ========================================================= */
+
+.mobile-navigation {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 100;
+
+  display: flex;
+}
+
+
+.mobile-navigation__backdrop {
+  position: absolute;
+
+  inset: 0;
+
+  border: 0;
+
+  background:
+    rgba(6, 18, 14, 0.58);
+
+  cursor: pointer;
+}
+
+
+.mobile-navigation__drawer {
+  position: relative;
+
+  display: flex;
+
+  width: min(300px, 88vw);
+  min-height: 100vh;
+
+  flex-direction: column;
+
+  padding:
+    22px 16px;
+
+  background:
+    var(--mg-green-950, #0b211b);
+
+  color: white;
+
+  box-shadow:
+    20px 0 60px
+    rgba(0, 0, 0, 0.18);
+
+  animation:
+    agent-drawer-enter
+    180ms ease-out;
+}
+
+
+.agent-brand--mobile {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 30px;
+}
+
+
+.agent-navigation__footer {
+  margin-top: auto;
+
+  padding:
+    16px;
+
+  border:
+    1px solid rgba(255, 255, 255, 0.08);
+
+  border-radius:
+    16px;
+
+  background:
+    rgba(255, 255, 255, 0.045);
+}
+
+
+.agent-navigation__footer-eyebrow {
+  margin: 0;
+
+  color:
+    rgba(255, 255, 255, 0.42);
+
+  font-size: 9px;
+  font-weight: 700;
+
+  letter-spacing:
+    0.13em;
+
+  text-transform:
+    uppercase;
+}
+
+
+.agent-navigation__footer-title {
+  margin:
+    8px 0 0;
+
+  color: white;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+
+.agent-navigation__footer-copy {
+  margin:
+    6px 0 0;
+
+  color:
+    rgba(255, 255, 255, 0.48);
+
+  font-size: 11px;
+
+  line-height:
+    1.55;
+}
+
+
+/* ========================================================= */
+/* MOTION */
+/* ========================================================= */
+
+@keyframes agent-drawer-enter {
+  from {
+    opacity: 0;
+
+    transform:
+      translateX(-18px);
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translateX(0);
+  }
+}
+
+
+/* ========================================================= */
+/* RESPONSIVE */
+/* ========================================================= */
+
+@media (max-width: 1023px) {
+
+  .agent-sidebar {
+    display: none;
+  }
+
+
+  .agent-main,
+  .agent-shell--collapsed .agent-main {
+    margin-left: 0;
+  }
+
+
+  .agent-topbar {
+    height: 68px;
+
+    padding:
+      0 18px;
+  }
+
+
+  .agent-topbar__collapse {
+    display: none;
+  }
+
+
+  .agent-topbar__mobile-menu {
+    display: inline-flex;
+  }
+
+
+  .agent-account__identity {
+    display: none;
+  }
+
+}
+
+
+@media (max-width: 640px) {
+
+  .agent-topbar {
+    padding:
+      0 13px;
+  }
+
+
+  .agent-topbar__title {
+    font-size: 13px;
+  }
+
+
+  .agent-account__trigger {
+    gap: 0;
+  }
+
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+
+  .agent-sidebar,
+  .agent-navigation__item,
+  .icon-button,
+  .agent-account__trigger {
+    transition: none;
+  }
+
+
+  .mobile-navigation__drawer {
+    animation: none;
+  }
+
+}
+
+
+
+================================================================================
+FILE: agent-shell\agent-shell.html
+================================================================================
+<div
+  class="agent-shell min-h-screen bg-[#faf9f6] text-[#0c1d18]"
+>
+  <!-- ========================================================= -->
+  <!-- MOBILE NAVIGATION -->
+  <!-- ========================================================= -->
+
+  @if (mobileMenuOpen()) {
+
+    <div
+      class="fixed inset-0 z-50 lg:hidden"
+    >
+
+      <!-- Backdrop -->
+      <button
+        type="button"
+        class="absolute inset-0 bg-black/45"
+        aria-label="Close navigation"
+        (click)="closeMobileMenu()"
+      ></button>
+
+
+      <!-- Drawer -->
+      <aside
+        class="relative flex h-full w-[285px] flex-col overflow-y-auto bg-[#0b211b] px-5 py-6 text-white shadow-2xl"
+      >
+
+        <!-- Brand -->
+        <div
+          class="flex items-center justify-between"
+        >
+
+          <a
+            routerLink="/agent"
+            class="flex min-w-0 items-center gap-3"
+            (click)="closeMobileMenu()"
+          >
+
+            <span
+              class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white"
+            >
+              <img
+                src="/images/mileguard/mileguard-logo.png"
+                alt="MileGuard"
+                class="h-full w-full object-contain p-1"
+              />
+            </span>
+
+
+            <span class="min-w-0">
+
+              <span
+                class="block truncate text-sm font-bold tracking-[-0.02em]"
+              >
+                MileGuard
+              </span>
+
+              <span
+                class="mt-0.5 block text-[10px] text-white/45"
+              >
+                Agent Workspace
+              </span>
+
+            </span>
+
+          </a>
+
+
+          <button
+            type="button"
+            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white/55 transition hover:bg-white/10 hover:text-white"
+            aria-label="Close navigation"
+            (click)="closeMobileMenu()"
+          >
+
+            <mg-icon
+              name="close"
+              size="sm"
+            />
+
+          </button>
+
+        </div>
+
+
+        <!-- Mobile navigation -->
+        <nav
+          class="mt-8 space-y-1"
+          aria-label="Agent navigation"
+        >
+
+          @for (
+            item of navigation;
+            track item.route
+          ) {
+
+            <a
+              [routerLink]="item.route"
+              routerLinkActive="bg-white/10 text-white"
+              [routerLinkActiveOptions]="{
+                exact: 
+                item.route ==='/agent' ||
+                item.route === '/agent/customers'
+              }"
+              class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-white/55 transition hover:bg-white/[0.06] hover:text-white"
+              (click)="closeMobileMenu()"
+            >
+
+              <mg-icon
+                [name]="navigationIcon(item)"
+                size="sm"
+              />
+
+              <span>
+                {{ item.label }}
+              </span>
+
+            </a>
+
+          }
+
+        </nav>
+
+
+        <!-- Workspace context -->
+        <div
+          class="mt-auto pt-8"
+        >
+
+          <div
+            class="rounded-2xl border border-white/10 bg-white/[0.045] p-4"
+          >
+
+            <p
+              class="text-[9px] font-bold uppercase tracking-[0.12em] text-white/35"
+            >
+              Agent Workspace
+            </p>
+
+            <p
+              class="mt-2 text-sm font-semibold text-white"
+            >
+              Assigned Customers
+            </p>
+
+            <p
+              class="mt-1 text-xs leading-5 text-white/40"
+            >
+              Manage customers assigned to your Agent account.
+            </p>
+
+          </div>
+
+        </div>
+
+      </aside>
+
+    </div>
+  }
+
+
+  <!-- ========================================================= -->
+  <!-- DESKTOP SIDEBAR -->
+  <!-- ========================================================= -->
+
+  <aside
+    class="fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-white/10 bg-[#0b211b] text-white shadow-xl transition-[width] duration-300 lg:flex"
+    [class.w-[76px]]="sidebarCollapsed()"
+    [class.w-[252px]]="!sidebarCollapsed()"
+  >
+
+    <!-- Brand -->
+    <div
+      class="flex h-[76px] shrink-0 items-center border-b border-white/10"
+      [class.justify-center]="sidebarCollapsed()"
+      [class.px-4]="!sidebarCollapsed()"
+      [class.px-3]="sidebarCollapsed()"
+    >
+
+      <a
+        routerLink="/agent"
+        class="flex min-w-0 items-center"
+        [class.gap-3]="!sidebarCollapsed()"
+      >
+
+        <span
+          class="flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white"
+          [class.h-10]="!sidebarCollapsed()"
+          [class.w-10]="!sidebarCollapsed()"
+          [class.h-11]="sidebarCollapsed()"
+          [class.w-11]="sidebarCollapsed()"
+        >
+
+          <img
+            src="/images/mileguard/mileguard-logo.png"
+            alt="MileGuard"
+            class="h-full w-full object-contain p-1"
+          />
+
+        </span>
+
+
+        @if (!sidebarCollapsed()) {
+
+          <span class="min-w-0">
+
+            <span
+              class="block truncate text-sm font-bold tracking-[-0.02em]"
+            >
+              MileGuard
+            </span>
+
+            <span
+              class="mt-0.5 block truncate text-[10px] text-white/40"
+            >
+              Agent Workspace
+            </span>
+
+          </span>
+
+        }
+
+      </a>
+
+    </div>
+
+
+    <!-- Sidebar content -->
+    <div
+      class="flex min-h-0 flex-1 flex-col overflow-y-auto"
+    >
+
+      <!-- Collapse button -->
+      <div
+        class="px-3 pt-4"
+      >
+
+        <button
+          type="button"
+          class="flex w-full items-center justify-center rounded-xl py-2.5 text-white/40 transition hover:bg-white/[0.06] hover:text-white"
+          [attr.aria-label]="
+            sidebarCollapsed()
+              ? 'Expand sidebar'
+              : 'Collapse sidebar'
+          "
+          (click)="toggleSidebar()"
+        >
+
+          @if (sidebarCollapsed()) {
+
+            <mg-icon
+              name="chevron-right"
+              size="sm"
+            />
+
+          } @else {
+
+            <mg-icon
+              name="chevron-down"
+              size="sm"
+            />
+
+          }
+
+        </button>
+
+      </div>
+
+
+      <!-- Navigation -->
+      <nav
+        class="px-3 py-5"
+        aria-label="Agent navigation"
+      >
+
+        @for (
+          item of navigation;
+          track item.route
+        ) {
+
+          <a
+            [routerLink]="item.route"
+            routerLinkActive="bg-white/10 text-white"
+            [routerLinkActiveOptions]="{
+              exact: item.route === '/agent/customers'
+            }"
+            class="mb-1 flex items-center rounded-xl py-3 text-sm font-medium text-white/50 transition hover:bg-white/[0.06] hover:text-white"
+            [class.justify-center]="sidebarCollapsed()"
+            [class.gap-3]="!sidebarCollapsed()"
+            [class.px-3]="!sidebarCollapsed()"
+            [class.px-2]="sidebarCollapsed()"
+            [attr.title]="
+              sidebarCollapsed()
+                ? item.label
+                : null
+            "
+          >
+
+            <mg-icon
+              [name]="navigationIcon(item)"
+              size="sm"
+            />
+
+
+            @if (!sidebarCollapsed()) {
+
+              <span class="truncate">
+                {{ item.label }}
+              </span>
+
+            }
+
+          </a>
+
+        }
+
+      </nav>
+
+
+      <!-- Sidebar context -->
+      @if (!sidebarCollapsed()) {
+
+        <div
+          class="mt-auto border-t border-white/10 p-3"
+        >
+
+          <div
+            class="rounded-2xl border border-white/10 bg-white/[0.045] p-4"
+          >
+
+            <p
+              class="text-[9px] font-bold uppercase tracking-[0.12em] text-white/30"
+            >
+              Agent Workspace
+            </p>
+
+            <p
+              class="mt-2 text-sm font-semibold text-white"
+            >
+              Assigned Customers
+            </p>
+
+            <p
+              class="mt-1 text-xs leading-5 text-white/40"
+            >
+              Work only with customers assigned to your Agent account.
+            </p>
+
+          </div>
+
+        </div>
+
+      }
+
+    </div>
+
+  </aside>
+
+
+  <!-- ========================================================= -->
+  <!-- MAIN -->
+  <!-- ========================================================= -->
+
+  <div
+    class="min-h-screen transition-[margin] duration-300"
+    [class.lg:ml-[76px]]="sidebarCollapsed()"
+    [class.lg:ml-[252px]]="!sidebarCollapsed()"
+  >
+
+    <!-- ======================================================= -->
+    <!-- TOPBAR -->
+    <!-- ======================================================= -->
+
+    <header
+      class="sticky top-0 z-30 flex h-[76px] items-center justify-between border-b border-[#ece9e1] bg-[#faf9f6]/90 px-4 backdrop-blur-xl sm:px-6 lg:px-8"
+    >
+
+      <!-- Left -->
+      <div
+        class="flex min-w-0 items-center gap-3"
+      >
+
+        <!-- Mobile menu -->
+        <button
+          type="button"
+          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#ece9e1] bg-white text-[#0b211b] transition hover:shadow-sm lg:hidden"
+          aria-label="Open navigation"
+          (click)="openMobileMenu()"
+        >
+
+          <mg-icon
+            name="menu"
+            size="sm"
+          />
+
+        </button>
+
+
+        <!-- Desktop collapse -->
+        <button
+          type="button"
+          class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#ece9e1] bg-white text-[#0b211b] transition hover:shadow-sm lg:flex"
+          [attr.aria-label]="
+            sidebarCollapsed()
+              ? 'Expand sidebar'
+              : 'Collapse sidebar'
+          "
+          (click)="toggleSidebar()"
+        >
+
+          @if (sidebarCollapsed()) {
+
+            <mg-icon
+              name="chevron-right"
+              size="sm"
+            />
+
+          } @else {
+
+            <mg-icon
+              name="menu"
+              size="sm"
+            />
+
+          }
+
+        </button>
+
+
+        <!-- Page context -->
+        <div
+          class="min-w-0"
+        >
+
+          <p
+            class="truncate text-[10px] font-bold uppercase tracking-[0.14em] text-[#d15b26]"
+          >
+            MileGuard
+          </p>
+
+          <p
+            class="truncate text-sm font-semibold text-[#0c1d18]"
+          >
+            Agent Workspace
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <!-- ===================================================== -->
+      <!-- ACCOUNT -->
+      <!-- ===================================================== -->
+
+      <div
+        class="relative"
+      >
+
+        <button
+          type="button"
+          class="flex items-center gap-2 rounded-xl border border-transparent px-2 py-1.5 transition hover:border-[#ece9e1] hover:bg-white"
+          aria-haspopup="menu"
+          [attr.aria-expanded]="accountMenuOpen()"
+          aria-label="Open account menu"
+          (click)="toggleAccountMenu()"
+        >
+
+          <!-- Avatar -->
+          <span
+            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0b211b] text-xs font-bold text-white"
+          >
+            {{
+              currentUser()?.firstName?.charAt(0) ??
+              'A'
+            }}
+          </span>
+
+
+          <!-- User -->
+          <span
+            class="hidden min-w-0 text-left sm:block"
+          >
+
+            <span
+              class="block max-w-[150px] truncate text-xs font-semibold text-[#0c1d18]"
+            >
+              {{
+                currentUser()?.firstName ??
+                'Agent'
+              }}
+              {{
+                currentUser()?.lastName ??
+                ''
+              }}
+            </span>
+
+            <span
+              class="block text-[10px] text-zinc-400"
+            >
+              Agent
+            </span>
+
+          </span>
+
+
+          <mg-icon
+            name="chevron-down"
+            size="sm"
+          />
+
+        </button>
+
+
+        <!-- =================================================== -->
+        <!-- ACCOUNT MENU -->
+        <!-- =================================================== -->
+
+        @if (accountMenuOpen()) {
+
+          <div
+            class="absolute right-0 top-[calc(100%+10px)] z-50 w-64 overflow-hidden rounded-2xl border border-[#ece9e1] bg-white p-2 shadow-xl"
+            role="menu"
+          >
+
+            <!-- Account summary -->
+            <div
+              class="border-b border-[#ece9e1] px-3 py-3"
+            >
+
+              <p
+                class="truncate text-sm font-semibold text-[#0c1d18]"
+              >
+                {{
+                  currentUser()?.firstName ??
+                  'MileGuard User'
+                }}
+                {{
+                  currentUser()?.lastName ??
+                  ''
+                }}
+              </p>
+
+              <p
+                class="mt-1 truncate text-xs text-zinc-400"
+              >
+                {{
+                  currentUser()?.email ??
+                  ''
+                }}
+              </p>
+
+            </div>
+
+
+            <!-- Profile -->
+            <button
+              type="button"
+              class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
+              role="menuitem"
+              (click)="goToAccount()"
+            >
+
+              <mg-icon
+                name="user"
+                size="sm"
+              />
+
+              <span>
+                Account Profile
+              </span>
+
+            </button>
+
+
+            <!-- Logout -->
+            <button
+              type="button"
+              class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+              role="menuitem"
+              [disabled]="isLoggingOut()"
+              (click)="logout()"
+            >
+
+              <mg-icon
+                name="logout"
+                size="sm"
+              />
+
+              <span>
+
+                @if (isLoggingOut()) {
+                  Signing out...
+                } @else {
+                  Sign out
+                }
+
+              </span>
+
+            </button>
+
+          </div>
+
+        }
+
+      </div>
+
+    </header>
+
+
+    <!-- ======================================================= -->
+    <!-- PAGE CONTENT -->
+    <!-- ======================================================= -->
+
+    <main
+      class="min-w-0"
+    >
+      <router-outlet />
+    </main>
+
+  </div>
+
+</div>
+
+
+
+================================================================================
+FILE: agent-shell\agent-shell.ts
+================================================================================
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  HostListener,
+  inject,
+  signal
+} from '@angular/core';
+
+import {
+  Router,
+  RouterLink,
+  RouterLinkActive,
+  RouterOutlet
+} from '@angular/router';
+
+import {
+  takeUntilDestroyed
+} from '@angular/core/rxjs-interop';
+
+import {
+  finalize
+} from 'rxjs';
+
+import {
+  AuthSession
+} from '../../core/auth/auth-session';
+
+import {
+  AuthApi
+} from '../../features/identity/services/auth-api';
+
+import {
+  MgIcon,
+  MgIconName
+} from '../../shared/ui/mg-icon/mg-icon';
+
+import {
+  AGENT_NAVIGATION,
+  AgentNavigationItem
+} from '../../core/routing/agent-navigation';
+
+
+@Component({
+  selector: 'app-agent-shell',
+  standalone: true,
+
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    MgIcon
+  ],
+
+  templateUrl: './agent-shell.html',
+
+  styleUrl: './agent-shell.css',
+
+  changeDetection:
+    ChangeDetectionStrategy.OnPush
+})
+export class AgentShell {
+
+  private readonly authSession =
+    inject(AuthSession);
+
+  private readonly authApi =
+    inject(AuthApi);
+
+  private readonly router =
+    inject(Router);
+
+  private readonly destroyRef =
+    inject(DestroyRef);
+
+
+  readonly currentUser =
+    this.authSession.currentUser;
+
+
+  readonly navigation =
+    AGENT_NAVIGATION;
+
+
+  readonly sidebarCollapsed =
+    signal(false);
+
+
+  readonly mobileMenuOpen =
+    signal(false);
+
+
+  readonly accountMenuOpen =
+    signal(false);
+
+
+  readonly isLoggingOut =
+    signal(false);
+
+
+  /*
+   * Explicitly return MgIconName.
+   *
+   * This keeps the Angular template compiler from
+   * treating the navigation icon as an arbitrary string.
+   */
+  navigationIcon(
+    item: AgentNavigationItem
+  ): MgIconName {
+    return item.icon;
+  }
+
+
+  toggleSidebar(): void {
+    this.sidebarCollapsed.update(
+      collapsed =>
+        !collapsed
+    );
+  }
+
+
+  openMobileMenu(): void {
+    this.mobileMenuOpen.set(
+      true
+    );
+
+    this.accountMenuOpen.set(
+      false
+    );
+  }
+
+
+  closeMobileMenu(): void {
+    this.mobileMenuOpen.set(
+      false
+    );
+  }
+
+
+  toggleAccountMenu(): void {
+    this.accountMenuOpen.update(
+      open =>
+        !open
+    );
+  }
+
+
+  closeAccountMenu(): void {
+    this.accountMenuOpen.set(
+      false
+    );
+  }
+
+
+  goToAccount(): void {
+    this.closeAccountMenu();
+
+    void this.router.navigate([
+      '/account/profile'
+    ]);
+  }
+
+
+  logout(): void {
+
+    if (this.isLoggingOut()) {
+      return;
+    }
+
+
+    this.isLoggingOut.set(
+      true
+    );
+
+    this.closeAccountMenu();
+    this.closeMobileMenu();
+
+
+    this.authApi
+      .logout()
+      .pipe(
+        takeUntilDestroyed(
+          this.destroyRef
+        ),
+
+        finalize(() => {
+          this.isLoggingOut.set(
+            false
+          );
+        })
+      )
+      .subscribe({
+        next: () => {
+
+          this.authSession.clear();
+
+          void this.router.navigate([
+            '/signin'
+          ]);
+        },
+
+        error: () => {
+
+          /*
+           * Local session must still be cleared
+           * when server logout fails.
+           */
+          this.authSession.clear();
+
+          void this.router.navigate([
+            '/signin'
+          ]);
+        }
+      });
+  }
+
+
+  @HostListener(
+    'document:keydown.escape'
+  )
+  handleEscape(): void {
+
+    this.closeMobileMenu();
+
+    this.closeAccountMenu();
+  }
+}
+
+

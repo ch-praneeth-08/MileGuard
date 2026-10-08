@@ -1,0 +1,377 @@
+
+================================================================================
+FILE: public-shell\public-shell.css
+================================================================================
+.public-shell {
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: var(--mg-cream-50);
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.public-header {
+  position: relative;
+  z-index: 20;
+
+  border-bottom:
+    1px solid var(--mg-border-light);
+
+  background:
+    rgba(250, 249, 246, 0.86);
+
+  backdrop-filter: blur(18px);
+}
+
+.public-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  min-height: 5.25rem;
+  gap: 2rem;
+}
+
+.brand-link {
+  display: inline-flex;
+  align-items: center;
+}
+
+.brand-logo {
+  width: min(12rem, 42vw);
+  height: auto;
+}
+
+.public-navigation {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.public-nav-link {
+  position: relative;
+
+  color: var(--mg-text-secondary);
+
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  transition:
+    color 180ms ease;
+}
+
+.public-nav-link::after {
+  content: "";
+
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.4rem;
+
+  height: 1px;
+
+  transform:
+    scaleX(0);
+  transform-origin: center;
+
+  background: var(--mg-orange-500);
+
+  transition:
+    transform 180ms ease;
+}
+
+.public-nav-link:hover {
+  color: var(--mg-green-900);
+}
+
+.public-nav-link:hover::after {
+  transform: scaleX(1);
+}
+
+.public-login {
+  min-height: 2.75rem;
+  padding-inline: 1.1rem;
+}
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+.public-footer {
+  margin-top: 5rem;
+
+  background: var(--mg-green-950);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.public-footer-inner {
+  display: flex;
+  justify-content: space-between;
+  gap: 4rem;
+
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+
+.footer-brand {
+  max-width: 20rem;
+}
+
+.footer-logo {
+  width: 10rem;
+  filter:
+    brightness(0)
+    invert(1)
+    opacity(0.95);
+}
+
+.footer-brand p {
+  margin-top: 1rem;
+
+  font-size: 0.875rem;
+  line-height: 1.6;
+
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.footer-links {
+  display: flex;
+  gap: 5rem;
+}
+
+.footer-links > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.footer-heading {
+  margin-bottom: 0.35rem;
+
+  color: white;
+
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.footer-links a {
+  font-size: 0.875rem;
+  transition:
+    color 180ms ease;
+}
+
+.footer-links a:hover {
+  color: white;
+}
+
+.footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+
+  padding-top: 1.25rem;
+  padding-bottom: 1.25rem;
+
+  border-top:
+    1px solid rgba(255, 255, 255, 0.08);
+
+  font-size: 0.75rem;
+
+  color: rgba(255, 255, 255, 0.42);
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 768px) {
+  .public-header-inner {
+    min-height: 4.5rem;
+  }
+
+  .public-navigation {
+    gap: 0.85rem;
+  }
+
+  .public-nav-link {
+    display: none;
+  }
+
+  .public-login {
+    min-height: 2.5rem;
+  }
+
+  .public-footer-inner {
+    flex-direction: column;
+    gap: 2.5rem;
+
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+
+  .footer-links {
+    gap: 3rem;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+  }
+}
+
+
+
+================================================================================
+FILE: public-shell\public-shell.html
+================================================================================
+<div class="public-shell">
+
+  <header class="public-header">
+    <div class="mg-container public-header-inner">
+
+      <a
+        routerLink="/"
+        class="brand-link"
+        aria-label="MileGuard home"
+      >
+        <img
+          src="/images/mileguard/mileguard-logo.png"
+          alt="MileGuard"
+          class="brand-logo"
+        />
+      </a>
+
+      <nav class="public-navigation">
+        <a
+          routerLink="/"
+          fragment="how-it-works"
+          class="public-nav-link"
+        >
+          How it works
+        </a>
+
+        <a
+          routerLink="/"
+          fragment="coverage"
+          class="public-nav-link"
+        >
+          Coverage
+        </a>
+
+        <a
+          routerLink="/signin"
+          class="mg-button mg-button-secondary public-login"
+        >
+          Sign in
+        </a>
+      </nav>
+
+    </div>
+  </header>
+
+  <main>
+    <router-outlet />
+  </main>
+
+  <footer class="public-footer">
+    <div class="mg-container public-footer-inner">
+
+      <div class="footer-brand">
+
+        <img
+          src="/images/mileguard/mileguard-logo.png"
+          alt="MileGuard"
+          class="footer-logo"
+        />
+
+        <p>
+          Protection for every mile.
+        </p>
+
+      </div>
+
+      <div class="footer-links">
+
+        <div>
+          <span class="footer-heading">
+            Explore
+          </span>
+
+          <a
+            routerLink="/"
+            fragment="how-it-works"
+          >
+            How it works
+          </a>
+
+          <a
+            routerLink="/"
+            fragment="coverage"
+          >
+            Coverage
+          </a>
+        </div>
+
+        <div>
+          <span class="footer-heading">
+            Account
+          </span>
+
+          <a routerLink="/signin">
+            Sign in
+          </a>
+
+          <a routerLink="/register">
+            Register
+          </a>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="mg-container footer-bottom">
+      <span>
+        Â© 2026 MileGuard
+      </span>
+
+      <span>
+        Auto insurance protection for the road ahead.
+      </span>
+    </div>
+  </footer>
+
+</div>
+
+
+
+================================================================================
+FILE: public-shell\public-shell.ts
+================================================================================
+import {
+  ChangeDetectionStrategy,
+  Component
+} from '@angular/core';
+import {
+  RouterLink,
+  RouterOutlet
+} from '@angular/router';
+
+@Component({
+  selector: 'app-public-shell',
+  standalone: true,
+  imports: [
+    RouterLink,
+    RouterOutlet
+  ],
+  templateUrl: './public-shell.html',
+  styleUrl: './public-shell.css',
+  changeDetection:
+    ChangeDetectionStrategy.OnPush
+})
+export class PublicShell {}
+
+

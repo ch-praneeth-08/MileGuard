@@ -1,0 +1,44 @@
+@startuml
+!theme plain
+skinparam shadowing false
+autonumber
+actor Customer
+actor Agent
+participant "Angular App" as UI
+participant "Ocelot Gateway" as GW
+participant "PolicyBillingService" as PB
+participant "QuoteRatingService" as QR
+participant "UnderwritingService" as UW
+
+Customer -> UI : Request eligible renewal
+UI -> GW : POST /policies/api/policies/{policyId}/renew
+GW -> PB : Validate 30-day renewal window
+PB --> GW : Renewal record
+GW --> UI : Renewal requested
+
+Agent -> UI : Open renewal request
+UI -> GW : GET /policies/api/renewals/{renewalId}
+GW -> PB : Read renewal progress
+PB --> GW : Derived renewal status
+GW --> UI : Renewal progress
+
+Agent -> UI : Start renewal quote
+UI -> GW : POST /policies/api/renewals/{renewalId}/start-quote
+GW -> PB : Authorize assigned agent
+PB -> QR : Start normal renewal Quote
+QR --> PB : Quote reference
+PB --> GW : Quote started
+GW --> UI : Quote workflow
+
+QR -> UW : Submit finalized renewal Quote
+UW --> QR : Underwriting application
+QR --> UI : Underwriting state (through normal API path)
+
+Customer -> UI : Accept approved renewal + first payment
+UI -> GW : Normal policy purchase APIs
+GW -> PB : Validate approved renewal + exact predecessor expiry date
+PB -> UW : Validate approved renewal offer
+UW --> PB : Valid
+PB --> GW : New policy issued
+GW --> UI : Renewal completed / new policy
+@enduml

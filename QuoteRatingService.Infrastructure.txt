@@ -1,0 +1,3911 @@
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Class1.cs
+================================================================================
+namespace QuoteRatingService.Infrastructure
+{
+    public class Class1
+    {
+
+    }
+}
+
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Clients\CustomerVehicleClient.cs
+================================================================================
+using System.Net;
+using System.Net.Http.Json;
+using QuoteRatingService.Application.Dtos.Clients.CustomerVehicle;
+using QuoteRatingService.Application.Interfaces.Clients;
+
+namespace QuoteRatingService.Infrastructure.Clients;
+
+public class CustomerVehicleClient
+    : ICustomerVehicleClient
+{
+    private readonly HttpClient
+        _httpClient;
+
+    public CustomerVehicleClient(
+        HttpClient httpClient)
+    {
+        _httpClient =
+            httpClient;
+    }
+
+    public async Task<CustomerVehicleRiskResult>
+        GetCustomerRiskAsync(
+            Guid customerProfileId)
+    {
+        try
+        {
+            using var response =
+                await _httpClient.GetAsync(
+                    $"internal/customers/{customerProfileId}/risk");
+
+            if (
+                response.StatusCode ==
+                HttpStatusCode.NotFound)
+            {
+                return CustomerVehicleRiskResult
+                    .CustomerNotFound();
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return CustomerVehicleRiskResult
+                    .Unavailable();
+            }
+
+            var risk =
+                await response.Content
+                    .ReadFromJsonAsync<
+                        CustomerVehicleRiskDto>();
+
+            if (risk is null)
+            {
+                return CustomerVehicleRiskResult
+                    .Unavailable();
+            }
+
+            return CustomerVehicleRiskResult
+                .Success(risk);
+        }
+        catch (HttpRequestException)
+        {
+            return CustomerVehicleRiskResult
+                .Unavailable();
+        }
+        catch (TaskCanceledException)
+        {
+            return CustomerVehicleRiskResult
+                .Unavailable();
+        }
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Clients\DevelopmentClaimsHistoryClient.cs
+================================================================================
+using Microsoft.Extensions.Configuration;
+using QuoteRatingService.Application.Dtos.Clients.Claims;
+using QuoteRatingService.Application.Interfaces.Clients;
+using Microsoft.Extensions.Configuration;
+namespace QuoteRatingService.Infrastructure.Clients;
+
+public class DevelopmentClaimsHistoryClient
+    : IClaimsHistoryClient
+{
+    private readonly IConfiguration
+        _configuration;
+
+    public DevelopmentClaimsHistoryClient(
+        IConfiguration configuration)
+    {
+        _configuration =
+            configuration;
+    }
+
+    public Task<ClaimsHistoryResult>
+        GetQualifyingClaimsAsync(
+            Guid customerProfileId,
+            DateTime ratingAsOfUtc)
+    {
+        var claimsCount =
+            _configuration.GetValue<int>(
+                "DevelopmentClaims:QualifyingClaimsCount");
+
+        if (claimsCount < 0)
+        {
+            throw new InvalidOperationException(
+                "Development Claims count cannot be negative.");
+        }
+
+        var result =
+            ClaimsHistoryResult.Success(
+                claimsCount,
+                ratingAsOfUtc);
+
+        return Task.FromResult(
+            result);
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Clients\UnderwritingClient.cs
+================================================================================
+using System.Net;
+using System.Net.Http.Json;
+using QuoteRatingService.Application.Dtos.Underwriting;
+using QuoteRatingService.Application.Interfaces.Clients;
+
+namespace QuoteRatingService.Infrastructure.Clients;
+
+public class UnderwritingClient
+    : IUnderwritingClient
+{
+    private readonly HttpClient _httpClient;
+
+    public UnderwritingClient(
+        HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+    }
+
+    public async Task<UnderwritingApplicationCreateResult>
+        CreateApplicationAsync(
+            CreateUnderwritingApplicationRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(
+            request);
+
+        try
+        {
+            using var response =
+                await _httpClient.PostAsJsonAsync(
+                    "internal/underwriting/applications",
+                    request);
+
+            if (response.StatusCode ==
+                    HttpStatusCode.OK ||
+                response.StatusCode ==
+                    HttpStatusCode.Created)
+            {
+                var application =
+                    await response.Content
+                        .ReadFromJsonAsync<
+                            CreateUnderwritingApplicationResponse>();
+
+                if (application is null ||
+                    application.ApplicationId ==
+                    Guid.Empty)
+                {
+                    return UnderwritingApplicationCreateResult
+                        .Unavailable(
+                            "UnderwritingService returned an invalid application response.");
+                }
+
+                return UnderwritingApplicationCreateResult
+                    .Success(
+                        application);
+            }
+
+            if (response.StatusCode ==
+                HttpStatusCode.BadRequest)
+            {
+                var error =
+                    await TryReadErrorAsync(
+                        response);
+
+                return UnderwritingApplicationCreateResult
+                    .BadRequest(
+                        error ??
+                        "UnderwritingService rejected the Quote submission.");
+            }
+
+            return UnderwritingApplicationCreateResult
+                .Unavailable(
+                    "UnderwritingService is temporarily unavailable.");
+        }
+        catch (HttpRequestException)
+        {
+            return UnderwritingApplicationCreateResult
+                .Unavailable(
+                    "UnderwritingService is temporarily unavailable.");
+        }
+        catch (TaskCanceledException)
+        {
+            return UnderwritingApplicationCreateResult
+                .Unavailable(
+                    "UnderwritingService request timed out.");
+        }
+    }
+
+    private static async Task<string?> TryReadErrorAsync(
+        HttpResponseMessage response)
+    {
+        try
+        {
+            var error =
+                await response.Content
+                    .ReadFromJsonAsync<ApiErrorResponse>();
+
+            return error?.Message;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private sealed class ApiErrorResponse
+    {
+        public string? Message { get; set; }
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Configurations\AddOnConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Configurations;
+
+public class AddOnConfiguration
+    : IEntityTypeConfiguration<AddOn>
+{
+    public void Configure(
+        EntityTypeBuilder<AddOn> builder)
+    {
+        builder.ToTable(
+            "AddOns",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_AddOns_AnnualPrice_NonNegative",
+                    "[AnnualPrice] >= 0");
+            });
+
+        builder.HasKey(
+            addOn => addOn.Id);
+
+        builder.Property(
+                addOn => addOn.Code)
+            .IsRequired();
+
+        builder.HasIndex(
+                addOn => addOn.Code)
+            .IsUnique();
+
+        builder.Property(
+                addOn => addOn.Name)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.HasIndex(
+                addOn => addOn.Name)
+            .IsUnique();
+
+        builder.Property(
+                addOn => addOn.AnnualPrice)
+            .HasPrecision(18, 2)
+            .IsRequired();
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Configurations\CoverageConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Configurations;
+
+public class CoverageConfiguration
+    : IEntityTypeConfiguration<Coverage>
+{
+    public void Configure(
+        EntityTypeBuilder<Coverage> builder)
+    {
+        builder.ToTable("Coverages");
+
+        builder.HasKey(
+            coverage => coverage.Id);
+
+        builder.Property(
+                coverage => coverage.Code)
+            .IsRequired();
+
+        builder.HasIndex(
+                coverage => coverage.Code)
+            .IsUnique();
+
+        builder.Property(
+                coverage => coverage.Name)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.HasIndex(
+                coverage => coverage.Name)
+            .IsUnique();
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Configurations\CoverageLimitOptionConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Configurations;
+
+public class CoverageLimitOptionConfiguration
+    : IEntityTypeConfiguration<CoverageLimitOption>
+{
+    public void Configure(
+        EntityTypeBuilder<CoverageLimitOption> builder)
+    {
+        builder.ToTable(
+            "CoverageLimitOptions",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_CoverageLimitOptions_AnnualCharge_NonNegative",
+                    "[AnnualCharge] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_CoverageLimitOptions_LimitAmount_Positive",
+                    "[LimitAmount] IS NULL OR [LimitAmount] > 0");
+            });
+
+        builder.HasKey(
+            option => option.Id);
+
+        builder.Property(
+                option => option.Tier)
+            .IsRequired();
+
+        builder.Property(
+                option => option.LimitAmount)
+            .HasPrecision(18, 2);
+
+        builder.Property(
+                option => option.AnnualCharge)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                option => option.IsDefault)
+            .IsRequired();
+
+        builder.HasOne(
+                option => option.Coverage)
+            .WithMany(
+                coverage =>
+                    coverage.LimitOptions)
+            .HasForeignKey(
+                option =>
+                    option.CoverageId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+
+        builder.HasIndex(
+                option =>
+                    new
+                    {
+                        option.CoverageId,
+                        option.Tier
+                    })
+            .IsUnique();
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Configurations\DeductibleOptionConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Configurations;
+
+public class DeductibleOptionConfiguration
+    : IEntityTypeConfiguration<DeductibleOption>
+{
+    public void Configure(
+        EntityTypeBuilder<DeductibleOption> builder)
+    {
+        builder.ToTable(
+            "DeductibleOptions",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_DeductibleOptions_Amount_Positive",
+                    "[DeductibleAmount] > 0");
+
+                table.HasCheckConstraint(
+                    "CK_DeductibleOptions_AnnualCharge_NonNegative",
+                    "[AnnualCharge] >= 0");
+            });
+
+        builder.HasKey(
+            option => option.Id);
+
+        builder.Property(
+                option => option.DeductibleAmount)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                option => option.AnnualCharge)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                option => option.IsDefault)
+            .IsRequired();
+
+        builder.HasOne(
+                option => option.Coverage)
+            .WithMany(
+                coverage =>
+                    coverage.DeductibleOptions)
+            .HasForeignKey(
+                option =>
+                    option.CoverageId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+
+        builder.HasIndex(
+                option =>
+                    new
+                    {
+                        option.CoverageId,
+                        option.DeductibleAmount
+                    })
+            .IsUnique();
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Configurations\PlanAddOnConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Configurations;
+
+public class PlanAddOnConfiguration
+    : IEntityTypeConfiguration<PlanAddOn>
+{
+    public void Configure(
+        EntityTypeBuilder<PlanAddOn> builder)
+    {
+        builder.ToTable("PlanAddOns");
+
+        builder.HasKey(
+            planAddOn =>
+                new
+                {
+                    planAddOn.PlanId,
+                    planAddOn.AddOnId
+                });
+
+        builder.HasOne(
+                planAddOn =>
+                    planAddOn.Plan)
+            .WithMany(
+                plan =>
+                    plan.PlanAddOns)
+            .HasForeignKey(
+                planAddOn =>
+                    planAddOn.PlanId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+
+        builder.HasOne(
+                planAddOn =>
+                    planAddOn.AddOn)
+            .WithMany(
+                addOn =>
+                    addOn.PlanAddOns)
+            .HasForeignKey(
+                planAddOn =>
+                    planAddOn.AddOnId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Configurations\PlanConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Configurations;
+
+public class PlanConfiguration
+    : IEntityTypeConfiguration<Plan>
+{
+    public void Configure(
+        EntityTypeBuilder<Plan> builder)
+    {
+        builder.ToTable(
+            "Plans",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_Plans_BasePremium_NonNegative",
+                    "[BasePremium] >= 0");
+            });
+
+        builder.HasKey(
+            plan => plan.Id);
+
+        builder.Property(
+                plan => plan.Code)
+            .IsRequired();
+
+        builder.HasIndex(
+                plan => plan.Code)
+            .IsUnique();
+
+        builder.Property(
+                plan => plan.Name)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.HasIndex(
+                plan => plan.Name)
+            .IsUnique();
+
+        builder.Property(
+                plan => plan.BasePremium)
+            .HasPrecision(18, 2)
+            .IsRequired();
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Configurations\PlanCoverageConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Configurations;
+
+public class PlanCoverageConfiguration
+    : IEntityTypeConfiguration<PlanCoverage>
+{
+    public void Configure(
+        EntityTypeBuilder<PlanCoverage> builder)
+    {
+        builder.ToTable("PlanCoverages");
+
+        builder.HasKey(
+            planCoverage =>
+                new
+                {
+                    planCoverage.PlanId,
+                    planCoverage.CoverageId
+                });
+
+        builder.HasOne(
+                planCoverage =>
+                    planCoverage.Plan)
+            .WithMany(
+                plan =>
+                    plan.PlanCoverages)
+            .HasForeignKey(
+                planCoverage =>
+                    planCoverage.PlanId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+
+        builder.HasOne(
+                planCoverage =>
+                    planCoverage.Coverage)
+            .WithMany(
+                coverage =>
+                    coverage.PlanCoverages)
+            .HasForeignKey(
+                planCoverage =>
+                    planCoverage.CoverageId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Configurations\PricingAuditConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Configurations;
+
+public class PricingAuditConfiguration
+    : IEntityTypeConfiguration<PricingAudit>
+{
+    public void Configure(
+        EntityTypeBuilder<PricingAudit> builder)
+    {
+        builder.ToTable(
+            "PricingAudits",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_PricingAudits_PreviousValue_NonNegative",
+                    "[PreviousValue] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_PricingAudits_NewValue_NonNegative",
+                    "[NewValue] >= 0");
+            });
+
+        builder.HasKey(
+            audit => audit.Id);
+
+        builder.Property(
+                audit =>
+                    audit.ActorIdentityUserId)
+            .IsRequired()
+            .HasMaxLength(450);
+
+        builder.Property(
+                audit =>
+                    audit.ConfigurationType)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(
+                audit =>
+                    audit.ConfigurationKey)
+            .IsRequired()
+            .HasMaxLength(200);
+
+        builder.Property(
+                audit => audit.PreviousValue)
+            .HasPrecision(18, 4)
+            .IsRequired();
+
+        builder.Property(
+                audit => audit.NewValue)
+            .HasPrecision(18, 4)
+            .IsRequired();
+
+        builder.Property(
+                audit => audit.ChangedAtUtc)
+            .IsRequired();
+
+        builder.HasIndex(
+            audit => audit.ChangedAtUtc);
+
+        builder.HasIndex(
+            audit =>
+                audit.ActorIdentityUserId);
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Configurations\QuoteAddOnSelectionConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Configurations;
+
+public class QuoteAddOnSelectionConfiguration
+    : IEntityTypeConfiguration<QuoteAddOnSelection>
+{
+    public void Configure(
+        EntityTypeBuilder<QuoteAddOnSelection> builder)
+    {
+        builder.ToTable(
+            "QuoteAddOnSelections",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_QuoteAddOnSelections_AnnualPrice_NonNegative",
+                    "[AnnualPrice] >= 0");
+            });
+
+        builder.HasKey(
+            selection => selection.Id);
+
+        builder.Property(
+                selection => selection.AnnualPrice)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.HasOne(
+                selection => selection.Quote)
+            .WithMany(
+                quote => quote.AddOnSelections)
+            .HasForeignKey(
+                selection => selection.QuoteId)
+            .OnDelete(
+                DeleteBehavior.Cascade);
+
+        builder.HasOne(
+                selection => selection.AddOn)
+            .WithMany()
+            .HasForeignKey(
+                selection => selection.AddOnId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+
+        builder.HasIndex(
+                selection =>
+                    new
+                    {
+                        selection.QuoteId,
+                        selection.AddOnId
+                    })
+            .IsUnique();
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Configurations\QuoteAddOnSnapshotConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Configurations;
+
+public class QuoteAddOnSnapshotConfiguration
+    : IEntityTypeConfiguration<QuoteAddOnSnapshot>
+{
+    public void Configure(
+        EntityTypeBuilder<QuoteAddOnSnapshot> builder)
+    {
+        builder.ToTable(
+            "QuoteAddOnSnapshots",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_QuoteAddOnSnapshots_AnnualPrice_NonNegative",
+                    "[AnnualPrice] >= 0");
+            });
+
+        builder.HasKey(
+            snapshot => snapshot.Id);
+
+        builder.Property(
+                snapshot => snapshot.AddOnName)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(
+                snapshot => snapshot.AnnualPrice)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.HasOne(
+                snapshot =>
+                    snapshot.QuoteSnapshot)
+            .WithMany(
+                quoteSnapshot =>
+                    quoteSnapshot.AddOns)
+            .HasForeignKey(
+                snapshot =>
+                    snapshot.QuoteSnapshotId)
+            .OnDelete(
+                DeleteBehavior.Cascade);
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Configurations\QuoteCalculationConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Configurations;
+
+public class QuoteCalculationConfiguration
+    : IEntityTypeConfiguration<QuoteCalculation>
+{
+    public void Configure(
+        EntityTypeBuilder<QuoteCalculation> builder)
+    {
+        builder.ToTable(
+            "QuoteCalculations",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_QuoteCalculations_DriverAge_NonNegative",
+                    "[DriverAge] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteCalculations_Experience_NonNegative",
+                    "[DrivingExperienceYears] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteCalculations_VehicleAge_NonNegative",
+                    "[VehicleAge] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteCalculations_VehicleValue_NonNegative",
+                    "[VehicleValue] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteCalculations_Odometer_NonNegative",
+                    "[CurrentOdometer] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteCalculations_AnnualMileage_NonNegative",
+                    "[AnnualMileage] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteCalculations_Claims_NonNegative",
+                    "[QualifyingClaimsCount] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteCalculations_Surcharge_NonNegative",
+                    "[TotalRiskSurchargePercent] >= 0");
+            });
+
+        builder.HasKey(
+            calculation =>
+                calculation.Id);
+
+        builder.Property(
+                calculation =>
+                    calculation.RatingAsOfUtc)
+            .IsRequired();
+
+        builder.Property(
+                calculation =>
+                    calculation.Geography)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                calculation =>
+                    calculation.DriverId)
+            .IsRequired();
+
+        builder.Property(
+                calculation =>
+                    calculation.VehicleVin)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                calculation =>
+                    calculation.VehicleMake)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(
+                calculation =>
+                    calculation.VehicleModel)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(
+                calculation =>
+                    calculation.VehicleType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                calculation =>
+                    calculation.FuelType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                calculation =>
+                    calculation.OwnershipType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                calculation =>
+                    calculation.VehicleValue)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                calculation =>
+                    calculation.TotalRiskSurchargePercent)
+            .HasPrecision(9, 4)
+            .IsRequired();
+
+        builder.HasIndex(
+                calculation =>
+                    calculation.QuoteId)
+            .IsUnique();
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Configurations\QuoteCalculationFactorConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Configurations;
+
+public class QuoteCalculationFactorConfiguration
+    : IEntityTypeConfiguration<QuoteCalculationFactor>
+{
+    public void Configure(
+        EntityTypeBuilder<QuoteCalculationFactor> builder)
+    {
+        builder.ToTable(
+            "QuoteCalculationFactors",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_QuoteCalculationFactors_Surcharge_NonNegative",
+                    "[SurchargePercent] >= 0");
+            });
+
+        builder.HasKey(
+            factor => factor.Id);
+
+        builder.Property(
+                factor => factor.Factor)
+            .IsRequired();
+
+        builder.Property(
+                factor => factor.BandCode)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(
+                factor => factor.BandLabel)
+            .IsRequired()
+            .HasMaxLength(150);
+
+        builder.Property(
+                factor => factor.SurchargePercent)
+            .HasPrecision(9, 4)
+            .IsRequired();
+
+        builder.HasOne(
+                factor =>
+                    factor.QuoteCalculation)
+            .WithMany(
+                calculation =>
+                    calculation.RatingFactors)
+            .HasForeignKey(
+                factor =>
+                    factor.QuoteCalculationId)
+            .OnDelete(
+                DeleteBehavior.Cascade);
+
+        builder.HasIndex(
+                factor =>
+                    new
+                    {
+                        factor.QuoteCalculationId,
+                        factor.Factor
+                    })
+            .IsUnique();
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Configurations\QuoteConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using QuoteRatingService.Domain.Entities;
+using QuoteRatingService.Domain.Enums;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Configurations;
+
+public class QuoteConfiguration
+    : IEntityTypeConfiguration<Quote>
+{
+    public void Configure(
+        EntityTypeBuilder<Quote> builder)
+    {
+        builder.ToTable("Quotes");
+
+        builder.HasKey(
+            quote => quote.Id);
+
+        builder.Property(
+                quote => quote.CustomerProfileId)
+            .IsRequired();
+
+        builder.Property(
+                quote => quote.VehicleId)
+            .IsRequired();
+
+        builder.Property(
+                quote => quote.AgentIdentityUserId)
+            .IsRequired()
+            .HasMaxLength(450);
+
+        builder.Property(
+                quote => quote.Status)
+            .IsRequired();
+
+        builder.Property(
+                quote => quote.CreatedAtUtc)
+            .IsRequired();
+
+        builder.HasOne(
+                quote => quote.SelectedPlan)
+            .WithMany()
+            .HasForeignKey(
+                quote => quote.SelectedPlanId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+
+        builder.HasOne(
+                quote => quote.Calculation)
+            .WithOne(
+                calculation =>
+                    calculation.Quote)
+            .HasForeignKey<QuoteCalculation>(
+                calculation =>
+                    calculation.QuoteId)
+            .OnDelete(
+                DeleteBehavior.Cascade);
+
+        builder.HasOne(
+                quote => quote.Snapshot)
+            .WithOne(
+                snapshot =>
+                    snapshot.Quote)
+            .HasForeignKey<QuoteSnapshot>(
+                snapshot =>
+                    snapshot.QuoteId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+
+        builder.HasIndex(
+            quote =>
+                quote.CustomerProfileId);
+
+        builder.HasIndex(
+            quote =>
+                quote.AgentIdentityUserId);
+
+        builder.HasIndex(
+            quote =>
+                quote.Status);
+
+        builder.HasIndex(
+            quote =>
+                new
+                {
+                    quote.CustomerProfileId,
+                    quote.CreatedAtUtc
+                });
+
+        /*
+         * SQL Server filtered unique index.
+         *
+         * QuoteStatus.Draft = 1.
+         *
+         * This guarantees that one Vehicle cannot have
+         * two Draft Quotes at the same time.
+         */
+        builder.HasIndex(
+                quote => quote.VehicleId)
+            .IsUnique()
+            .HasFilter(
+                $"[Status] = {(int)QuoteStatus.Draft}");
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Configurations\QuoteCoverageSelectionConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Configurations;
+
+public class QuoteCoverageSelectionConfiguration
+    : IEntityTypeConfiguration<QuoteCoverageSelection>
+{
+    public void Configure(
+        EntityTypeBuilder<QuoteCoverageSelection> builder)
+    {
+        builder.ToTable(
+            "QuoteCoverageSelections",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_QuoteCoverageSelections_ResolvedLimit_Positive",
+                    "[ResolvedLimitAmount] > 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteCoverageSelections_LimitCharge_NonNegative",
+                    "[CoverageLimitCharge] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteCoverageSelections_DeductibleCharge_NonNegative",
+                    "[DeductibleCharge] >= 0");
+            });
+
+        builder.HasKey(
+            selection => selection.Id);
+
+        builder.Property(
+                selection =>
+                    selection.ResolvedLimitAmount)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                selection =>
+                    selection.CoverageLimitCharge)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                selection =>
+                    selection.DeductibleCharge)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.HasOne(
+                selection => selection.Quote)
+            .WithMany(
+                quote =>
+                    quote.CoverageSelections)
+            .HasForeignKey(
+                selection =>
+                    selection.QuoteId)
+            .OnDelete(
+                DeleteBehavior.Cascade);
+
+        builder.HasOne(
+                selection =>
+                    selection.Coverage)
+            .WithMany()
+            .HasForeignKey(
+                selection =>
+                    selection.CoverageId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+
+        builder.HasOne(
+                selection =>
+                    selection.CoverageLimitOption)
+            .WithMany()
+            .HasForeignKey(
+                selection =>
+                    selection.CoverageLimitOptionId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+
+        builder.HasOne(
+                selection =>
+                    selection.DeductibleOption)
+            .WithMany()
+            .HasForeignKey(
+                selection =>
+                    selection.DeductibleOptionId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+
+        builder.HasIndex(
+                selection =>
+                    new
+                    {
+                        selection.QuoteId,
+                        selection.CoverageId
+                    })
+            .IsUnique();
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Configurations\QuoteCoverageSnapshotConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Configurations;
+
+public class QuoteCoverageSnapshotConfiguration
+    : IEntityTypeConfiguration<QuoteCoverageSnapshot>
+{
+    public void Configure(
+        EntityTypeBuilder<QuoteCoverageSnapshot> builder)
+    {
+        builder.ToTable(
+            "QuoteCoverageSnapshots",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_QuoteCoverageSnapshots_Limit_Positive",
+                    "[ResolvedLimitAmount] > 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteCoverageSnapshots_Deductible_Positive",
+                    "[DeductibleAmount] IS NULL OR [DeductibleAmount] > 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteCoverageSnapshots_LimitCharge_NonNegative",
+                    "[CoverageLimitCharge] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteCoverageSnapshots_DeductibleCharge_NonNegative",
+                    "[DeductibleCharge] >= 0");
+            });
+
+        builder.HasKey(
+            snapshot => snapshot.Id);
+
+        builder.Property(
+                snapshot => snapshot.CoverageName)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(
+                snapshot =>
+                    snapshot.ResolvedLimitAmount)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                snapshot =>
+                    snapshot.DeductibleAmount)
+            .HasPrecision(18, 2);
+
+        builder.Property(
+                snapshot =>
+                    snapshot.CoverageLimitCharge)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                snapshot =>
+                    snapshot.DeductibleCharge)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.HasOne(
+                snapshot =>
+                    snapshot.QuoteSnapshot)
+            .WithMany(
+                quoteSnapshot =>
+                    quoteSnapshot.Coverages)
+            .HasForeignKey(
+                snapshot =>
+                    snapshot.QuoteSnapshotId)
+            .OnDelete(
+                DeleteBehavior.Cascade);
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Configurations\QuotePlanOptionConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Configurations;
+
+public class QuotePlanOptionConfiguration
+    : IEntityTypeConfiguration<QuotePlanOption>
+{
+    public void Configure(
+        EntityTypeBuilder<QuotePlanOption> builder)
+    {
+        builder.ToTable(
+            "QuotePlanOptions",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_QuotePlanOptions_BasePremium_NonNegative",
+                    "[BasePremium] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuotePlanOptions_RiskSurcharge_NonNegative",
+                    "[TotalRiskSurchargePercent] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuotePlanOptions_RiskPremium_NonNegative",
+                    "[RiskAdjustedPremium] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuotePlanOptions_CoverageCharges_NonNegative",
+                    "[CoverageOptionCharges] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuotePlanOptions_DeductibleCharges_NonNegative",
+                    "[DeductibleCharges] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuotePlanOptions_AddOnCharges_NonNegative",
+                    "[AddOnCharges] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuotePlanOptions_FinalPremium_NonNegative",
+                    "[FinalAnnualPremium] >= 0");
+            });
+
+        builder.HasKey(
+            option => option.Id);
+
+        builder.Property(
+                option => option.BasePremium)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                option =>
+                    option.TotalRiskSurchargePercent)
+            .HasPrecision(9, 4)
+            .IsRequired();
+
+        builder.Property(
+                option =>
+                    option.RiskAdjustedPremium)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                option =>
+                    option.CoverageOptionCharges)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                option =>
+                    option.DeductibleCharges)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                option =>
+                    option.AddOnCharges)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                option =>
+                    option.FinalAnnualPremium)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                option => option.IsSelected)
+            .IsRequired();
+
+        builder.HasOne(
+                option => option.Quote)
+            .WithMany(
+                quote =>
+                    quote.PlanOptions)
+            .HasForeignKey(
+                option =>
+                    option.QuoteId)
+            .OnDelete(
+                DeleteBehavior.Cascade);
+
+        builder.HasOne(
+                option =>
+                    option.QuoteCalculation)
+            .WithMany(
+                calculation =>
+                    calculation.PlanOptions)
+            .HasForeignKey(
+                option =>
+                    option.QuoteCalculationId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+
+        builder.HasOne(
+                option => option.Plan)
+            .WithMany()
+            .HasForeignKey(
+                option => option.PlanId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+
+        builder.HasIndex(
+                option =>
+                    new
+                    {
+                        option.QuoteCalculationId,
+                        option.PlanId
+                    })
+            .IsUnique();
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Configurations\QuoteRatingFactorSnapshotConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Configurations;
+
+public class QuoteRatingFactorSnapshotConfiguration
+    : IEntityTypeConfiguration<QuoteRatingFactorSnapshot>
+{
+    public void Configure(
+        EntityTypeBuilder<QuoteRatingFactorSnapshot> builder)
+    {
+        builder.ToTable(
+            "QuoteRatingFactorSnapshots",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_QuoteRatingFactorSnapshots_Surcharge_NonNegative",
+                    "[SurchargePercent] >= 0");
+            });
+
+        builder.HasKey(
+            snapshot => snapshot.Id);
+
+        builder.Property(
+                snapshot => snapshot.Factor)
+            .IsRequired();
+
+        builder.Property(
+                snapshot => snapshot.BandCode)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(
+                snapshot => snapshot.BandLabel)
+            .IsRequired()
+            .HasMaxLength(150);
+
+        builder.Property(
+                snapshot => snapshot.SurchargePercent)
+            .HasPrecision(9, 4)
+            .IsRequired();
+
+        builder.HasOne(
+                snapshot =>
+                    snapshot.QuoteSnapshot)
+            .WithMany(
+                quoteSnapshot =>
+                    quoteSnapshot.RatingFactors)
+            .HasForeignKey(
+                snapshot =>
+                    snapshot.QuoteSnapshotId)
+            .OnDelete(
+                DeleteBehavior.Cascade);
+
+        builder.HasIndex(
+                snapshot =>
+                    new
+                    {
+                        snapshot.QuoteSnapshotId,
+                        snapshot.Factor
+                    })
+            .IsUnique();
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Configurations\QuoteSnapshotConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Configurations;
+
+public class QuoteSnapshotConfiguration
+    : IEntityTypeConfiguration<QuoteSnapshot>
+{
+    public void Configure(
+        EntityTypeBuilder<QuoteSnapshot> builder)
+    {
+        builder.ToTable(
+            "QuoteSnapshots",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_QuoteSnapshots_DriverAge_NonNegative",
+                    "[DriverAge] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteSnapshots_Experience_NonNegative",
+                    "[DrivingExperienceYears] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteSnapshots_VehicleAge_NonNegative",
+                    "[VehicleAge] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteSnapshots_VehicleValue_NonNegative",
+                    "[VehicleValue] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteSnapshots_Odometer_NonNegative",
+                    "[CurrentOdometer] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteSnapshots_AnnualMileage_NonNegative",
+                    "[AnnualMileage] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteSnapshots_Claims_NonNegative",
+                    "[QualifyingClaimsCount] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteSnapshots_BasePremium_NonNegative",
+                    "[BasePremium] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteSnapshots_RiskSurcharge_NonNegative",
+                    "[TotalRiskSurchargePercent] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteSnapshots_RiskPremium_NonNegative",
+                    "[RiskAdjustedPremium] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteSnapshots_CoverageCharges_NonNegative",
+                    "[CoverageOptionCharges] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteSnapshots_DeductibleCharges_NonNegative",
+                    "[DeductibleCharges] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteSnapshots_AddOnCharges_NonNegative",
+                    "[AddOnCharges] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_QuoteSnapshots_FinalPremium_NonNegative",
+                    "[FinalAnnualPremium] >= 0");
+            });
+
+        builder.HasKey(
+            snapshot => snapshot.Id);
+
+        builder.HasIndex(
+                snapshot => snapshot.QuoteId)
+            .IsUnique();
+
+        builder.Property(
+                snapshot =>
+                    snapshot.AgentIdentityUserId)
+            .IsRequired()
+            .HasMaxLength(450);
+
+        builder.Property(
+                snapshot => snapshot.Geography)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                snapshot => snapshot.VehicleVin)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                snapshot => snapshot.VehicleMake)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(
+                snapshot => snapshot.VehicleModel)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(
+                snapshot => snapshot.VehicleType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                snapshot => snapshot.FuelType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                snapshot => snapshot.OwnershipType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                snapshot => snapshot.PlanName)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                snapshot => snapshot.VehicleValue)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                snapshot => snapshot.BasePremium)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                snapshot =>
+                    snapshot.TotalRiskSurchargePercent)
+            .HasPrecision(9, 4)
+            .IsRequired();
+
+        builder.Property(
+                snapshot =>
+                    snapshot.RiskAdjustedPremium)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                snapshot =>
+                    snapshot.CoverageOptionCharges)
+            .HasPrecision(18, 2)
+            .IsRequired();
+        builder.Property(
+        snapshot => snapshot.DriverId)
+    .IsRequired();
+        builder.Property(
+        snapshot => snapshot.OverallRiskRating)
+    .IsRequired();
+        builder.Property(
+                snapshot =>
+                    snapshot.DeductibleCharges)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                snapshot => snapshot.AddOnCharges)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                snapshot =>
+                    snapshot.FinalAnnualPremium)
+            .HasPrecision(18, 2)
+            .IsRequired();
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Configurations\RatingRuleConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Configurations;
+
+public class RatingRuleConfiguration
+    : IEntityTypeConfiguration<RatingRule>
+{
+    public void Configure(
+        EntityTypeBuilder<RatingRule> builder)
+    {
+        builder.ToTable(
+            "RatingRules",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_RatingRules_SurchargePercent_NonNegative",
+                    "[SurchargePercent] >= 0");
+            });
+
+        builder.HasKey(
+            rule => rule.Id);
+
+        builder.Property(
+                rule => rule.Factor)
+            .IsRequired();
+
+        builder.Property(
+                rule => rule.BandCode)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(
+                rule => rule.BandLabel)
+            .IsRequired()
+            .HasMaxLength(150);
+
+        builder.Property(
+                rule => rule.SurchargePercent)
+            .HasPrecision(9, 4)
+            .IsRequired();
+
+        builder.HasIndex(
+                rule =>
+                    new
+                    {
+                        rule.Factor,
+                        rule.BandCode
+                    })
+            .IsUnique();
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\QuoteRatingDbContext.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Infrastructure.Persistence;
+
+public class QuoteRatingDbContext
+    : DbContext
+{
+    public QuoteRatingDbContext(
+        DbContextOptions<QuoteRatingDbContext> options)
+        : base(options)
+    {
+    }
+
+    public DbSet<Plan> Plans =>
+        Set<Plan>();
+    public DbSet<QuoteCalculationFactor>
+    QuoteCalculationFactors =>
+    Set<QuoteCalculationFactor>();
+    public DbSet<Coverage> Coverages =>
+        Set<Coverage>();
+
+    public DbSet<PlanCoverage> PlanCoverages =>
+        Set<PlanCoverage>();
+
+    public DbSet<CoverageLimitOption>
+        CoverageLimitOptions =>
+        Set<CoverageLimitOption>();
+
+    public DbSet<DeductibleOption>
+        DeductibleOptions =>
+        Set<DeductibleOption>();
+
+    public DbSet<AddOn> AddOns =>
+        Set<AddOn>();
+
+    public DbSet<PlanAddOn> PlanAddOns =>
+        Set<PlanAddOn>();
+
+    public DbSet<RatingRule> RatingRules =>
+        Set<RatingRule>();
+
+    public DbSet<Quote> Quotes =>
+        Set<Quote>();
+
+    public DbSet<QuoteCalculation>
+        QuoteCalculations =>
+        Set<QuoteCalculation>();
+
+    public DbSet<QuotePlanOption>
+        QuotePlanOptions =>
+        Set<QuotePlanOption>();
+
+    public DbSet<QuoteCoverageSelection>
+        QuoteCoverageSelections =>
+        Set<QuoteCoverageSelection>();
+
+    public DbSet<QuoteAddOnSelection>
+        QuoteAddOnSelections =>
+        Set<QuoteAddOnSelection>();
+
+    public DbSet<QuoteSnapshot>
+        QuoteSnapshots =>
+        Set<QuoteSnapshot>();
+
+    public DbSet<QuoteCoverageSnapshot>
+        QuoteCoverageSnapshots =>
+        Set<QuoteCoverageSnapshot>();
+
+    public DbSet<QuoteAddOnSnapshot>
+        QuoteAddOnSnapshots =>
+        Set<QuoteAddOnSnapshot>();
+
+    public DbSet<QuoteRatingFactorSnapshot>
+        QuoteRatingFactorSnapshots =>
+        Set<QuoteRatingFactorSnapshot>();
+
+    public DbSet<PricingAudit>
+        PricingAudits =>
+        Set<PricingAudit>();
+
+    protected override void OnModelCreating(
+        ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(
+            modelBuilder);
+
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            typeof(QuoteRatingDbContext)
+                .Assembly);
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Seeding\QuoteRatingCatalogueSeeder.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using QuoteRatingService.Domain.Entities;
+using QuoteRatingService.Domain.Enums;
+
+namespace QuoteRatingService.Infrastructure.Persistence.Seeding;
+
+public class QuoteRatingCatalogueSeeder
+{
+    private readonly QuoteRatingDbContext _dbContext;
+
+    public QuoteRatingCatalogueSeeder(
+        QuoteRatingDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task SeedAsync()
+    {
+        await SeedPlansAsync();
+        await SeedCoveragesAsync();
+        await SeedPlanCoveragesAsync();
+        await SeedCoverageLimitOptionsAsync();
+        await SeedDeductibleOptionsAsync();
+        await SeedAddOnsAsync();
+        await SeedPlanAddOnsAsync();
+        await SeedRatingRulesAsync();
+    }
+
+    /*
+     * =====================================================
+     * PLANS
+     * =====================================================
+     */
+
+    private async Task SeedPlansAsync()
+    {
+        await EnsurePlanAsync(
+            QuoteRatingSeedIds.Plans.Basic,
+            PlanCode.Basic,
+            "Basic",
+            8000m);
+
+        await EnsurePlanAsync(
+            QuoteRatingSeedIds.Plans.Standard,
+            PlanCode.Standard,
+            "Standard",
+            14000m);
+
+        await EnsurePlanAsync(
+            QuoteRatingSeedIds.Plans.Premium,
+            PlanCode.Premium,
+            "Premium",
+            20000m);
+
+        await _dbContext.SaveChangesAsync();
+    }
+
+    private async Task EnsurePlanAsync(
+        Guid id,
+        PlanCode code,
+        string name,
+        decimal basePremium)
+    {
+        var exists =
+            await _dbContext.Plans
+                .AnyAsync(
+                    plan =>
+                        plan.Code == code);
+
+        if (exists)
+        {
+            return;
+        }
+
+        _dbContext.Plans.Add(
+            new Plan
+            {
+                Id = id,
+                Code = code,
+                Name = name,
+                BasePremium = basePremium
+            });
+    }
+
+    /*
+     * =====================================================
+     * COVERAGES
+     * =====================================================
+     */
+
+    private async Task SeedCoveragesAsync()
+    {
+        await EnsureCoverageAsync(
+            QuoteRatingSeedIds
+                .Coverages
+                .ThirdPartyLiability,
+            CoverageCode.ThirdPartyLiability,
+            "Third-Party Liability");
+
+        await EnsureCoverageAsync(
+            QuoteRatingSeedIds
+                .Coverages
+                .Collision,
+            CoverageCode.Collision,
+            "Collision");
+
+        await EnsureCoverageAsync(
+            QuoteRatingSeedIds
+                .Coverages
+                .Comprehensive,
+            CoverageCode.Comprehensive,
+            "Comprehensive");
+
+        await EnsureCoverageAsync(
+            QuoteRatingSeedIds
+                .Coverages
+                .UninsuredUnderinsured,
+            CoverageCode
+                .UninsuredUnderinsuredMotorist,
+            "UM/UIM");
+
+        await EnsureCoverageAsync(
+            QuoteRatingSeedIds
+                .Coverages
+                .MedicalPayments,
+            CoverageCode
+                .MedicalPaymentsPersonalInjuryProtection,
+            "MedPay/PIP");
+
+        await _dbContext.SaveChangesAsync();
+    }
+
+    private async Task EnsureCoverageAsync(
+        Guid id,
+        CoverageCode code,
+        string name)
+    {
+        var exists =
+            await _dbContext.Coverages
+                .AnyAsync(
+                    coverage =>
+                        coverage.Code == code);
+
+        if (exists)
+        {
+            return;
+        }
+
+        _dbContext.Coverages.Add(
+            new Coverage
+            {
+                Id = id,
+                Code = code,
+                Name = name
+            });
+    }
+
+    /*
+     * =====================================================
+     * PLAN COVERAGE MEMBERSHIP
+     * =====================================================
+     */
+
+    private async Task SeedPlanCoveragesAsync()
+    {
+        /*
+         * Basic
+         */
+        await EnsurePlanCoverageAsync(
+            QuoteRatingSeedIds.Plans.Basic,
+            QuoteRatingSeedIds
+                .Coverages
+                .ThirdPartyLiability);
+
+        /*
+         * Standard
+         */
+        await EnsurePlanCoverageAsync(
+            QuoteRatingSeedIds.Plans.Standard,
+            QuoteRatingSeedIds
+                .Coverages
+                .ThirdPartyLiability);
+
+        await EnsurePlanCoverageAsync(
+            QuoteRatingSeedIds.Plans.Standard,
+            QuoteRatingSeedIds
+                .Coverages
+                .Collision);
+
+        await EnsurePlanCoverageAsync(
+            QuoteRatingSeedIds.Plans.Standard,
+            QuoteRatingSeedIds
+                .Coverages
+                .Comprehensive);
+
+        /*
+         * Premium
+         */
+        await EnsurePlanCoverageAsync(
+            QuoteRatingSeedIds.Plans.Premium,
+            QuoteRatingSeedIds
+                .Coverages
+                .ThirdPartyLiability);
+
+        await EnsurePlanCoverageAsync(
+            QuoteRatingSeedIds.Plans.Premium,
+            QuoteRatingSeedIds
+                .Coverages
+                .Collision);
+
+        await EnsurePlanCoverageAsync(
+            QuoteRatingSeedIds.Plans.Premium,
+            QuoteRatingSeedIds
+                .Coverages
+                .Comprehensive);
+
+        await EnsurePlanCoverageAsync(
+            QuoteRatingSeedIds.Plans.Premium,
+            QuoteRatingSeedIds
+                .Coverages
+                .UninsuredUnderinsured);
+
+        await EnsurePlanCoverageAsync(
+            QuoteRatingSeedIds.Plans.Premium,
+            QuoteRatingSeedIds
+                .Coverages
+                .MedicalPayments);
+
+        await _dbContext.SaveChangesAsync();
+    }
+
+    private async Task EnsurePlanCoverageAsync(
+        Guid planId,
+        Guid coverageId)
+    {
+        var exists =
+            await _dbContext.PlanCoverages
+                .AnyAsync(
+                    item =>
+                        item.PlanId == planId &&
+                        item.CoverageId == coverageId);
+
+        if (exists)
+        {
+            return;
+        }
+
+        _dbContext.PlanCoverages.Add(
+            new PlanCoverage
+            {
+                PlanId = planId,
+                CoverageId = coverageId
+            });
+    }
+
+    /*
+     * =====================================================
+     * COVERAGE LIMIT OPTIONS
+     * =====================================================
+     */
+
+    private async Task SeedCoverageLimitOptionsAsync()
+    {
+        /*
+         * Third-Party Liability
+         * 5L / 10L / 20L
+         */
+
+        await EnsureCoverageLimitAsync(
+            QuoteRatingSeedIds
+                .CoverageLimits
+                .ThirdPartyLow,
+            QuoteRatingSeedIds
+                .Coverages
+                .ThirdPartyLiability,
+            CoverageLimitTier.Low,
+            500000m,
+            0m,
+            false);
+
+        await EnsureCoverageLimitAsync(
+            QuoteRatingSeedIds
+                .CoverageLimits
+                .ThirdPartyMiddle,
+            QuoteRatingSeedIds
+                .Coverages
+                .ThirdPartyLiability,
+            CoverageLimitTier.Middle,
+            1000000m,
+            500m,
+            true);
+
+        await EnsureCoverageLimitAsync(
+            QuoteRatingSeedIds
+                .CoverageLimits
+                .ThirdPartyHigh,
+            QuoteRatingSeedIds
+                .Coverages
+                .ThirdPartyLiability,
+            CoverageLimitTier.High,
+            2000000m,
+            1000m,
+            false);
+
+        /*
+         * Collision
+         * 5L / 10L / Up to Vehicle Value
+         */
+
+        await EnsureCoverageLimitAsync(
+            QuoteRatingSeedIds
+                .CoverageLimits
+                .CollisionLow,
+            QuoteRatingSeedIds
+                .Coverages
+                .Collision,
+            CoverageLimitTier.Low,
+            500000m,
+            0m,
+            false);
+
+        await EnsureCoverageLimitAsync(
+            QuoteRatingSeedIds
+                .CoverageLimits
+                .CollisionMiddle,
+            QuoteRatingSeedIds
+                .Coverages
+                .Collision,
+            CoverageLimitTier.Middle,
+            1000000m,
+            500m,
+            true);
+
+        await EnsureCoverageLimitAsync(
+            QuoteRatingSeedIds
+                .CoverageLimits
+                .CollisionVehicleValue,
+            QuoteRatingSeedIds
+                .Coverages
+                .Collision,
+            CoverageLimitTier.UpToVehicleValue,
+            null,
+            1000m,
+            false);
+
+        /*
+         * Comprehensive
+         * 5L / 10L / Up to Vehicle Value
+         */
+
+        await EnsureCoverageLimitAsync(
+            QuoteRatingSeedIds
+                .CoverageLimits
+                .ComprehensiveLow,
+            QuoteRatingSeedIds
+                .Coverages
+                .Comprehensive,
+            CoverageLimitTier.Low,
+            500000m,
+            0m,
+            false);
+
+        await EnsureCoverageLimitAsync(
+            QuoteRatingSeedIds
+                .CoverageLimits
+                .ComprehensiveMiddle,
+            QuoteRatingSeedIds
+                .Coverages
+                .Comprehensive,
+            CoverageLimitTier.Middle,
+            1000000m,
+            500m,
+            true);
+
+        await EnsureCoverageLimitAsync(
+            QuoteRatingSeedIds
+                .CoverageLimits
+                .ComprehensiveVehicleValue,
+            QuoteRatingSeedIds
+                .Coverages
+                .Comprehensive,
+            CoverageLimitTier.UpToVehicleValue,
+            null,
+            1000m,
+            false);
+
+        /*
+         * UM/UIM
+         * 5L / 10L / 20L
+         */
+
+        await EnsureCoverageLimitAsync(
+            QuoteRatingSeedIds
+                .CoverageLimits
+                .UmUimLow,
+            QuoteRatingSeedIds
+                .Coverages
+                .UninsuredUnderinsured,
+            CoverageLimitTier.Low,
+            500000m,
+            0m,
+            false);
+
+        await EnsureCoverageLimitAsync(
+            QuoteRatingSeedIds
+                .CoverageLimits
+                .UmUimMiddle,
+            QuoteRatingSeedIds
+                .Coverages
+                .UninsuredUnderinsured,
+            CoverageLimitTier.Middle,
+            1000000m,
+            500m,
+            true);
+
+        await EnsureCoverageLimitAsync(
+            QuoteRatingSeedIds
+                .CoverageLimits
+                .UmUimHigh,
+            QuoteRatingSeedIds
+                .Coverages
+                .UninsuredUnderinsured,
+            CoverageLimitTier.High,
+            2000000m,
+            1000m,
+            false);
+
+        /*
+         * MedPay/PIP
+         * 1L / 2L / 5L
+         */
+
+        await EnsureCoverageLimitAsync(
+            QuoteRatingSeedIds
+                .CoverageLimits
+                .MedPayLow,
+            QuoteRatingSeedIds
+                .Coverages
+                .MedicalPayments,
+            CoverageLimitTier.Low,
+            100000m,
+            0m,
+            false);
+
+        await EnsureCoverageLimitAsync(
+            QuoteRatingSeedIds
+                .CoverageLimits
+                .MedPayMiddle,
+            QuoteRatingSeedIds
+                .Coverages
+                .MedicalPayments,
+            CoverageLimitTier.Middle,
+            200000m,
+            500m,
+            true);
+
+        await EnsureCoverageLimitAsync(
+            QuoteRatingSeedIds
+                .CoverageLimits
+                .MedPayHigh,
+            QuoteRatingSeedIds
+                .Coverages
+                .MedicalPayments,
+            CoverageLimitTier.High,
+            500000m,
+            1000m,
+            false);
+
+        await _dbContext.SaveChangesAsync();
+    }
+
+    private async Task EnsureCoverageLimitAsync(
+        Guid id,
+        Guid coverageId,
+        CoverageLimitTier tier,
+        decimal? limitAmount,
+        decimal annualCharge,
+        bool isDefault)
+    {
+        var exists =
+            await _dbContext.CoverageLimitOptions
+                .AnyAsync(
+                    option =>
+                        option.CoverageId ==
+                            coverageId &&
+                        option.Tier ==
+                            tier);
+
+        if (exists)
+        {
+            return;
+        }
+
+        _dbContext.CoverageLimitOptions.Add(
+            new CoverageLimitOption
+            {
+                Id = id,
+                CoverageId = coverageId,
+                Tier = tier,
+                LimitAmount = limitAmount,
+                AnnualCharge = annualCharge,
+                IsDefault = isDefault
+            });
+    }
+
+    /*
+     * =====================================================
+     * DEDUCTIBLE OPTIONS
+     * =====================================================
+     */
+
+    private async Task SeedDeductibleOptionsAsync()
+    {
+        /*
+         * Collision
+         */
+
+        await EnsureDeductibleAsync(
+            QuoteRatingSeedIds
+                .Deductibles
+                .Collision5000,
+            QuoteRatingSeedIds
+                .Coverages
+                .Collision,
+            5000m,
+            1000m,
+            false);
+
+        await EnsureDeductibleAsync(
+            QuoteRatingSeedIds
+                .Deductibles
+                .Collision10000,
+            QuoteRatingSeedIds
+                .Coverages
+                .Collision,
+            10000m,
+            500m,
+            true);
+
+        await EnsureDeductibleAsync(
+            QuoteRatingSeedIds
+                .Deductibles
+                .Collision20000,
+            QuoteRatingSeedIds
+                .Coverages
+                .Collision,
+            20000m,
+            0m,
+            false);
+
+        /*
+         * Comprehensive
+         */
+
+        await EnsureDeductibleAsync(
+            QuoteRatingSeedIds
+                .Deductibles
+                .Comprehensive5000,
+            QuoteRatingSeedIds
+                .Coverages
+                .Comprehensive,
+            5000m,
+            1000m,
+            false);
+
+        await EnsureDeductibleAsync(
+            QuoteRatingSeedIds
+                .Deductibles
+                .Comprehensive10000,
+            QuoteRatingSeedIds
+                .Coverages
+                .Comprehensive,
+            10000m,
+            500m,
+            true);
+
+        await EnsureDeductibleAsync(
+            QuoteRatingSeedIds
+                .Deductibles
+                .Comprehensive20000,
+            QuoteRatingSeedIds
+                .Coverages
+                .Comprehensive,
+            20000m,
+            0m,
+            false);
+
+        await _dbContext.SaveChangesAsync();
+    }
+
+    private async Task EnsureDeductibleAsync(
+        Guid id,
+        Guid coverageId,
+        decimal deductibleAmount,
+        decimal annualCharge,
+        bool isDefault)
+    {
+        var exists =
+            await _dbContext.DeductibleOptions
+                .AnyAsync(
+                    option =>
+                        option.CoverageId ==
+                            coverageId &&
+                        option.DeductibleAmount ==
+                            deductibleAmount);
+
+        if (exists)
+        {
+            return;
+        }
+
+        _dbContext.DeductibleOptions.Add(
+            new DeductibleOption
+            {
+                Id = id,
+
+                CoverageId =
+                    coverageId,
+
+                DeductibleAmount =
+                    deductibleAmount,
+
+                AnnualCharge =
+                    annualCharge,
+
+                IsDefault =
+                    isDefault
+            });
+    }
+
+    /*
+     * =====================================================
+     * ADD-ONS
+     * =====================================================
+     */
+
+    private async Task SeedAddOnsAsync()
+    {
+        await EnsureAddOnAsync(
+            QuoteRatingSeedIds
+                .AddOns
+                .RoadsideAssistance,
+            AddOnCode.RoadsideAssistance,
+            "Roadside Assistance",
+            750m);
+
+        await EnsureAddOnAsync(
+            QuoteRatingSeedIds
+                .AddOns
+                .ZeroDepreciation,
+            AddOnCode.ZeroDepreciation,
+            "Zero Depreciation",
+            1500m);
+
+        await EnsureAddOnAsync(
+            QuoteRatingSeedIds
+                .AddOns
+                .PersonalBelongings,
+            AddOnCode
+                .PersonalBelongingsProtection,
+            "Personal Belongings Protection",
+            750m);
+
+        await _dbContext.SaveChangesAsync();
+    }
+
+    private async Task EnsureAddOnAsync(
+        Guid id,
+        AddOnCode code,
+        string name,
+        decimal annualPrice)
+    {
+        var exists =
+            await _dbContext.AddOns
+                .AnyAsync(
+                    addOn =>
+                        addOn.Code == code);
+
+        if (exists)
+        {
+            return;
+        }
+
+        _dbContext.AddOns.Add(
+            new AddOn
+            {
+                Id = id,
+                Code = code,
+                Name = name,
+                AnnualPrice = annualPrice
+            });
+    }
+
+    /*
+     * =====================================================
+     * PLAN / ADD-ON MEMBERSHIP
+     * =====================================================
+     */
+
+    private async Task SeedPlanAddOnsAsync()
+    {
+        /*
+         * Roadside Assistance:
+         * Standard + Premium
+         */
+
+        await EnsurePlanAddOnAsync(
+            QuoteRatingSeedIds
+                .Plans
+                .Standard,
+            QuoteRatingSeedIds
+                .AddOns
+                .RoadsideAssistance);
+
+        await EnsurePlanAddOnAsync(
+            QuoteRatingSeedIds
+                .Plans
+                .Premium,
+            QuoteRatingSeedIds
+                .AddOns
+                .RoadsideAssistance);
+
+        /*
+         * Zero Depreciation:
+         * Standard + Premium
+         */
+
+        await EnsurePlanAddOnAsync(
+            QuoteRatingSeedIds
+                .Plans
+                .Standard,
+            QuoteRatingSeedIds
+                .AddOns
+                .ZeroDepreciation);
+
+        await EnsurePlanAddOnAsync(
+            QuoteRatingSeedIds
+                .Plans
+                .Premium,
+            QuoteRatingSeedIds
+                .AddOns
+                .ZeroDepreciation);
+
+        /*
+         * Personal Belongings:
+         * Premium only
+         */
+
+        await EnsurePlanAddOnAsync(
+            QuoteRatingSeedIds
+                .Plans
+                .Premium,
+            QuoteRatingSeedIds
+                .AddOns
+                .PersonalBelongings);
+
+        await _dbContext.SaveChangesAsync();
+    }
+
+    private async Task EnsurePlanAddOnAsync(
+        Guid planId,
+        Guid addOnId)
+    {
+        var exists =
+            await _dbContext.PlanAddOns
+                .AnyAsync(
+                    item =>
+                        item.PlanId == planId &&
+                        item.AddOnId == addOnId);
+
+        if (exists)
+        {
+            return;
+        }
+
+        _dbContext.PlanAddOns.Add(
+            new PlanAddOn
+            {
+                PlanId = planId,
+                AddOnId = addOnId
+            });
+    }
+
+    /*
+     * =====================================================
+     * RATING RULES
+     * =====================================================
+     */
+
+    private async Task SeedRatingRulesAsync()
+    {
+        /*
+         * Driver Age
+         */
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Age18To24,
+            RatingFactorCode.DriverAge,
+            "Age18To24",
+            "18-24 years",
+            20m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Age25To34,
+            RatingFactorCode.DriverAge,
+            "Age25To34",
+            "25-34 years",
+            10m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Age35To59,
+            RatingFactorCode.DriverAge,
+            "Age35To59",
+            "35-59 years",
+            0m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Age60Plus,
+            RatingFactorCode.DriverAge,
+            "Age60Plus",
+            "60+ years",
+            5m);
+
+        /*
+         * Driving Experience
+         */
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Experience0To2,
+            RatingFactorCode.DrivingExperience,
+            "Experience0To2",
+            "0-2 years",
+            15m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Experience3To5,
+            RatingFactorCode.DrivingExperience,
+            "Experience3To5",
+            "3-5 years",
+            10m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Experience6To10,
+            RatingFactorCode.DrivingExperience,
+            "Experience6To10",
+            "6-10 years",
+            5m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Experience11Plus,
+            RatingFactorCode.DrivingExperience,
+            "Experience11Plus",
+            "11+ years",
+            0m);
+
+        /*
+         * Vehicle Age
+         */
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .VehicleAge0To2,
+            RatingFactorCode.VehicleAge,
+            "VehicleAge0To2",
+            "0-2 years",
+            5m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .VehicleAge3To5,
+            RatingFactorCode.VehicleAge,
+            "VehicleAge3To5",
+            "3-5 years",
+            0m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .VehicleAge6To10,
+            RatingFactorCode.VehicleAge,
+            "VehicleAge6To10",
+            "6-10 years",
+            5m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .VehicleAge11To15,
+            RatingFactorCode.VehicleAge,
+            "VehicleAge11To15",
+            "11-15 years",
+            10m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .VehicleAge16To20,
+            RatingFactorCode.VehicleAge,
+            "VehicleAge16To20",
+            "16-20 years",
+            15m);
+
+        /*
+         * Vehicle Value
+         */
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .VehicleValueUpTo5L,
+            RatingFactorCode.VehicleValue,
+            "VehicleValueUpTo5L",
+            "Up to 5L",
+            0m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .VehicleValue5To10L,
+            RatingFactorCode.VehicleValue,
+            "VehicleValue5To10L",
+            "Above 5L to 10L",
+            5m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .VehicleValue10To20L,
+            RatingFactorCode.VehicleValue,
+            "VehicleValue10To20L",
+            "Above 10L to 20L",
+            10m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .VehicleValue20To35L,
+            RatingFactorCode.VehicleValue,
+            "VehicleValue20To35L",
+            "Above 20L to 35L",
+            15m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .VehicleValue35LPlus,
+            RatingFactorCode.VehicleValue,
+            "VehicleValue35LPlus",
+            "Above 35L",
+            20m);
+
+        /*
+         * Annual Mileage
+         */
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Mileage0To5000,
+            RatingFactorCode.AnnualMileage,
+            "Mileage0To5000",
+            "0-5,000",
+            0m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Mileage5001To10000,
+            RatingFactorCode.AnnualMileage,
+            "Mileage5001To10000",
+            "5,001-10,000",
+            3m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Mileage10001To15000,
+            RatingFactorCode.AnnualMileage,
+            "Mileage10001To15000",
+            "10,001-15,000",
+            5m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Mileage15001To20000,
+            RatingFactorCode.AnnualMileage,
+            "Mileage15001To20000",
+            "15,001-20,000",
+            8m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Mileage20000Plus,
+            RatingFactorCode.AnnualMileage,
+            "Mileage20000Plus",
+            "Above 20,000",
+            12m);
+
+        /*
+         * Geography
+         */
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Rural,
+            RatingFactorCode.Geography,
+            "Rural",
+            "Rural",
+            0m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Urban,
+            RatingFactorCode.Geography,
+            "Urban",
+            "Urban",
+            8m);
+
+        /*
+         * Claims History
+         */
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Claims0,
+            RatingFactorCode.ClaimsHistory,
+            "Claims0",
+            "0 claims",
+            0m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Claims1,
+            RatingFactorCode.ClaimsHistory,
+            "Claims1",
+            "1 claim",
+            10m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Claims2,
+            RatingFactorCode.ClaimsHistory,
+            "Claims2",
+            "2 claims",
+            20m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Claims3,
+            RatingFactorCode.ClaimsHistory,
+            "Claims3",
+            "3 claims",
+            30m);
+
+        await EnsureRatingRuleAsync(
+            QuoteRatingSeedIds
+                .RatingRules
+                .Claims4Plus,
+            RatingFactorCode.ClaimsHistory,
+            "Claims4Plus",
+            "4+ claims",
+            40m);
+
+        await _dbContext.SaveChangesAsync();
+    }
+
+    private async Task EnsureRatingRuleAsync(
+        Guid id,
+        RatingFactorCode factor,
+        string bandCode,
+        string bandLabel,
+        decimal surchargePercent)
+    {
+        var exists =
+            await _dbContext.RatingRules
+                .AnyAsync(
+                    rule =>
+                        rule.Factor ==
+                            factor &&
+                        rule.BandCode ==
+                            bandCode);
+
+        if (exists)
+        {
+            return;
+        }
+
+        _dbContext.RatingRules.Add(
+            new RatingRule
+            {
+                Id = id,
+                Factor = factor,
+                BandCode = bandCode,
+                BandLabel = bandLabel,
+                SurchargePercent =
+                    surchargePercent
+            });
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Persistence\Seeding\QuoteRatingSeedIds.cs
+================================================================================
+namespace QuoteRatingService.Infrastructure.Persistence.Seeding;
+
+public static class QuoteRatingSeedIds
+{
+    /*
+     * =====================================================
+     * PLANS
+     * =====================================================
+     */
+
+    public static class Plans
+    {
+        public static readonly Guid Basic =
+            Guid.Parse(
+                "10000000-0000-0000-0000-000000000001");
+
+        public static readonly Guid Standard =
+            Guid.Parse(
+                "10000000-0000-0000-0000-000000000002");
+
+        public static readonly Guid Premium =
+            Guid.Parse(
+                "10000000-0000-0000-0000-000000000003");
+    }
+
+    /*
+     * =====================================================
+     * COVERAGES
+     * =====================================================
+     */
+
+    public static class Coverages
+    {
+        public static readonly Guid ThirdPartyLiability=
+            Guid.Parse(
+             "20000000-0000-0000-0000-000000000001");
+
+        public static readonly Guid Collision =
+            Guid.Parse(
+                "20000000-0000-0000-0000-000000000002");
+
+    public static readonly Guid Comprehensive =
+        Guid.Parse(
+            "20000000-0000-0000-0000-000000000003");
+
+    public static readonly Guid UninsuredUnderinsured =
+        Guid.Parse(
+            "20000000-0000-0000-0000-000000000004");
+
+    public static readonly Guid MedicalPayments =
+        Guid.Parse(
+            "20000000-0000-0000-0000-000000000005");
+}
+
+/*
+ * =====================================================
+ * ADD-ONS
+ * =====================================================
+ */
+
+public static class AddOns
+{
+    public static readonly Guid RoadsideAssistance =
+        Guid.Parse(
+            "30000000-0000-0000-0000-000000000001");
+
+    public static readonly Guid ZeroDepreciation =
+        Guid.Parse(
+            "30000000-0000-0000-0000-000000000002");
+
+    public static readonly Guid PersonalBelongings =
+        Guid.Parse(
+            "30000000-0000-0000-0000-000000000003");
+}
+
+/*
+ * =====================================================
+ * COVERAGE LIMIT OPTIONS
+ * =====================================================
+ */
+
+public static class CoverageLimits
+{
+    /*
+     * Third-Party Liability
+     */
+
+    public static readonly Guid ThirdPartyLow =
+        Guid.Parse(
+            "40000000-0000-0000-0000-000000000001");
+
+    public static readonly Guid ThirdPartyMiddle =
+        Guid.Parse(
+            "40000000-0000-0000-0000-000000000002");
+
+    public static readonly Guid ThirdPartyHigh =
+        Guid.Parse(
+            "40000000-0000-0000-0000-000000000003");
+
+    /*
+     * Collision
+     */
+
+    public static readonly Guid CollisionLow =
+        Guid.Parse(
+            "40000000-0000-0000-0000-000000000004");
+
+    public static readonly Guid CollisionMiddle =
+        Guid.Parse(
+            "40000000-0000-0000-0000-000000000005");
+
+    public static readonly Guid CollisionVehicleValue =
+        Guid.Parse(
+            "40000000-0000-0000-0000-000000000006");
+
+    /*
+     * Comprehensive
+     */
+
+    public static readonly Guid ComprehensiveLow =
+        Guid.Parse(
+            "40000000-0000-0000-0000-000000000007");
+
+    public static readonly Guid ComprehensiveMiddle =
+        Guid.Parse(
+            "40000000-0000-0000-0000-000000000008");
+
+    public static readonly Guid ComprehensiveVehicleValue =
+        Guid.Parse(
+            "40000000-0000-0000-0000-000000000009");
+
+    /*
+     * UM/UIM
+     */
+
+    public static readonly Guid UmUimLow =
+        Guid.Parse(
+            "40000000-0000-0000-0000-000000000010");
+
+    public static readonly Guid UmUimMiddle =
+        Guid.Parse(
+            "40000000-0000-0000-0000-000000000011");
+
+    public static readonly Guid UmUimHigh =
+        Guid.Parse(
+            "40000000-0000-0000-0000-000000000012");
+
+    /*
+     * MedPay/PIP
+     */
+
+    public static readonly Guid MedPayLow =
+        Guid.Parse(
+            "40000000-0000-0000-0000-000000000013");
+
+    public static readonly Guid MedPayMiddle =
+        Guid.Parse(
+            "40000000-0000-0000-0000-000000000014");
+
+    public static readonly Guid MedPayHigh =
+        Guid.Parse(
+            "40000000-0000-0000-0000-000000000015");
+}
+
+/*
+ * =====================================================
+ * DEDUCTIBLE OPTIONS
+ * =====================================================
+ */
+
+public static class Deductibles
+{
+    /*
+     * Collision
+     */
+
+    public static readonly Guid Collision5000 =
+        Guid.Parse(
+            "50000000-0000-0000-0000-000000000001");
+
+    public static readonly Guid Collision10000 =
+        Guid.Parse(
+            "50000000-0000-0000-0000-000000000002");
+
+    public static readonly Guid Collision20000 =
+        Guid.Parse(
+            "50000000-0000-0000-0000-000000000003");
+
+    /*
+     * Comprehensive
+     */
+
+    public static readonly Guid Comprehensive5000 =
+        Guid.Parse(
+            "50000000-0000-0000-0000-000000000004");
+
+    public static readonly Guid Comprehensive10000 =
+        Guid.Parse(
+            "50000000-0000-0000-0000-000000000005");
+
+    public static readonly Guid Comprehensive20000 =
+        Guid.Parse(
+            "50000000-0000-0000-0000-000000000006");
+}
+
+/*
+ * =====================================================
+ * RATING RULES
+ * =====================================================
+ */
+
+public static class RatingRules
+{
+    /*
+     * Driver Age
+     */
+
+    public static readonly Guid Age18To24 =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000001");
+
+    public static readonly Guid Age25To34 =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000002");
+
+    public static readonly Guid Age35To59 =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000003");
+
+    public static readonly Guid Age60Plus =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000004");
+
+    /*
+     * Driving Experience
+     */
+
+    public static readonly Guid Experience0To2 =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000005");
+
+    public static readonly Guid Experience3To5 =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000006");
+
+    public static readonly Guid Experience6To10 =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000007");
+
+    public static readonly Guid Experience11Plus =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000008");
+
+    /*
+     * Vehicle Age
+     */
+
+    public static readonly Guid VehicleAge0To2 =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000009");
+
+    public static readonly Guid VehicleAge3To5 =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000010");
+
+    public static readonly Guid VehicleAge6To10 =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000011");
+
+    public static readonly Guid VehicleAge11To15 =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000012");
+
+    public static readonly Guid VehicleAge16To20 =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000013");
+
+    /*
+     * Vehicle Value
+     */
+
+    public static readonly Guid VehicleValueUpTo5L =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000014");
+
+    public static readonly Guid VehicleValue5To10L =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000015");
+
+    public static readonly Guid VehicleValue10To20L =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000016");
+
+    public static readonly Guid VehicleValue20To35L =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000017");
+
+    public static readonly Guid VehicleValue35LPlus =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000018");
+
+    /*
+     * Annual Mileage
+     */
+
+    public static readonly Guid Mileage0To5000 =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000019");
+
+    public static readonly Guid Mileage5001To10000 =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000020");
+
+    public static readonly Guid Mileage10001To15000 =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000021");
+
+    public static readonly Guid Mileage15001To20000 =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000022");
+
+    public static readonly Guid Mileage20000Plus =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000023");
+
+    /*
+     * Geography
+     */
+
+    public static readonly Guid Rural =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000024");
+
+    public static readonly Guid Urban =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000025");
+
+    /*
+     * Claims History
+     */
+
+    public static readonly Guid Claims0 =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000026");
+
+    public static readonly Guid Claims1 =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000027");
+
+    public static readonly Guid Claims2 =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000028");
+
+    public static readonly Guid Claims3 =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000029");
+
+    public static readonly Guid Claims4Plus =
+        Guid.Parse(
+            "60000000-0000-0000-0000-000000000030");
+}
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\QuoteRatingService.Infrastructure.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.19">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.19" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\QuoteRatingService.Application\QuoteRatingService.Application.csproj" />
+    <ProjectReference Include="..\QuoteRatingService.Domain\QuoteRatingService.Domain.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
+
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Repositories\PricingRepository.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using QuoteRatingService.Application.Interfaces.Repositories;
+using QuoteRatingService.Domain.Entities;
+using QuoteRatingService.Infrastructure.Persistence;
+
+namespace QuoteRatingService.Infrastructure.Repositories;
+
+public class PricingRepository : IPricingRepository
+{
+    private readonly QuoteRatingDbContext _dbContext;
+
+    public PricingRepository(
+        QuoteRatingDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<IReadOnlyList<Plan>>
+        GetPlansAsync()
+    {
+        return await _dbContext.Plans
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(plan => plan.PlanCoverages)
+                .ThenInclude(
+                    planCoverage =>
+                        planCoverage.Coverage)
+            .OrderBy(plan => plan.Code)
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<RatingRule>>
+        GetRatingRulesAsync()
+    {
+        return await _dbContext.RatingRules
+            .AsNoTracking()
+            .OrderBy(rule => rule.Factor)
+            .ThenBy(rule => rule.BandCode)
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<CoverageLimitOption>>
+        GetCoverageLimitOptionsAsync()
+    {
+        return await _dbContext.CoverageLimitOptions
+            .AsNoTracking()
+            .Include(option => option.Coverage)
+            .OrderBy(option => option.Coverage.Code)
+            .ThenBy(option => option.Tier)
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<DeductibleOption>>
+        GetDeductibleOptionsAsync()
+    {
+        return await _dbContext.DeductibleOptions
+            .AsNoTracking()
+            .Include(option => option.Coverage)
+            .OrderBy(option => option.Coverage.Code)
+            .ThenBy(option => option.DeductibleAmount)
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<AddOn>>
+        GetAddOnsAsync()
+    {
+        return await _dbContext.AddOns
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(addOn => addOn.PlanAddOns)
+                .ThenInclude(
+                    planAddOn =>
+                        planAddOn.Plan)
+            .OrderBy(addOn => addOn.Code)
+            .ToListAsync();
+    }
+
+    public async Task<Plan?> GetPlanByIdAsync(
+        Guid planId)
+    {
+        return await _dbContext.Plans
+            .SingleOrDefaultAsync(
+                plan => plan.Id == planId);
+    }
+
+    public async Task<RatingRule?>
+        GetRatingRuleByIdAsync(
+            Guid ratingRuleId)
+    {
+        return await _dbContext.RatingRules
+            .SingleOrDefaultAsync(
+                rule =>
+                    rule.Id == ratingRuleId);
+    }
+
+    public async Task<CoverageLimitOption?>
+        GetCoverageLimitOptionByIdAsync(
+            Guid coverageLimitOptionId)
+    {
+        return await _dbContext.CoverageLimitOptions
+            .SingleOrDefaultAsync(
+                option =>
+                    option.Id ==
+                    coverageLimitOptionId);
+    }
+
+    public async Task<DeductibleOption?>
+        GetDeductibleOptionByIdAsync(
+            Guid deductibleOptionId)
+    {
+        return await _dbContext.DeductibleOptions
+            .SingleOrDefaultAsync(
+                option =>
+                    option.Id ==
+                    deductibleOptionId);
+    }
+
+    public async Task<AddOn?> GetAddOnByIdAsync(
+        Guid addOnId)
+    {
+        return await _dbContext.AddOns
+            .SingleOrDefaultAsync(
+                addOn => addOn.Id == addOnId);
+    }
+
+    public async Task AddPricingAuditsAsync(
+        IEnumerable<PricingAudit> audits)
+    {
+        await _dbContext.PricingAudits
+            .AddRangeAsync(
+                audits);
+    }
+
+    public async Task SaveChangesAsync()
+    {
+        await _dbContext.SaveChangesAsync();
+    }
+
+    public async Task ExecuteInTransactionAsync(
+        Func<Task> operation)
+    {
+        ArgumentNullException.ThrowIfNull(
+            operation);
+
+        await using var transaction =
+            await _dbContext.Database
+                .BeginTransactionAsync();
+
+        try
+        {
+            await operation();
+
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+
+            throw;
+        }
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Repositories\ProductCatalogueRepository.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using QuoteRatingService.Application.Interfaces.Repositories;
+using QuoteRatingService.Domain.Entities;
+using QuoteRatingService.Domain.Enums;
+using QuoteRatingService.Infrastructure.Persistence;
+
+namespace QuoteRatingService.Infrastructure.Repositories;
+
+public class ProductCatalogueRepository
+    : IProductCatalogueRepository
+{
+    private readonly QuoteRatingDbContext _dbContext;
+
+    public ProductCatalogueRepository(
+        QuoteRatingDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<IReadOnlyList<Plan>>
+        GetPlansWithConfigurationAsync()
+    {
+        return await BuildPlanConfigurationQuery()
+            .OrderBy(
+                plan =>
+                    plan.Code)
+            .ToListAsync();
+    }
+
+    public async Task<Plan?>
+        GetPlanWithConfigurationAsync(
+            PlanCode planCode)
+    {
+        return await BuildPlanConfigurationQuery()
+            .SingleOrDefaultAsync(
+                plan =>
+                    plan.Code == planCode);
+    }
+
+    private IQueryable<Plan>
+        BuildPlanConfigurationQuery()
+    {
+        return _dbContext.Plans
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(
+                plan =>
+                    plan.PlanCoverages)
+                .ThenInclude(
+                    planCoverage =>
+                        planCoverage.Coverage)
+                    .ThenInclude(
+                        coverage =>
+                            coverage.LimitOptions)
+            .Include(
+                plan =>
+                    plan.PlanCoverages)
+                .ThenInclude(
+                    planCoverage =>
+                        planCoverage.Coverage)
+                    .ThenInclude(
+                        coverage =>
+                            coverage.DeductibleOptions)
+            .Include(
+                plan =>
+                    plan.PlanAddOns)
+                .ThenInclude(
+                    planAddOn =>
+                        planAddOn.AddOn);
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Repositories\QuoteRepository.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using QuoteRatingService.Application.Interfaces.Repositories;
+using QuoteRatingService.Domain.Entities;
+using QuoteRatingService.Domain.Enums;
+using QuoteRatingService.Infrastructure.Persistence;
+
+namespace QuoteRatingService.Infrastructure.Repositories;
+
+public class QuoteRepository : IQuoteRepository
+{
+    private readonly QuoteRatingDbContext _dbContext;
+
+    public QuoteRepository(
+        QuoteRatingDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<Quote?> GetDraftByVehicleIdAsync(
+        Guid vehicleId)
+    {
+        return await _dbContext.Quotes
+            .Include(quote => quote.SelectedPlan)
+            .Include(quote => quote.Calculation)
+            .Include(
+    quote =>
+        quote.PlanOptions)
+    .ThenInclude(
+        option =>
+            option.Plan)
+    .ThenInclude(
+        plan =>
+            plan.PlanCoverages)
+    .ThenInclude(
+        planCoverage =>
+            planCoverage.Coverage)
+            .Include(quote => quote.CoverageSelections)
+            .Include(quote => quote.AddOnSelections)
+            .SingleOrDefaultAsync(
+                quote =>
+                    quote.VehicleId == vehicleId &&
+                    quote.Status == QuoteStatus.Draft);
+    }
+
+    public async Task<Quote?> GetByIdAsync(
+        Guid quoteId)
+    {
+        return await _dbContext.Quotes
+    .Include(
+        quote =>
+            quote.SelectedPlan)
+    .Include(
+        quote =>
+            quote.Calculation)
+        .ThenInclude(
+            calculation =>
+                calculation!.RatingFactors)
+    .Include(
+    quote =>
+        quote.PlanOptions)
+    .ThenInclude(
+        option =>
+            option.Plan)
+    .ThenInclude(
+        plan =>
+            plan.PlanCoverages)
+    .ThenInclude(
+        planCoverage =>
+            planCoverage.Coverage)
+            .Include(quote => quote.CoverageSelections)
+                .ThenInclude(selection => selection.Coverage)
+            .Include(quote => quote.CoverageSelections)
+                .ThenInclude(
+                    selection =>
+                        selection.CoverageLimitOption)
+            .Include(quote => quote.CoverageSelections)
+                .ThenInclude(
+                    selection =>
+                        selection.DeductibleOption)
+            .Include(quote => quote.AddOnSelections)
+                .ThenInclude(selection => selection.AddOn)
+            .Include(quote => quote.Snapshot)
+                .ThenInclude(snapshot => snapshot!.Coverages)
+            .Include(quote => quote.Snapshot)
+                .ThenInclude(snapshot => snapshot!.AddOns)
+            .Include(quote => quote.Snapshot)
+                .ThenInclude(snapshot => snapshot!.RatingFactors)
+            .SingleOrDefaultAsync(
+                quote =>
+                    quote.Id == quoteId);
+    }
+
+    public void AddCoverageSelections(
+    IEnumerable<QuoteCoverageSelection> selections)
+    {
+        _dbContext
+            .QuoteCoverageSelections
+            .AddRange(
+                selections);
+    }
+
+    public void AddAddOnSelections(
+        IEnumerable<QuoteAddOnSelection> selections)
+    {
+        _dbContext
+            .QuoteAddOnSelections
+            .AddRange(
+                selections);
+    }
+    public async Task<IReadOnlyList<Quote>>
+     GetByCustomerProfileIdAsync(
+         Guid customerProfileId)
+    {
+        return await _dbContext.Quotes
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(
+                quote =>
+                    quote.SelectedPlan)
+            .Include(
+    quote =>
+        quote.PlanOptions)
+    .ThenInclude(
+        option =>
+            option.Plan)
+    .ThenInclude(
+        plan =>
+            plan.PlanCoverages)
+    .ThenInclude(
+        planCoverage =>
+            planCoverage.Coverage)
+                .Include(
+    quote =>
+        quote.Snapshot)
+    .ThenInclude(
+        snapshot =>
+            snapshot!.Coverages)
+
+.Include(
+    quote =>
+        quote.Snapshot)
+    .ThenInclude(
+        snapshot =>
+            snapshot!.AddOns)
+            .Where(
+                quote =>
+                    quote.CustomerProfileId ==
+                    customerProfileId)
+            .OrderByDescending(
+                quote =>
+                    quote.CreatedAtUtc)
+            .ToListAsync();
+    }
+
+    public async Task<Quote?>
+        GetCurrentFinalizedByVehicleIdAsync(
+            Guid vehicleId,
+            DateTime nowUtc)
+    {
+        return await _dbContext.Quotes
+            .Include(quote => quote.SelectedPlan)
+            .Include(quote => quote.Snapshot)
+            .Where(
+                quote =>
+                    quote.VehicleId == vehicleId &&
+                    quote.Status == QuoteStatus.Finalized &&
+                    quote.ValidUntilUtc != null &&
+                    quote.ValidUntilUtc > nowUtc)
+            .OrderByDescending(
+                quote => quote.FinalizedAtUtc)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task AddAsync(
+        Quote quote)
+    {
+        await _dbContext.Quotes
+            .AddAsync(quote);
+    }
+    public async Task ExecuteInTransactionAsync(
+    Func<Task> operation)
+    {
+        ArgumentNullException.ThrowIfNull(
+            operation);
+
+        await using var transaction =
+            await _dbContext.Database
+                .BeginTransactionAsync();
+
+        try
+        {
+            await operation();
+
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+
+            throw;
+        }
+    }
+    public void RemoveCoverageSelections(
+    IEnumerable<QuoteCoverageSelection> selections)
+    {
+        _dbContext.QuoteCoverageSelections
+            .RemoveRange(
+                selections);
+    }
+    public void RemoveCalculationFactors(
+    IEnumerable<QuoteCalculationFactor> factors)
+    {
+        _dbContext.QuoteCalculationFactors
+            .RemoveRange(
+                factors);
+    }
+    public void RemoveAddOnSelections(
+        IEnumerable<QuoteAddOnSelection> selections)
+    {
+        _dbContext.QuoteAddOnSelections
+            .RemoveRange(
+                selections);
+    }
+    public void AddSnapshot(
+    QuoteSnapshot snapshot)
+    {
+        _dbContext.QuoteSnapshots.Add(
+            snapshot);
+    }
+    public async Task SaveChangesAsync()
+    {
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            Console.WriteLine(
+                "========== EF CONCURRENCY FAILURE ==========");
+
+            foreach (var entry in ex.Entries)
+            {
+                Console.WriteLine(
+                    $"Entity: {entry.Metadata.ClrType.Name}");
+
+                Console.WriteLine(
+                    $"State: {entry.State}");
+
+                foreach (var property in entry.Properties)
+                {
+                    Console.WriteLine(
+                        $"{property.Metadata.Name}: " +
+                        $"Current={property.CurrentValue}, " +
+                        $"Original={property.OriginalValue}");
+                }
+
+                Console.WriteLine(
+                    "--------------------------------------------");
+            }
+
+            Console.WriteLine(
+                "============================================");
+
+            throw;
+        }
+    }
+}
+
+================================================================================
+FILE: QuoteRatingService.Infrastructure\Repositories\RatingRuleRepository.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using QuoteRatingService.Application.Interfaces.Repositories;
+using QuoteRatingService.Domain.Entities;
+using QuoteRatingService.Infrastructure.Persistence;
+
+namespace QuoteRatingService.Infrastructure.Repositories;
+
+public class RatingRuleRepository
+    : IRatingRuleRepository
+{
+    private readonly QuoteRatingDbContext
+        _dbContext;
+
+    public RatingRuleRepository(
+        QuoteRatingDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<IReadOnlyList<RatingRule>>
+        GetAllAsync()
+    {
+        return await _dbContext.RatingRules
+            .AsNoTracking()
+            .OrderBy(
+                rule => rule.Factor)
+            .ThenBy(
+                rule => rule.BandCode)
+            .ToListAsync();
+    }
+}
+

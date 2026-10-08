@@ -1,0 +1,123 @@
+@startuml
+!theme plain
+hide methods
+hide stereotypes
+skinparam linetype ortho
+skinparam shadowing false
+entity "Plans" as P {
+  * Id : GUID
+  --
+  Code
+  Name
+  BasePremium
+}
+entity "Coverages" as C {
+  * Id : GUID
+  --
+  Code
+  Name
+}
+entity "PlanCoverages" as PC {
+  * PlanId : FK
+  * CoverageId : FK
+  --
+  IsMandatory
+}
+entity "CoverageLimitOptions" as CLO {
+  * Id : GUID
+  --
+  CoverageId : FK
+  LimitAmount
+  SurchargePercent
+}
+entity "DeductibleOptions" as DO {
+  * Id : GUID
+  --
+  CoverageId : FK
+  DeductibleAmount
+  SurchargePercent
+}
+entity "AddOns" as AO {
+  * Id : GUID
+  --
+  Name
+  Description
+  AnnualPrice
+}
+entity "AddOnPlanMappings" as APM {
+  * AddOnId : FK
+  * PlanId : FK
+}
+entity "RatingRules" as RR {
+  * Id : GUID
+  --
+  FactorType
+  MinValue
+  MaxValue
+  CategoryValue
+  SurchargePercent
+}
+entity "Quotes" as Q {
+  * Id : GUID
+  --
+  QuoteNumber
+  CustomerId
+  VehicleId
+  AgentIdentityUserId
+  Status
+  CreatedAt
+  FinalizedAt
+  ExpiresAt
+  SubmittedAt
+}
+entity "QuoteSnapshots" as QS {
+  * Id : GUID
+  --
+  QuoteId : FK
+  RiskInputs
+  PlanSelection
+  RatingBreakdown
+  AnnualPremium
+}
+entity "QuoteCoverageSnapshots" as QCS {
+  * Id : GUID
+  --
+  QuoteSnapshotId : FK
+  CoverageCode
+  CoverageName
+  LimitAmount
+  LimitSurchargePercent
+  DeductibleAmount
+  DeductibleSurchargePercent
+}
+entity "QuoteAddOnSnapshots" as QAS {
+  * Id : GUID
+  --
+  QuoteSnapshotId : FK
+  AddOnName
+  AnnualPrice
+}
+entity "PricingAudit" as PA {
+  * Id : GUID
+  --
+  ItemType
+  ItemId
+  PreviousValue
+  NewValue
+  ChangedBy
+  ChangedAt
+}
+P ||--o{ PC
+C ||--o{ PC
+C ||--o{ CLO
+C ||--o{ DO
+AO ||--o{ APM
+P ||--o{ APM
+Q ||--|| QS
+QS ||--o{ QCS
+QS ||--o{ QAS
+note right of Q
+Cross-service references CustomerId,
+VehicleId and AgentIdentityUserId are identifiers only.
+end note
+@enduml

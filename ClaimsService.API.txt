@@ -1,0 +1,1160 @@
+
+================================================================================
+FILE: ClaimsService.API\appsettings.Development.json
+================================================================================
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}
+
+
+================================================================================
+FILE: ClaimsService.API\appsettings.json
+================================================================================
+{
+  "ConnectionStrings": {
+    "ClaimsDb": "Server=(localdb)\\MSSQLLocalDB;Database=ClaimsDb;Trusted_Connection=True;TrustServerCertificate=True;",
+    "CentralLoggingDb": "Server=(localdb)\\MSSQLLocalDB;Database=AutoInsuranceLoggingDb;Trusted_Connection=True;TrustServerCertificate=True;"
+  },
+
+  "Jwt": {
+    "Key": "YOUR_LOCAL_DEVELOPMENT_SIGNING_KEY_AT_LEAST_32_CHARACTERS",
+    "Issuer": "AutoInsurance.IdentityService",
+    "Audience": "AutoInsurance",
+    "AccessTokenMinutes": 15,
+    "RefreshSessionDays": 7
+  },
+
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+
+  "Serilog": {
+    "Using": [
+      "Serilog.Sinks.Console",
+      "Serilog.Sinks.File",
+      "Serilog.Sinks.MSSqlServer"
+    ],
+
+    "MinimumLevel": {
+      "Default": "Information",
+      "Override": {
+        "Microsoft": "Warning",
+        "Microsoft.AspNetCore": "Warning",
+        "Microsoft.EntityFrameworkCore": "Warning"
+      }
+    },
+
+    "Enrich": [
+      "FromLogContext"
+    ],
+
+    "Properties": {
+      "Application": "ClaimsService"
+    },
+
+    "WriteTo": [
+      {
+        "Name": "Console"
+      },
+
+      {
+        "Name": "File",
+        "Args": {
+          "path": "Logs/claims-service-.log",
+          "rollingInterval": "Day",
+          "retainedFileCountLimit": 14
+        }
+      },
+
+      {
+        "Name": "MSSqlServer",
+        "Args": {
+          "connectionString": "CentralLoggingDb",
+
+          "sinkOptionsSection": {
+            "tableName": "Logs",
+            "schemaName": "dbo",
+            "autoCreateSqlDatabase": true,
+            "autoCreateSqlTable": true,
+            "batchPostingLimit": 50,
+            "batchPeriod": "0.00:00:05"
+          },
+
+          "columnOptionsSection": {
+            "additionalColumns": [
+              {
+                "ColumnName": "Application",
+                "PropertyName": "Application",
+                "DataType": "NVarChar",
+                "DataLength": 100,
+                "AllowNull": false
+              },
+              {
+                "ColumnName": "CorrelationId",
+                "PropertyName": "CorrelationId",
+                "DataType": "NVarChar",
+                "DataLength": 100,
+                "AllowNull": true
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+
+  "Services": {
+    "IdentityService": "https://localhost:7130/",
+    "CustomerVehicleService": "https://localhost:7133/",
+    "PolicyBillingService": "https://localhost:7009/"
+  },
+
+  "AllowedHosts": "*"
+}
+
+================================================================================
+FILE: ClaimsService.API\ClaimsService.API.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.19" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.19">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageReference Include="Serilog.Sinks.MSSqlServer" Version="10.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ClaimsService.Application\ClaimsService.Application.csproj" />
+    <ProjectReference Include="..\ClaimsService.Infrastructure\ClaimsService.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
+
+
+================================================================================
+FILE: ClaimsService.API\Controllers\AdminClaimsController.cs
+================================================================================
+using System.Security.Claims;
+using ClaimsService.Application.Dtos.Admin;
+using ClaimsService.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace ClaimsService.API.Controllers;
+
+[ApiController]
+[Route("api/admin/claims")]
+[Authorize(Roles = "Admin")]
+public class AdminClaimsController : ControllerBase
+{
+    private readonly IClaimService _claimService;
+
+    public AdminClaimsController(
+        IClaimService claimService)
+    {
+        _claimService = claimService;
+    }
+
+    [HttpGet("unassigned")]
+    public async Task<IActionResult> GetUnassignedClaims(
+        CancellationToken cancellationToken)
+    {
+        var claims =
+            await _claimService.GetUnassignedClaimsAsync(
+                cancellationToken);
+
+        return Ok(claims);
+    }
+
+    [HttpGet("{claimId:guid}")]
+    public async Task<IActionResult> GetClaim(
+        Guid claimId,
+        CancellationToken cancellationToken)
+    {
+        var claim =
+            await _claimService.GetAdminClaimAsync(
+                claimId,
+                cancellationToken);
+
+        return Ok(claim);
+    }
+
+    [HttpPost("{claimId:guid}/claims-officer")]
+    public async Task<IActionResult> AssignClaimsOfficer(
+        Guid claimId,
+        [FromBody] AssignClaimsOfficerRequest request,
+        CancellationToken cancellationToken)
+    {
+        var adminIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                adminIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var claim =
+            await _claimService.AssignClaimsOfficerAsync(
+                claimId,
+                adminIdentityUserId,
+                request,
+                cancellationToken);
+
+        return Ok(claim);
+    }
+    [HttpGet("/api/admin/claims-officers/eligible")]
+    public async Task<IActionResult>
+    GetEligibleClaimsOfficers(
+        CancellationToken cancellationToken)
+    {
+        var claimsOfficers =
+            await _claimService
+                .GetEligibleClaimsOfficersAsync(
+                    cancellationToken);
+
+        return Ok(claimsOfficers);
+    }
+    private string? GetCurrentUserId()
+    {
+        return User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+    }
+}
+
+================================================================================
+FILE: ClaimsService.API\Controllers\AgentClaimsController.cs
+================================================================================
+using System.Security.Claims;
+using ClaimsService.Application.Dtos.Agent;
+using ClaimsService.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace ClaimsService.API.Controllers;
+
+[ApiController]
+[Route("api/agent")]
+[Authorize(Roles = "Agent")]
+public class AgentClaimsController : ControllerBase
+{
+    private readonly IClaimService _claimService;
+
+    public AgentClaimsController(
+        IClaimService claimService)
+    {
+        _claimService = claimService;
+    }
+
+    [HttpGet(
+        "customers/{customerProfileId:guid}/claims")]
+    public async Task<IActionResult>
+        GetCustomerClaims(
+            Guid customerProfileId,
+            CancellationToken cancellationToken)
+    {
+        var agentIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var claims =
+            await _claimService
+                .GetAgentCustomerClaimsAsync(
+                    customerProfileId,
+                    agentIdentityUserId,
+                    cancellationToken);
+
+        return Ok(claims);
+    }
+
+    [HttpPost(
+        "customers/{customerProfileId:guid}/claims")]
+    public async Task<IActionResult>
+        SubmitClaim(
+            Guid customerProfileId,
+            [FromBody] SubmitClaimRequest request,
+            CancellationToken cancellationToken)
+    {
+        var agentIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var claim =
+            await _claimService.SubmitClaimAsync(
+                customerProfileId,
+                agentIdentityUserId,
+                request,
+                cancellationToken);
+
+        return CreatedAtAction(
+            nameof(GetClaim),
+            new
+            {
+                claimId =
+                    claim.ClaimId
+            },
+            claim);
+    }
+
+    [HttpGet(
+        "claims/{claimId:guid}")]
+    public async Task<IActionResult> GetClaim(
+        Guid claimId,
+        CancellationToken cancellationToken)
+    {
+        var agentIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var claim =
+            await _claimService.GetAgentClaimAsync(
+                claimId,
+                agentIdentityUserId,
+                cancellationToken);
+
+        return Ok(claim);
+    }
+
+    private string? GetCurrentUserId()
+    {
+        return User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+    }
+}
+
+================================================================================
+FILE: ClaimsService.API\Controllers\ClaimsOfficerClaimsController.cs.cs
+================================================================================
+using System.Security.Claims;
+using ClaimsService.Application.Dtos.ClaimsOfficer;
+using ClaimsService.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace ClaimsService.API.Controllers;
+
+[ApiController]
+[Route("api/claims-officer/claims")]
+[Authorize(Roles = "ClaimsOfficer")]
+public class ClaimsOfficerClaimsController : ControllerBase
+{
+    private readonly IClaimService _claimService;
+
+    public ClaimsOfficerClaimsController(
+        IClaimService claimService)
+    {
+        _claimService = claimService;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetQueue(
+        CancellationToken cancellationToken)
+    {
+        var claimsOfficerIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                claimsOfficerIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var claims =
+            await _claimService
+                .GetClaimsOfficerQueueAsync(
+                    claimsOfficerIdentityUserId,
+                    cancellationToken);
+
+        return Ok(claims);
+    }
+
+    [HttpGet("{claimId:guid}")]
+    public async Task<IActionResult> GetClaim(
+        Guid claimId,
+        CancellationToken cancellationToken)
+    {
+        var claimsOfficerIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                claimsOfficerIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var claim =
+            await _claimService
+                .GetClaimsOfficerClaimAsync(
+                    claimId,
+                    claimsOfficerIdentityUserId,
+                    cancellationToken);
+
+        return Ok(claim);
+    }
+
+    [HttpPost("{claimId:guid}/start-review")]
+    public async Task<IActionResult> StartReview(
+        Guid claimId,
+        CancellationToken cancellationToken)
+    {
+        var claimsOfficerIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                claimsOfficerIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var claim =
+            await _claimService.StartReviewAsync(
+                claimId,
+                claimsOfficerIdentityUserId,
+                cancellationToken);
+
+        return Ok(claim);
+    }
+
+    [HttpPost("{claimId:guid}/approve")]
+    public async Task<IActionResult> Approve(
+        Guid claimId,
+        [FromBody] ApproveClaimRequest request,
+        CancellationToken cancellationToken)
+    {
+        var claimsOfficerIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                claimsOfficerIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var claim =
+            await _claimService.ApproveAsync(
+                claimId,
+                claimsOfficerIdentityUserId,
+                request,
+                cancellationToken);
+
+        return Ok(claim);
+    }
+
+    [HttpPost("{claimId:guid}/reject")]
+    public async Task<IActionResult> Reject(
+        Guid claimId,
+        [FromBody] RejectClaimRequest request,
+        CancellationToken cancellationToken)
+    {
+        var claimsOfficerIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                claimsOfficerIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var claim =
+            await _claimService.RejectAsync(
+                claimId,
+                claimsOfficerIdentityUserId,
+                request,
+                cancellationToken);
+
+        return Ok(claim);
+    }
+
+    [HttpPost("{claimId:guid}/settle")]
+    public async Task<IActionResult> Settle(
+        Guid claimId,
+        [FromBody] SettleClaimRequest request,
+        CancellationToken cancellationToken)
+    {
+        var claimsOfficerIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                claimsOfficerIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var claim =
+            await _claimService.SettleAsync(
+                claimId,
+                claimsOfficerIdentityUserId,
+                request,
+                cancellationToken);
+
+        return Ok(claim);
+    }
+
+    [HttpPost("{claimId:guid}/close")]
+    public async Task<IActionResult> Close(
+        Guid claimId,
+        CancellationToken cancellationToken)
+    {
+        var claimsOfficerIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                claimsOfficerIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var claim =
+            await _claimService.CloseAsync(
+                claimId,
+                claimsOfficerIdentityUserId,
+                cancellationToken);
+
+        return Ok(claim);
+    }
+
+    private string? GetCurrentUserId()
+    {
+        return User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+    }
+}
+
+================================================================================
+FILE: ClaimsService.API\Controllers\CustomerClaimsController.cs
+================================================================================
+using System.Security.Claims;
+using ClaimsService.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace ClaimsService.API.Controllers;
+
+[ApiController]
+[Route("api/customer/claims")]
+[Authorize(Roles = "Customer")]
+public class CustomerClaimsController : ControllerBase
+{
+    private readonly IClaimService _claimService;
+
+    public CustomerClaimsController(
+        IClaimService claimService)
+    {
+        _claimService = claimService;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetMyClaims(
+        CancellationToken cancellationToken)
+    {
+        var customerIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var claims =
+            await _claimService.GetCustomerClaimsAsync(
+                customerIdentityUserId,
+                cancellationToken);
+
+        return Ok(claims);
+    }
+
+    [HttpGet("{claimId:guid}")]
+    public async Task<IActionResult> GetClaim(
+        Guid claimId,
+        CancellationToken cancellationToken)
+    {
+        var customerIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var claim =
+            await _claimService.GetCustomerClaimAsync(
+                claimId,
+                customerIdentityUserId,
+                cancellationToken);
+
+        return Ok(claim);
+    }
+
+    private string? GetCurrentUserId()
+    {
+        return User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+    }
+}
+
+================================================================================
+FILE: ClaimsService.API\ErrorHandling\GlobalExceptionHandler.cs
+================================================================================
+using ClaimsService.Application.Exceptions;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Mvc;
+using ApplicationValidationException =
+    ClaimsService.Application.Exceptions.ValidationException;
+
+namespace ClaimsService.API.ErrorHandling;
+
+public class GlobalExceptionHandler :
+    IExceptionHandler
+{
+    private readonly ILogger<GlobalExceptionHandler>
+        _logger;
+
+    public GlobalExceptionHandler(
+        ILogger<GlobalExceptionHandler> logger)
+    {
+        _logger = logger;
+    }
+
+    public async ValueTask<bool> TryHandleAsync(
+        HttpContext httpContext,
+        Exception exception,
+        CancellationToken cancellationToken)
+    {
+        var problemDetails =
+            CreateProblemDetails(
+                httpContext,
+                exception);
+
+        if (problemDetails.Status >= 500)
+        {
+            _logger.LogError(
+                exception,
+                "Unhandled exception while processing request. TraceId: {TraceId}",
+                httpContext.TraceIdentifier);
+        }
+        else
+        {
+            _logger.LogWarning(
+                exception,
+                "Request failed with status {StatusCode}. TraceId: {TraceId}",
+                problemDetails.Status,
+                httpContext.TraceIdentifier);
+        }
+
+        httpContext.Response.StatusCode =
+            problemDetails.Status ??
+            StatusCodes
+                .Status500InternalServerError;
+
+        await httpContext.Response
+            .WriteAsJsonAsync(
+                problemDetails,
+                cancellationToken);
+
+        return true;
+    }
+
+    private static ProblemDetails
+        CreateProblemDetails(
+            HttpContext context,
+            Exception exception)
+    {
+        var problemDetails =
+            exception switch
+            {
+                ApplicationValidationException
+                    validationException =>
+                    CreateValidationProblem(
+                        context,
+                        validationException),
+
+                NotFoundException =>
+                    CreateProblem(
+                        context,
+                        StatusCodes.Status404NotFound,
+                        "Resource not found",
+                        exception.Message),
+
+                ForbiddenException =>
+                    CreateProblem(
+                        context,
+                        StatusCodes.Status403Forbidden,
+                        "Access denied",
+                        exception.Message),
+
+                ConflictException =>
+                    CreateProblem(
+                        context,
+                        StatusCodes.Status409Conflict,
+                        "Conflict",
+                        exception.Message),
+
+                ServiceUnavailableException =>
+                    CreateProblem(
+                        context,
+                        StatusCodes
+                            .Status503ServiceUnavailable,
+                        "Service unavailable",
+                        exception.Message),
+
+                _ =>
+                    CreateProblem(
+                        context,
+                        StatusCodes
+                            .Status500InternalServerError,
+                        "Server error",
+                        "An unexpected error occurred.")
+            };
+
+        problemDetails.Extensions[
+            "traceId"] =
+            context.TraceIdentifier;
+
+        if (
+            context.Response.Headers
+                .TryGetValue(
+                    "X-Correlation-Id",
+                    out var correlationId))
+        {
+            problemDetails.Extensions[
+                "correlationId"] =
+                correlationId.ToString();
+        }
+
+        return problemDetails;
+    }
+
+    private static ProblemDetails
+        CreateProblem(
+            HttpContext context,
+            int status,
+            string title,
+            string detail)
+    {
+        return new ProblemDetails
+        {
+            Status =
+                status,
+
+            Title =
+                title,
+
+            Detail =
+                detail,
+
+            Instance =
+                context.Request.Path
+        };
+    }
+
+    private static ProblemDetails
+        CreateValidationProblem(
+            HttpContext context,
+            ApplicationValidationException exception)
+    {
+        return new HttpValidationProblemDetails(
+            exception.Errors
+                .ToDictionary(
+                    item => item.Key,
+                    item => item.Value))
+        {
+            Status =
+                StatusCodes.Status400BadRequest,
+
+            Title =
+                "Validation failed",
+
+            Detail =
+                exception.Message,
+
+            Instance =
+                context.Request.Path
+        };
+    }
+}
+
+================================================================================
+FILE: ClaimsService.API\Extensions\ApiServiceExtensions.cs
+================================================================================
+using ClaimsService.API.ErrorHandling;
+using Microsoft.OpenApi.Models;
+using System.Text.Json.Serialization;
+
+namespace ClaimsService.API.Extensions;
+
+public static class ApiServiceExtensions
+{
+    public static IServiceCollection AddApiServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services
+            .AddControllers()
+            .AddJsonOptions(
+                options =>
+                {
+                    options.JsonSerializerOptions
+                        .Converters
+                        .Add(
+                            new JsonStringEnumConverter());
+        });
+
+        services.AddProblemDetails();
+
+        services.AddExceptionHandler<
+            GlobalExceptionHandler>();
+
+        services.AddEndpointsApiExplorer();
+
+        services.AddSwaggerGen(
+            options =>
+            {
+                options.AddSecurityDefinition(
+                    "Bearer",
+                    new OpenApiSecurityScheme
+                    {
+                        Name = "Authorization",
+                        Type = SecuritySchemeType.Http,
+                        Scheme = "bearer",
+                        BearerFormat = "JWT",
+                        In = ParameterLocation.Header,
+                        Description =
+                            "Enter the JWT access token."
+                    });
+
+                options.AddSecurityRequirement(
+                    new OpenApiSecurityRequirement
+                    {
+                        {
+                            new OpenApiSecurityScheme
+                            {
+                                Reference =
+                                    new OpenApiReference
+                                    {
+                                        Type =
+                                            ReferenceType.SecurityScheme,
+                                        Id =
+                                            "Bearer"
+                                    }
+                            },
+                            Array.Empty<string>()
+                        }
+                    });
+            });
+
+        services.AddApiAuthentication(
+            configuration);
+
+        return services;
+    }
+}
+
+================================================================================
+FILE: ClaimsService.API\Extensions\ApplicationBuilderExtensions.cs
+================================================================================
+using ClaimsService.API.Middleware;
+using ClaimsService.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Serilog;
+
+namespace ClaimsService.API.Extensions;
+
+public static class ApplicationBuilderExtensions
+{
+    public static async Task InitialiseClaimsDatabaseAsync(
+        this WebApplication app)
+    {
+        if (app.Environment.IsEnvironment(
+                "IntegrationTesting"))
+        {
+            return;
+        }
+
+        await using var scope =
+            app.Services.CreateAsyncScope();
+
+        var dbContext =
+            scope.ServiceProvider
+                .GetRequiredService<
+                    ClaimsDbContext>();
+
+        await dbContext.Database
+            .MigrateAsync();
+    }
+
+    public static WebApplication ConfigureHttpPipeline(
+        this WebApplication app)
+    {
+        app.UseMiddleware<
+            CorrelationIdMiddleware>();
+
+        app.UseSerilogRequestLogging();
+
+        app.UseExceptionHandler();
+
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+
+            app.UseSwaggerUI();
+        }
+
+        app.UseHttpsRedirection();
+
+        app.UseAuthentication();
+
+        app.UseAuthorization();
+
+        app.MapControllers();
+
+        return app;
+    }
+}
+
+================================================================================
+FILE: ClaimsService.API\Extensions\AuthenticationExtensions.cs
+================================================================================
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+
+namespace ClaimsService.API.Extensions;
+
+public static class AuthenticationExtensions
+{
+    public static IServiceCollection AddApiAuthentication(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var jwtIssuer =
+            configuration["Jwt:Issuer"];
+
+        var jwtAudience =
+            configuration["Jwt:Audience"];
+
+        var jwtKey =
+            configuration["Jwt:Key"];
+
+        if (string.IsNullOrWhiteSpace(jwtIssuer) ||
+            string.IsNullOrWhiteSpace(jwtAudience) ||
+            string.IsNullOrWhiteSpace(jwtKey))
+        {
+            throw new InvalidOperationException(
+                "JWT configuration is incomplete.");
+        }
+
+        services
+            .AddAuthentication(
+                options =>
+                {
+                    options.DefaultAuthenticateScheme =
+                        JwtBearerDefaults.AuthenticationScheme;
+
+                    options.DefaultChallengeScheme =
+                        JwtBearerDefaults.AuthenticationScheme;
+                })
+            .AddJwtBearer(
+                options =>
+                {
+                    options.TokenValidationParameters =
+                        new TokenValidationParameters
+                        {
+                            ValidateIssuer = true,
+                            ValidIssuer = jwtIssuer,
+
+                            ValidateAudience = true,
+                            ValidAudience = jwtAudience,
+
+                            ValidateIssuerSigningKey = true,
+                            IssuerSigningKey =
+                                new SymmetricSecurityKey(
+                                    Encoding.UTF8.GetBytes(
+                                        jwtKey)),
+
+                            ValidateLifetime = true,
+                            ClockSkew = TimeSpan.Zero
+                        };
+                });
+
+        services.AddAuthorization();
+
+        return services;
+    }
+}
+
+================================================================================
+FILE: ClaimsService.API\Middleware\CorrelationIdMiddleware.cs
+================================================================================
+using Serilog.Context;
+
+namespace ClaimsService.API.Middleware;
+
+public class CorrelationIdMiddleware
+{
+    private const string CorrelationIdHeader =
+        "X-Correlation-Id";
+
+    private readonly RequestDelegate _next;
+
+    public CorrelationIdMiddleware(
+        RequestDelegate next)
+    {
+        _next = next;
+    }
+
+    public async Task InvokeAsync(
+        HttpContext context)
+    {
+        var correlationId =
+            context.Request.Headers
+                .TryGetValue(
+                    CorrelationIdHeader,
+                    out var existingCorrelationId)
+            &&
+            !string.IsNullOrWhiteSpace(
+                existingCorrelationId.FirstOrDefault())
+                ? existingCorrelationId
+                    .First()
+                : Guid.NewGuid()
+                    .ToString();
+
+        context.Request.Headers[
+            CorrelationIdHeader] =
+            correlationId;
+
+        context.Response.Headers[
+            CorrelationIdHeader] =
+            correlationId;
+
+        using (
+            LogContext.PushProperty(
+                "CorrelationId",
+                correlationId))
+        {
+            await _next(
+                context);
+        }
+    }
+}
+
+================================================================================
+FILE: ClaimsService.API\Program.cs
+================================================================================
+using ClaimsService.API.Extensions;
+using ClaimsService.Application;
+using ClaimsService.Infrastructure;
+using Serilog;
+
+var builder =
+    WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog(
+    (context, configuration) =>
+    {
+        configuration.ReadFrom.Configuration(
+            context.Configuration);
+    });
+
+builder.Services
+    .AddApplication()
+    .AddInfrastructure(
+        builder.Configuration)
+    .AddApiServices(
+        builder.Configuration);
+
+var app =
+    builder.Build();
+
+await app.InitialiseClaimsDatabaseAsync();
+
+app.ConfigureHttpPipeline();
+
+app.Run();
+
+public partial class Program
+{
+}
+
+================================================================================
+FILE: ClaimsService.API\Properties\launchSettings.json
+================================================================================
+{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:13745",
+      "sslPort": 44328
+    }
+  },
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "http://localhost:5153",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "https": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "https://localhost:7219;http://localhost:5153",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
+

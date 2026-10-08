@@ -1,0 +1,132 @@
+@startuml
+!theme plain
+hide methods
+hide stereotypes
+skinparam linetype ortho
+skinparam shadowing false
+entity "FNOLs" as F {
+  * Id : GUID
+  --
+  FnolNumber
+  CustomerId
+  PolicyId
+  VehicleId
+  AgentIdentityUserId
+  DateOfLoss
+  TimeOfLoss
+  LossLocation
+  IncidentDescription
+  Status
+  CreatedAt
+  CompletedAt
+}
+entity "Claims" as CL {
+  * Id : GUID
+  --
+  ClaimNumber
+  FnolId : FK
+  CustomerId
+  PolicyId
+  VehicleId
+  AgentIdentityUserId
+  AssignedAdjusterIdentityUserId
+  PotentialCoverageCode
+  ClaimedAmount
+  Status
+  SubmittedAt
+}
+entity "ClaimDocuments" as CD {
+  * Id : GUID
+  --
+  ClaimId : FK
+  DocumentType
+  OriginalFileName
+  StoredFileName
+  StoragePath
+  ContentType
+  FileSize
+  UploadedAt
+  UploadedBy
+}
+entity "ClaimReviews" as CR {
+  * Id : GUID
+  --
+  ClaimId : FK
+  InvestigationNotes
+  InvestigationOutcome
+  AssessedAmount
+  AssessmentNotes
+  ReviewedAt
+}
+entity "ClaimDecisions" as CI {
+  * Id : GUID
+  --
+  ClaimId : FK
+  DecisionType
+  DecisionReason
+  DecidedBy
+  DecidedAt
+}
+entity "Settlements" as S {
+  * Id : GUID
+  --
+  ClaimId : FK
+  CoverageLimit
+  Deductible
+  SettlementAmount
+  AdjusterAuthorityLimitAtDecision
+  RequiresAdminApproval
+  AdminDecision
+  AdminReason
+  CustomerAcceptedAt
+}
+entity "AuthorityReviews" as AR {
+  * Id : GUID
+  --
+  ClaimId : FK
+  Decision
+  Reason
+  DecidedBy
+  DecidedAt
+}
+entity "Payouts" as PO {
+  * Id : GUID
+  --
+  PayoutReference
+  ClaimId : FK
+  Amount
+  Method
+  Status
+  CreatedAt
+  ProcessedAt
+  FailureReason
+  MockTransactionReference
+}
+entity "ClaimStatusHistory" as CSH {
+  * Id : GUID
+  --
+  ClaimId : FK
+  FromStatus
+  ToStatus
+  ChangedAt
+  ChangedBy
+}
+F ||--o| CL
+CL ||--o{ CD
+CL ||--o| CR
+CL ||--o| CI
+CL ||--o| S
+CL ||--o| AR
+CL ||--o| PO
+CL ||--o{ CSH
+note right of CL
+Formal submitted claims consume one of
+five policy-term claim slots.
+Duplicate Policy + Vehicle + DateOfLoss is blocked.
+end note
+note bottom of S
+Settlement = max(0, min(AssessedAmount, CoverageLimit) - Deductible)
+
+Above-authority settlements require Admin review.
+end note
+@enduml

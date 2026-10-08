@@ -1,0 +1,3034 @@
+
+================================================================================
+FILE: UnderwritingService.Application\Class1.cs
+================================================================================
+namespace UnderwritingService.Application
+{
+    public class Class1
+    {
+
+    }
+}
+
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Admin\AdminApplicationDetailDto.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Admin;
+
+public class AdminApplicationDetailDto
+{
+    public Guid ApplicationId { get; set; }
+
+    public Guid OriginatingQuoteId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public string Status { get; set; } =
+        string.Empty;
+
+    public DateTime CreatedAtUtc { get; set; }
+
+    public AdminDriverSnapshotDto Driver { get; set; } =
+        new();
+
+    public AdminVehicleSnapshotDto Vehicle { get; set; } =
+        new();
+
+    public AdminQuoteSnapshotDto Quote { get; set; } =
+        new();
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Admin\AdminApplicationDetailResult.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Admin;
+
+public class AdminApplicationDetailResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool NotFound { get; private set; }
+
+    public AdminApplicationDetailDto? Application
+    {
+        get;
+        private set;
+    }
+
+    public string? Message { get; private set; }
+
+    private AdminApplicationDetailResult()
+    {
+    }
+
+    public static AdminApplicationDetailResult Success(
+        AdminApplicationDetailDto application)
+    {
+        return new AdminApplicationDetailResult
+        {
+            Succeeded = true,
+            Application = application
+        };
+    }
+
+    public static AdminApplicationDetailResult Missing(
+        string message)
+    {
+        return new AdminApplicationDetailResult
+        {
+            NotFound = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Admin\AdminDriverSnapshotDto.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Admin;
+
+public class AdminDriverSnapshotDto
+{
+    public Guid DriverId { get; set; }
+
+    public int DriverAge { get; set; }
+
+    public int DrivingExperienceYears { get; set; }
+
+    public DateOnly LicenceIssueDate { get; set; }
+
+    public DateOnly LicenceExpiryDate { get; set; }
+
+    public bool LicenceValid { get; set; }
+}   
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Admin\AdminQuoteSnapshotDto.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Admin;
+
+public class AdminQuoteSnapshotDto
+{
+    public Guid PlanId { get; set; }
+
+    public string PlanName { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPremium { get; set; }
+
+    public string OverallRiskRating { get; set; } =
+        string.Empty;
+
+    public DateTime QuoteFinalizedAtUtc { get; set; }
+
+    public DateTime QuoteValidUntilUtc { get; set; }
+}
+
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Admin\AdminVehicleSnapshotDto.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Admin;
+
+public class AdminVehicleSnapshotDto
+{
+    public string Vin { get; set; } =
+        string.Empty;
+
+    public string Make { get; set; } =
+        string.Empty;
+
+    public string Model { get; set; } =
+        string.Empty;
+
+    public int ManufacturingYear { get; set; }
+
+    public int VehicleAge { get; set; }
+
+    public string VehicleType { get; set; } =
+        string.Empty;
+
+    public string FuelType { get; set; } =
+        string.Empty;
+
+    public decimal VehicleValue { get; set; }
+
+    public int CurrentOdometer { get; set; }
+
+    public int AnnualMileage { get; set; }
+
+    public string OwnershipType { get; set; } =
+        string.Empty;
+}
+
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Admin\AssignUnderwriterRequest.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Admin;
+
+public class AssignUnderwriterRequest
+{
+    public string UnderwriterIdentityUserId { get; set; } =
+        string.Empty;
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Admin\AssignUnderwriterResult.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Admin;
+
+public class AssignUnderwriterResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool NotFound { get; private set; }
+
+    public bool Conflict { get; private set; }
+
+    public bool UnderwriterNotEligible { get; private set; }
+
+    public bool DependencyUnavailable { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public AdminApplicationDetailDto? Application
+    {
+        get;
+        private set;
+    }
+
+    private AssignUnderwriterResult()
+    {
+    }
+
+    public static AssignUnderwriterResult Success(
+        AdminApplicationDetailDto application)
+    {
+        return new AssignUnderwriterResult
+        {
+            Succeeded = true,
+            Application = application
+        };
+    }
+
+    public static AssignUnderwriterResult Missing(
+        string message)
+    {
+        return new AssignUnderwriterResult
+        {
+            NotFound = true,
+            Message = message
+        };
+    }
+
+    public static AssignUnderwriterResult AlreadyAssigned(
+        string message)
+    {
+        return new AssignUnderwriterResult
+        {
+            Conflict = true,
+            Message = message
+        };
+    }
+
+    public static AssignUnderwriterResult Ineligible(
+        string message)
+    {
+        return new AssignUnderwriterResult
+        {
+            UnderwriterNotEligible = true,
+            Message = message
+        };
+    }
+
+    public static AssignUnderwriterResult Unavailable(
+        string message)
+    {
+        return new AssignUnderwriterResult
+        {
+            DependencyUnavailable = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Admin\EligibleUnderwritersAdminResult.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Admin;
+
+public class EligibleUnderwritersAdminResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool DependencyUnavailable { get; private set; }
+
+    public IReadOnlyList<EligibleUnderwriterWithWorkloadDto>
+        Underwriters
+    { get; private set; } =
+            Array.Empty<EligibleUnderwriterWithWorkloadDto>();
+
+    public string? Message { get; private set; }
+
+    private EligibleUnderwritersAdminResult()
+    {
+    }
+
+    public static EligibleUnderwritersAdminResult Success(
+        IReadOnlyList<EligibleUnderwriterWithWorkloadDto>
+            underwriters)
+    {
+        return new EligibleUnderwritersAdminResult
+        {
+            Succeeded = true,
+            Underwriters = underwriters
+        };
+    }
+
+    public static EligibleUnderwritersAdminResult Unavailable(
+        string message)
+    {
+        return new EligibleUnderwritersAdminResult
+        {
+            DependencyUnavailable = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Admin\EligibleUnderwriterWithWorkloadDto.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Admin;
+
+public class EligibleUnderwriterWithWorkloadDto
+{
+    public string IdentityUserId { get; set; } =
+        string.Empty;
+
+    public string FirstName { get; set; } =
+        string.Empty;
+
+    public string LastName { get; set; } =
+        string.Empty;
+
+    public string Email { get; set; } =
+        string.Empty;
+
+    public int ActionableApplicationCount { get; set; }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Admin\UnassignedApplicationDto.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Admin;
+
+public class UnassignedApplicationDto
+{
+    public Guid ApplicationId { get; set; }
+
+    public Guid OriginatingQuoteId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public string PlanName { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPremium { get; set; }
+
+    public string OverallRiskRating { get; set; } =
+        string.Empty;
+
+    public DateTime CreatedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Applications\CreateApplicationAddOnRequest.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Applications;
+
+public class CreateApplicationAddOnRequest
+{
+    public string AddOnName { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPrice { get; set; }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Applications\CreateApplicationCoverageRequest.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Applications;
+
+public class CreateApplicationCoverageRequest
+{
+    public string CoverageName { get; set; } =
+        string.Empty;
+
+    public decimal ResolvedLimitAmount { get; set; }
+
+    public decimal? DeductibleAmount { get; set; }
+}
+
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Applications\CreateUnderwritingApplicationRequest.cs
+================================================================================
+using UnderwritingService.Domain.Enums;
+
+namespace UnderwritingService.Application.Dtos.Applications;
+
+public class CreateUnderwritingApplicationRequest
+{
+    public Guid OriginatingQuoteId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public string AgentIdentityUserId { get; set; } =
+        string.Empty;
+
+    public DateTime QuoteFinalizedAtUtc { get; set; }
+
+    public DateTime QuoteValidUntilUtc { get; set; }
+
+    // Customer
+    public DateOnly CustomerDateOfBirth { get; set; }
+
+    public string Geography { get; set; } =
+        string.Empty;
+
+    // Driver
+    public Guid DriverId { get; set; }
+
+    public int DriverAge { get; set; }
+
+    public int DrivingExperienceYears { get; set; }
+
+    public DateOnly LicenceIssueDate { get; set; }
+
+    public DateOnly LicenceExpiryDate { get; set; }
+
+    public bool LicenceValid { get; set; }
+
+    // Vehicle
+    public string VehicleVin { get; set; } =
+        string.Empty;
+
+    public string VehicleMake { get; set; } =
+        string.Empty;
+
+    public string VehicleModel { get; set; } =
+        string.Empty;
+
+    public int VehicleManufacturingYear { get; set; }
+
+    public int VehicleAge { get; set; }
+
+    public string VehicleType { get; set; } =
+        string.Empty;
+
+    public string FuelType { get; set; } =
+        string.Empty;
+
+    public decimal VehicleValue { get; set; }
+
+    public int CurrentOdometer { get; set; }
+
+    public int AnnualMileage { get; set; }
+
+    public string OwnershipType { get; set; } =
+        string.Empty;
+
+    public DateOnly VehiclePurchaseDate { get; set; }
+
+    // Insurance / Quote
+    public Guid PlanId { get; set; }
+
+    public string PlanName { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPremium { get; set; }
+
+    public int QualifyingClaimsCount { get; set; }
+
+    public OverallRiskRating OverallRiskRating
+    {
+        get;
+        set;
+    }
+
+    public List<CreateApplicationCoverageRequest>
+        Coverages
+    { get; set; } = [];
+
+    public List<CreateApplicationAddOnRequest>
+        AddOns
+    { get; set; } = [];
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Applications\CreateUnderwritingApplicationResponse.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Applications;
+
+public class CreateUnderwritingApplicationResponse
+{
+    public Guid ApplicationId { get; set; }
+
+    public Guid OriginatingQuoteId { get; set; }
+
+    public string Status { get; set; } =
+        string.Empty;
+
+    public bool ExistingApplication { get; set; }
+
+    public DateTime CreatedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Applications\CreateUnderwritingApplicationResult.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Applications;
+
+public class CreateUnderwritingApplicationResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool ExistingApplication { get; private set; }
+
+    public CreateUnderwritingApplicationResponse?
+        Application
+    { get; private set; }
+
+    public string? Message { get; private set; }
+
+    private CreateUnderwritingApplicationResult()
+    {
+    }
+
+    public static CreateUnderwritingApplicationResult Success(
+        CreateUnderwritingApplicationResponse application,
+        bool existingApplication)
+    {
+        return new CreateUnderwritingApplicationResult
+        {
+            Succeeded = true,
+            ExistingApplication = existingApplication,
+            Application = application
+        };
+    }
+
+    public static CreateUnderwritingApplicationResult Failed(
+        string message)
+    {
+        return new CreateUnderwritingApplicationResult
+        {
+            Succeeded = false,
+            ExistingApplication = false,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Identity\EligibleUnderwriterDto.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Identity;
+
+public class EligibleUnderwriterDto
+{
+    public string Id { get; set; } = string.Empty;
+
+    public string FirstName { get; set; } = string.Empty;
+
+    public string LastName { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Identity\EligibleUnderwriterResult.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Identity;
+
+public class EligibleUnderwriterResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool NotEligible { get; private set; }
+
+    public bool DependencyUnavailable { get; private set; }
+
+    public EligibleUnderwriterDto? Underwriter
+    {
+        get;
+        private set;
+    }
+
+    public string? Message { get; private set; }
+
+    private EligibleUnderwriterResult()
+    {
+    }
+
+    public static EligibleUnderwriterResult Success(
+        EligibleUnderwriterDto underwriter)
+    {
+        return new EligibleUnderwriterResult
+        {
+            Succeeded = true,
+            Underwriter = underwriter
+        };
+    }
+
+    public static EligibleUnderwriterResult Ineligible(
+        string message)
+    {
+        return new EligibleUnderwriterResult
+        {
+            NotEligible = true,
+            Message = message
+        };
+    }
+
+    public static EligibleUnderwriterResult Unavailable(
+        string message)
+    {
+        return new EligibleUnderwriterResult
+        {
+            DependencyUnavailable = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Identity\EligibleUnderwritersResult.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Identity;
+
+public class EligibleUnderwritersResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool DependencyUnavailable { get; private set; }
+
+    public IReadOnlyList<EligibleUnderwriterDto> Underwriters
+    {
+        get;
+        private set;
+    } = Array.Empty<EligibleUnderwriterDto>();
+
+    public string? Message { get; private set; }
+
+    private EligibleUnderwritersResult()
+    {
+    }
+
+    public static EligibleUnderwritersResult Success(
+        IReadOnlyList<EligibleUnderwriterDto> underwriters)
+    {
+        return new EligibleUnderwritersResult
+        {
+            Succeeded = true,
+            Underwriters = underwriters
+        };
+    }
+
+    public static EligibleUnderwritersResult Unavailable(
+        string message)
+    {
+        return new EligibleUnderwritersResult
+        {
+            DependencyUnavailable = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Underwriting\MakeUnderwritingDecisionRequest.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Underwriting;
+
+public class MakeUnderwritingDecisionRequest
+{
+    public string Decision { get; set; } =
+        string.Empty;
+
+    public string? RejectionReason { get; set; }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Underwriting\MakeUnderwritingDecisionResult.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Underwriting;
+
+public class MakeUnderwritingDecisionResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool NotFound { get; private set; }
+
+    public bool Forbidden { get; private set; }
+
+    public bool InvalidState { get; private set; }
+
+    public bool IncompleteReview { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public UnderwritingDecisionDto? Decision
+    {
+        get;
+        private set;
+    }
+
+    private MakeUnderwritingDecisionResult()
+    {
+    }
+
+    public static MakeUnderwritingDecisionResult Success(
+        UnderwritingDecisionDto decision)
+    {
+        return new MakeUnderwritingDecisionResult
+        {
+            Succeeded = true,
+            Decision = decision
+        };
+    }
+
+    public static MakeUnderwritingDecisionResult Missing(
+        string message)
+    {
+        return new MakeUnderwritingDecisionResult
+        {
+            NotFound = true,
+            Message = message
+        };
+    }
+
+    public static MakeUnderwritingDecisionResult AccessDenied(
+        string message)
+    {
+        return new MakeUnderwritingDecisionResult
+        {
+            Forbidden = true,
+            Message = message
+        };
+    }
+
+    public static MakeUnderwritingDecisionResult Invalid(
+        string message)
+    {
+        return new MakeUnderwritingDecisionResult
+        {
+            InvalidState = true,
+            Message = message
+        };
+    }
+
+    public static MakeUnderwritingDecisionResult ReviewIncomplete(
+        string message)
+    {
+        return new MakeUnderwritingDecisionResult
+        {
+            IncompleteReview = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Underwriting\UnderwriterAddOnDto.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Underwriting;
+
+public class UnderwriterAddOnDto
+{
+    public string AddOnName { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPrice { get; set; }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Underwriting\UnderwriterApplicationListDto.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Underwriting;
+
+public class UnderwriterApplicationListDto
+{
+    public Guid ApplicationId { get; set; }
+
+    public Guid OriginatingQuoteId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public string Status { get; set; } =
+        string.Empty;
+
+    public string PlanName { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPremium { get; set; }
+
+    public string OverallRiskRating { get; set; } =
+        string.Empty;
+
+    public DateTime? AssignedAtUtc { get; set; }
+
+    public DateTime? ReviewStartedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Underwriting\UnderwriterCoverageDto.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Underwriting;
+
+public class UnderwriterCoverageDto
+{
+    public string CoverageName { get; set; } =
+        string.Empty;
+
+    public decimal ResolvedLimitAmount { get; set; }
+
+    public decimal? DeductibleAmount { get; set; }
+}
+
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Underwriting\UnderwriterDriverReviewDto.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Underwriting;
+
+public class UnderwriterDriverReviewDto
+{
+    public Guid DriverId { get; set; }
+
+    public DateOnly CustomerDateOfBirth { get; set; }
+
+    public string Geography { get; set; } =
+        string.Empty;
+
+    public int DriverAge { get; set; }
+
+    public int DrivingExperienceYears { get; set; }
+
+    public DateOnly LicenceIssueDate { get; set; }
+
+    public DateOnly LicenceExpiryDate { get; set; }
+
+    public bool LicenceValid { get; set; }
+
+    public int QualifyingClaimsCount { get; set; }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Underwriting\UnderwriterQuoteReviewDto.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Underwriting;
+
+public class UnderwriterQuoteReviewDto
+{
+    public Guid PlanId { get; set; }
+
+    public string PlanName { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPremium { get; set; }
+
+    public string OverallRiskRating { get; set; } =
+        string.Empty;
+
+    public DateTime QuoteFinalizedAtUtc { get; set; }
+
+    public DateTime QuoteValidUntilUtc { get; set; }
+
+    public List<UnderwriterCoverageDto>
+        Coverages
+    { get; set; } = new();
+
+    public List<UnderwriterAddOnDto>
+        AddOns
+    { get; set; } = new();
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Underwriting\UnderwriterReviewDto.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Underwriting;
+
+public class UnderwriterReviewDto
+{
+    public Guid ApplicationId { get; set; }
+
+    public Guid OriginatingQuoteId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public string Status { get; set; } =
+        string.Empty;
+
+    public DateTime CreatedAtUtc { get; set; }
+
+    public DateTime? AssignedAtUtc { get; set; }
+
+    public DateTime? ReviewStartedAtUtc { get; set; }
+
+    public UnderwriterDriverReviewDto Driver { get; set; } =
+        new();
+
+    public UnderwriterVehicleReviewDto Vehicle { get; set; } =
+        new();
+
+    public UnderwriterQuoteReviewDto Quote { get; set; } =
+        new();
+
+    public List<UnderwriterReviewSectionDto>
+        ReviewSections
+    { get; set; } = new();
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Underwriting\UnderwriterReviewResult.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Underwriting;
+
+public class UnderwriterReviewResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool NotFound { get; private set; }
+
+    public bool Forbidden { get; private set; }
+
+    public bool InvalidState { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public UnderwriterReviewDto? Application
+    {
+        get;
+        private set;
+    }
+
+    private UnderwriterReviewResult()
+    {
+    }
+
+    public static UnderwriterReviewResult Success(
+        UnderwriterReviewDto application)
+    {
+        return new UnderwriterReviewResult
+        {
+            Succeeded = true,
+            Application = application
+        };
+    }
+
+    public static UnderwriterReviewResult Missing(
+        string message)
+    {
+        return new UnderwriterReviewResult
+        {
+            NotFound = true,
+            Message = message
+        };
+    }
+
+    public static UnderwriterReviewResult AccessDenied(
+        string message)
+    {
+        return new UnderwriterReviewResult
+        {
+            Forbidden = true,
+            Message = message
+        };
+    }
+
+    public static UnderwriterReviewResult Invalid(
+        string message)
+    {
+        return new UnderwriterReviewResult
+        {
+            InvalidState = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Underwriting\UnderwriterReviewSectionDto.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Underwriting;
+
+public class UnderwriterReviewSectionDto
+{
+    public Guid SectionId { get; set; }
+
+    public string SectionType { get; set; } =
+        string.Empty;
+
+    public bool Reviewed { get; set; }
+
+    public DateTime? ReviewedAtUtc { get; set; }
+
+    public string? Notes { get; set; }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Underwriting\UnderwriterVehicleReviewDto.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Underwriting;
+
+public class UnderwriterVehicleReviewDto
+{
+    public string Vin { get; set; } =
+        string.Empty;
+
+    public string Make { get; set; } =
+        string.Empty;
+
+    public string Model { get; set; } =
+        string.Empty;
+
+    public int ManufacturingYear { get; set; }
+
+    public int VehicleAge { get; set; }
+
+    public string VehicleType { get; set; } =
+        string.Empty;
+
+    public string FuelType { get; set; } =
+        string.Empty;
+
+    public decimal VehicleValue { get; set; }
+
+    public int CurrentOdometer { get; set; }
+
+    public int AnnualMileage { get; set; }
+
+    public string OwnershipType { get; set; } =
+        string.Empty;
+
+    public DateOnly PurchaseDate { get; set; }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Underwriting\UnderwritingDecisionDto.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Underwriting;
+
+public class UnderwritingDecisionDto
+{
+    public Guid ApplicationId { get; set; }
+
+    public string Status { get; set; } =
+        string.Empty;
+
+    public string Decision { get; set; } =
+        string.Empty;
+
+    public DateTime DecidedAtUtc { get; set; }
+
+    public string? RejectionReason { get; set; }
+
+    public DateTime? OfferValidUntilUtc { get; set; }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Underwriting\UpdateReviewSectionRequest.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Underwriting;
+
+public class UpdateReviewSectionRequest
+{
+    public bool Reviewed { get; set; }
+
+    public string? Notes { get; set; }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Dtos\Underwriting\UpdateReviewSectionResult.cs
+================================================================================
+namespace UnderwritingService.Application.Dtos.Underwriting;
+
+public class UpdateReviewSectionResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool NotFound { get; private set; }
+
+    public bool Forbidden { get; private set; }
+
+    public bool InvalidState { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public UnderwriterReviewSectionDto? Section
+    {
+        get;
+        private set;
+    }
+
+    private UpdateReviewSectionResult()
+    {
+    }
+
+    public static UpdateReviewSectionResult Success(
+        UnderwriterReviewSectionDto section)
+    {
+        return new UpdateReviewSectionResult
+        {
+            Succeeded = true,
+            Section = section
+        };
+    }
+
+    public static UpdateReviewSectionResult Missing(
+        string message)
+    {
+        return new UpdateReviewSectionResult
+        {
+            NotFound = true,
+            Message = message
+        };
+    }
+
+    public static UpdateReviewSectionResult AccessDenied(
+        string message)
+    {
+        return new UpdateReviewSectionResult
+        {
+            Forbidden = true,
+            Message = message
+        };
+    }
+
+    public static UpdateReviewSectionResult Invalid(
+        string message)
+    {
+        return new UpdateReviewSectionResult
+        {
+            InvalidState = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Interfaces\Clients\IIdentityClient.cs
+================================================================================
+using UnderwritingService.Application.Dtos.Identity;
+
+namespace UnderwritingService.Application.Interfaces.Clients;
+
+public interface IIdentityClient
+{
+    Task<EligibleUnderwritersResult>
+        GetEligibleUnderwritersAsync();
+
+    Task<EligibleUnderwriterResult>
+        GetEligibleUnderwriterAsync(
+            string identityUserId);
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Interfaces\IAdminUnderwritingService.cs
+================================================================================
+using UnderwritingService.Application.Dtos.Admin;
+
+namespace UnderwritingService.Application.Interfaces;
+
+public interface IAdminUnderwritingService
+{
+    Task<IReadOnlyList<UnassignedApplicationDto>>
+        GetUnassignedAsync();
+
+    Task<AdminApplicationDetailResult>
+        GetApplicationAsync(
+            Guid applicationId);
+
+    Task<EligibleUnderwritersAdminResult>
+        GetEligibleUnderwritersAsync();
+
+    Task<AssignUnderwriterResult>
+    AssignAsync(
+        Guid applicationId,
+        AssignUnderwriterRequest request,
+        string adminIdentityUserId);
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Interfaces\IUnderwriterService.cs
+================================================================================
+using UnderwritingService.Application.Dtos.Underwriting;
+using UnderwritingService.Domain.Enums;
+
+namespace UnderwritingService.Application.Interfaces;
+
+public interface IUnderwriterService
+{
+    Task<IReadOnlyList<UnderwriterApplicationListDto>>
+        GetMyApplicationsAsync(
+            string underwriterIdentityUserId);
+
+    Task<UnderwriterReviewResult>
+        GetReviewAsync(
+            Guid applicationId,
+            string underwriterIdentityUserId);
+
+    Task<UpdateReviewSectionResult>
+        UpdateReviewSectionAsync(
+            Guid applicationId,
+            ReviewSectionType sectionType,
+            UpdateReviewSectionRequest request,
+            string underwriterIdentityUserId);
+
+    Task<MakeUnderwritingDecisionResult>
+    MakeDecisionAsync(
+        Guid applicationId,
+        MakeUnderwritingDecisionRequest request,
+        string underwriterIdentityUserId);
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Interfaces\IUnderwritingApplicationService.cs
+================================================================================
+using UnderwritingService.Application.Dtos.Applications;
+
+namespace UnderwritingService.Application.Interfaces;
+
+public interface IUnderwritingApplicationService
+{
+    Task<CreateUnderwritingApplicationResult> CreateAsync(
+        CreateUnderwritingApplicationRequest request);
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Interfaces\Repositories\IUnderwritingApplicationRepository.cs
+================================================================================
+using UnderwritingService.Domain.Entities;
+using UnderwritingService.Domain.Enums;
+
+namespace UnderwritingService.Application.Interfaces.Repositories;
+
+public interface IUnderwritingApplicationRepository
+{
+    Task<UnderwritingApplication?>
+        GetByOriginatingQuoteIdAsync(
+            Guid originatingQuoteId);
+
+    Task<UnderwritingApplication?>
+        GetByIdAsync(
+            Guid applicationId);
+
+    Task<UnderwritingApplication?>
+        GetByIdForUpdateAsync(
+            Guid applicationId);
+
+    Task<IReadOnlyList<UnderwritingApplication>>
+        GetUnassignedAsync();
+    Task<IReadOnlyList<ApplicationReviewSection>>
+    GetReviewSectionsAsync(
+        Guid applicationId);
+
+    Task<bool> DecisionExistsAsync(
+        Guid applicationId);
+
+    Task AddDecisionAsync(
+        UnderwritingDecision decision);
+    Task<int>
+        GetActionableCountForUnderwriterAsync(
+            string underwriterIdentityUserId);
+    Task<ApplicationReviewSection?>
+    GetReviewSectionForUpdateAsync(
+        Guid applicationId,
+        ReviewSectionType sectionType);
+    Task AddAsync(
+        UnderwritingApplication application);
+
+    Task SaveChangesAsync();
+
+    Task ExecuteInTransactionAsync(
+        Func<Task> operation);
+    Task AddStatusHistoryAsync(
+    ApplicationStatusHistory history);
+
+    Task<IReadOnlyList<UnderwritingApplication>>
+    GetAssignedToUnderwriterAsync(
+        string underwriterIdentityUserId);
+
+    Task<UnderwritingApplication?>
+        GetAssignedByIdForUpdateAsync(
+            Guid applicationId,
+            string underwriterIdentityUserId);
+
+}
+
+
+================================================================================
+FILE: UnderwritingService.Application\Services\AdminUnderwritingService.cs
+================================================================================
+using UnderwritingService.Application.Dtos.Admin;
+using UnderwritingService.Application.Interfaces;
+using UnderwritingService.Application.Interfaces.Clients;
+using UnderwritingService.Application.Interfaces.Repositories;
+using UnderwritingService.Domain.Entities;
+using UnderwritingService.Domain.Enums;
+
+namespace UnderwritingService.Application.Services;
+
+public class AdminUnderwritingService
+    : IAdminUnderwritingService
+{
+    private readonly IUnderwritingApplicationRepository
+        _repository;
+
+    private readonly IIdentityClient
+        _identityClient;
+
+    public AdminUnderwritingService(
+        IUnderwritingApplicationRepository repository,
+        IIdentityClient identityClient)
+    {
+        _repository = repository;
+        _identityClient = identityClient;
+    }
+
+    public async Task<IReadOnlyList<UnassignedApplicationDto>>
+        GetUnassignedAsync()
+    {
+        var applications =
+            await _repository.GetUnassignedAsync();
+
+        return applications
+            .Select(
+                application =>
+                    new UnassignedApplicationDto
+                    {
+                        ApplicationId =
+                            application.Id,
+
+                        OriginatingQuoteId =
+                            application.OriginatingQuoteId,
+
+                        CustomerProfileId =
+                            application.CustomerProfileId,
+
+                        VehicleId =
+                            application.VehicleId,
+
+                        PlanName =
+                            application.Snapshot.PlanName,
+
+                        AnnualPremium =
+                            application.Snapshot.AnnualPremium,
+
+                        OverallRiskRating =
+                            application.Snapshot
+                                .OverallRiskRating
+                                .ToString(),
+
+                        CreatedAtUtc =
+                            application.CreatedAtUtc
+                    })
+            .ToList();
+    }
+
+    public async Task<AdminApplicationDetailResult>
+        GetApplicationAsync(
+            Guid applicationId)
+    {
+        if (applicationId == Guid.Empty)
+        {
+            return AdminApplicationDetailResult.Missing(
+                "Underwriting application was not found.");
+        }
+
+        var application =
+            await _repository.GetByIdAsync(
+                applicationId);
+
+        if (application is null)
+        {
+            return AdminApplicationDetailResult.Missing(
+                "Underwriting application was not found.");
+        }
+
+        var snapshot =
+            application.Snapshot;
+
+        if (snapshot is null)
+        {
+            throw new InvalidOperationException(
+                "Underwriting application does not contain its immutable snapshot.");
+        }
+
+        var dto =
+            new AdminApplicationDetailDto
+            {
+                ApplicationId =
+                    application.Id,
+
+                OriginatingQuoteId =
+                    application.OriginatingQuoteId,
+
+                CustomerProfileId =
+                    application.CustomerProfileId,
+
+                VehicleId =
+                    application.VehicleId,
+
+                Status =
+                    application.Status.ToString(),
+
+                CreatedAtUtc =
+                    application.CreatedAtUtc,
+
+                Driver =
+                    new AdminDriverSnapshotDto
+                    {
+                        DriverId =
+                            snapshot.DriverId,
+
+                        DriverAge =
+                            snapshot.DriverAge,
+
+                        DrivingExperienceYears =
+                            snapshot.DrivingExperienceYears,
+
+                        LicenceIssueDate =
+                            snapshot.LicenceIssueDate,
+
+                        LicenceExpiryDate =
+                            snapshot.LicenceExpiryDate,
+
+                        LicenceValid =
+                            snapshot.LicenceValid
+                    },
+
+                Vehicle =
+                    new AdminVehicleSnapshotDto
+                    {
+                        Vin =
+                            snapshot.VehicleVin,
+
+                        Make =
+                            snapshot.VehicleMake,
+
+                        Model =
+                            snapshot.VehicleModel,
+
+                        ManufacturingYear =
+                            snapshot.VehicleManufacturingYear,
+
+                        VehicleAge =
+                            snapshot.VehicleAge,
+
+                        VehicleType =
+                            snapshot.VehicleType,
+
+                        FuelType =
+                            snapshot.FuelType,
+
+                        VehicleValue =
+                            snapshot.VehicleValue,
+
+                        CurrentOdometer =
+                            snapshot.CurrentOdometer,
+
+                        AnnualMileage =
+                            snapshot.AnnualMileage,
+
+                        OwnershipType =
+                            snapshot.OwnershipType
+                    },
+
+                Quote =
+                    new AdminQuoteSnapshotDto
+                    {
+                        PlanId =
+                            snapshot.PlanId,
+
+                        PlanName =
+                            snapshot.PlanName,
+
+                        AnnualPremium =
+                            snapshot.AnnualPremium,
+
+                        OverallRiskRating =
+                            snapshot.OverallRiskRating
+                                .ToString(),
+
+                        QuoteFinalizedAtUtc =
+                            snapshot.QuoteFinalizedAtUtc,
+
+                        QuoteValidUntilUtc =
+                            snapshot.QuoteValidUntilUtc
+                    }
+            };
+
+        return AdminApplicationDetailResult.Success(
+    MapAdminApplicationDetail(
+        application));
+    }
+    public async Task<AssignUnderwriterResult> AssignAsync(
+    Guid applicationId,
+    AssignUnderwriterRequest request,
+    string adminIdentityUserId)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (applicationId == Guid.Empty)
+        {
+            return AssignUnderwriterResult.Missing(
+                "Underwriting application was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                adminIdentityUserId))
+        {
+            throw new ArgumentException(
+                "Admin Identity User ID is required.",
+                nameof(adminIdentityUserId));
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                request.UnderwriterIdentityUserId))
+        {
+            return AssignUnderwriterResult.Ineligible(
+                "Underwriter Identity User ID is required.");
+        }
+
+        var application =
+            await _repository.GetByIdForUpdateAsync(
+                applicationId);
+
+        if (application is null)
+        {
+            return AssignUnderwriterResult.Missing(
+                "Underwriting application was not found.");
+        }
+
+        if (application.Status !=
+                ApplicationStatus.Unassigned ||
+            !string.IsNullOrWhiteSpace(
+                application.AssignedUnderwriterIdentityUserId))
+        {
+            return AssignUnderwriterResult.AlreadyAssigned(
+                "Underwriting application has already been assigned.");
+        }
+
+        var underwriterResult =
+            await _identityClient
+                .GetEligibleUnderwriterAsync(
+                    request.UnderwriterIdentityUserId);
+
+        if (underwriterResult.DependencyUnavailable)
+        {
+            return AssignUnderwriterResult.Unavailable(
+                underwriterResult.Message ??
+                "Underwriter eligibility could not be verified.");
+        }
+
+        if (!underwriterResult.Succeeded ||
+            underwriterResult.Underwriter is null)
+        {
+            return AssignUnderwriterResult.Ineligible(
+                underwriterResult.Message ??
+                "Selected Underwriter is not currently eligible.");
+        }
+
+        var nowUtc =
+            DateTime.UtcNow;
+
+        await _repository.ExecuteInTransactionAsync(
+    async () =>
+    {
+        application.AssignedUnderwriterIdentityUserId =
+            underwriterResult.Underwriter.Id;
+
+        application.AssignedByIdentityUserId =
+            adminIdentityUserId;
+
+        application.AssignedAtUtc =
+            nowUtc;
+
+        application.Status =
+            ApplicationStatus.PendingReview;
+
+        var history =
+            new ApplicationStatusHistory
+            {
+                Id =
+                    Guid.NewGuid(),
+
+                UnderwritingApplicationId =
+                    application.Id,
+
+                FromStatus =
+                    ApplicationStatus.Unassigned,
+
+                ToStatus =
+                    ApplicationStatus.PendingReview,
+
+                ChangedByIdentityUserId =
+                    adminIdentityUserId,
+
+                ChangedAtUtc =
+                    nowUtc
+            };
+
+        await _repository.AddStatusHistoryAsync(
+            history);
+
+        await _repository.SaveChangesAsync();
+    });
+
+        var assignedApplication =
+            await _repository.GetByIdAsync(
+                application.Id);
+
+        if (assignedApplication is null)
+        {
+            throw new InvalidOperationException(
+                "Assigned Underwriting application could not be reloaded.");
+        }
+
+        return AssignUnderwriterResult.Success(
+            MapAdminApplicationDetail(
+                assignedApplication));
+    }
+
+    private static AdminApplicationDetailDto
+    MapAdminApplicationDetail(
+        UnderwritingApplication application)
+    {
+        var snapshot =
+            application.Snapshot ??
+            throw new InvalidOperationException(
+                "Underwriting application does not contain its immutable snapshot.");
+
+        return new AdminApplicationDetailDto
+        {
+            ApplicationId =
+                application.Id,
+
+            OriginatingQuoteId =
+                application.OriginatingQuoteId,
+
+            CustomerProfileId =
+                application.CustomerProfileId,
+
+            VehicleId =
+                application.VehicleId,
+
+            Status =
+                application.Status.ToString(),
+
+            CreatedAtUtc =
+                application.CreatedAtUtc,
+
+            Driver =
+                new AdminDriverSnapshotDto
+                {
+                    DriverId =
+                        snapshot.DriverId,
+
+                    DriverAge =
+                        snapshot.DriverAge,
+
+                    DrivingExperienceYears =
+                        snapshot.DrivingExperienceYears,
+
+                    LicenceIssueDate =
+                        snapshot.LicenceIssueDate,
+
+                    LicenceExpiryDate =
+                        snapshot.LicenceExpiryDate,
+
+                    LicenceValid =
+                        snapshot.LicenceValid
+                },
+
+            Vehicle =
+                new AdminVehicleSnapshotDto
+                {
+                    Vin =
+                        snapshot.VehicleVin,
+
+                    Make =
+                        snapshot.VehicleMake,
+
+                    Model =
+                        snapshot.VehicleModel,
+
+                    ManufacturingYear =
+                        snapshot.VehicleManufacturingYear,
+
+                    VehicleAge =
+                        snapshot.VehicleAge,
+
+                    VehicleType =
+                        snapshot.VehicleType,
+
+                    FuelType =
+                        snapshot.FuelType,
+
+                    VehicleValue =
+                        snapshot.VehicleValue,
+
+                    CurrentOdometer =
+                        snapshot.CurrentOdometer,
+
+                    AnnualMileage =
+                        snapshot.AnnualMileage,
+
+                    OwnershipType =
+                        snapshot.OwnershipType
+                },
+
+            Quote =
+                new AdminQuoteSnapshotDto
+                {
+                    PlanId =
+                        snapshot.PlanId,
+
+                    PlanName =
+                        snapshot.PlanName,
+
+                    AnnualPremium =
+                        snapshot.AnnualPremium,
+
+                    OverallRiskRating =
+                        snapshot.OverallRiskRating
+                            .ToString(),
+
+                    QuoteFinalizedAtUtc =
+                        snapshot.QuoteFinalizedAtUtc,
+
+                    QuoteValidUntilUtc =
+                        snapshot.QuoteValidUntilUtc
+                }
+        };
+    }
+    public async Task<EligibleUnderwritersAdminResult>
+        GetEligibleUnderwritersAsync()
+    {
+        var identityResult =
+            await _identityClient
+                .GetEligibleUnderwritersAsync();
+
+        if (!identityResult.Succeeded)
+        {
+            return EligibleUnderwritersAdminResult.Unavailable(
+                identityResult.Message ??
+                "Eligible Underwriters are temporarily unavailable.");
+        }
+
+        var result =
+            new List<EligibleUnderwriterWithWorkloadDto>();
+
+        foreach (var underwriter in identityResult.Underwriters)
+        {
+            var actionableCount =
+                await _repository
+                    .GetActionableCountForUnderwriterAsync(
+                        underwriter.Id);
+
+            result.Add(
+                new EligibleUnderwriterWithWorkloadDto
+                {
+                    IdentityUserId =
+                        underwriter.Id,
+
+                    FirstName =
+                        underwriter.FirstName,
+
+                    LastName =
+                        underwriter.LastName,
+
+                    Email =
+                        underwriter.Email,
+
+                    ActionableApplicationCount =
+                        actionableCount
+                });
+        }
+
+        return EligibleUnderwritersAdminResult.Success(
+            result);
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Services\UnderwriterService.cs
+================================================================================
+using UnderwritingService.Application.Dtos.Underwriting;
+using UnderwritingService.Application.Interfaces;
+using UnderwritingService.Application.Interfaces.Repositories;
+using UnderwritingService.Domain.Entities;
+using UnderwritingService.Domain.Enums;
+
+namespace UnderwritingService.Application.Services;
+
+public class UnderwriterService : IUnderwriterService
+{
+    private readonly IUnderwritingApplicationRepository
+        _repository;
+
+    public UnderwriterService(
+        IUnderwritingApplicationRepository repository)
+    {
+        _repository = repository;
+    }
+
+    public async Task<
+        IReadOnlyList<UnderwriterApplicationListDto>>
+        GetMyApplicationsAsync(
+            string underwriterIdentityUserId)
+    {
+        if (string.IsNullOrWhiteSpace(
+                underwriterIdentityUserId))
+        {
+            throw new ArgumentException(
+                "Underwriter Identity User ID is required.",
+                nameof(underwriterIdentityUserId));
+        }
+
+        var applications =
+            await _repository
+                .GetAssignedToUnderwriterAsync(
+                    underwriterIdentityUserId);
+
+        return applications
+            .Select(
+                application =>
+                    new UnderwriterApplicationListDto
+                    {
+                        ApplicationId =
+                            application.Id,
+
+                        OriginatingQuoteId =
+                            application.OriginatingQuoteId,
+
+                        CustomerProfileId =
+                            application.CustomerProfileId,
+
+                        VehicleId =
+                            application.VehicleId,
+
+                        Status =
+                            application.Status.ToString(),
+
+                        PlanName =
+                            application.Snapshot.PlanName,
+
+                        AnnualPremium =
+                            application.Snapshot.AnnualPremium,
+
+                        OverallRiskRating =
+                            application.Snapshot
+                                .OverallRiskRating
+                                .ToString(),
+
+                        AssignedAtUtc =
+                            application.AssignedAtUtc,
+
+                        ReviewStartedAtUtc =
+                            application.ReviewStartedAtUtc
+                    })
+            .ToList();
+    }
+
+    public async Task<UpdateReviewSectionResult>
+    UpdateReviewSectionAsync(
+        Guid applicationId,
+        ReviewSectionType sectionType,
+        UpdateReviewSectionRequest request,
+        string underwriterIdentityUserId)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (applicationId == Guid.Empty)
+        {
+            return UpdateReviewSectionResult.Missing(
+                "Underwriting application was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                underwriterIdentityUserId))
+        {
+            throw new ArgumentException(
+                "Underwriter Identity User ID is required.",
+                nameof(underwriterIdentityUserId));
+        }
+
+        if (!Enum.IsDefined(
+                typeof(ReviewSectionType),
+                sectionType))
+        {
+            return UpdateReviewSectionResult.Invalid(
+                "Review section type is invalid.");
+        }
+
+        if (request.Notes is not null &&
+            request.Notes.Length > 2000)
+        {
+            return UpdateReviewSectionResult.Invalid(
+                "Review notes cannot exceed 2000 characters.");
+        }
+
+        var application =
+            await _repository
+                .GetAssignedByIdForUpdateAsync(
+                    applicationId,
+                    underwriterIdentityUserId);
+
+        if (application is null)
+        {
+            var existingApplication =
+                await _repository.GetByIdAsync(
+                    applicationId);
+
+            if (existingApplication is null)
+            {
+                return UpdateReviewSectionResult.Missing(
+                    "Underwriting application was not found.");
+            }
+
+            return UpdateReviewSectionResult.AccessDenied(
+                "Underwriting application is not assigned to the current Underwriter.");
+        }
+
+        if (application.Status !=
+            ApplicationStatus.InReview)
+        {
+            return UpdateReviewSectionResult.Invalid(
+                "Review sections can only be updated while the application is InReview.");
+        }
+
+        var section =
+            await _repository
+                .GetReviewSectionForUpdateAsync(
+                    applicationId,
+                    sectionType);
+
+        if (section is null)
+        {
+            return UpdateReviewSectionResult.Missing(
+                "Review section was not found.");
+        }
+
+        var normalizedNotes =
+            string.IsNullOrWhiteSpace(
+                request.Notes)
+                ? null
+                : request.Notes.Trim();
+
+        section.Notes =
+            normalizedNotes;
+
+        if (request.Reviewed)
+        {
+            section.Reviewed =
+                true;
+
+            section.ReviewedByIdentityUserId =
+                underwriterIdentityUserId;
+
+            section.ReviewedAtUtc =
+                DateTime.UtcNow;
+        }
+        else
+        {
+            section.Reviewed =
+                false;
+
+            section.ReviewedByIdentityUserId =
+                null;
+
+            section.ReviewedAtUtc =
+                null;
+        }
+
+        await _repository.SaveChangesAsync();
+
+        return UpdateReviewSectionResult.Success(
+            new UnderwriterReviewSectionDto
+            {
+                SectionId =
+                    section.Id,
+
+                SectionType =
+                    section.SectionType.ToString(),
+
+                Reviewed =
+                    section.Reviewed,
+
+                ReviewedAtUtc =
+                    section.ReviewedAtUtc,
+
+                Notes =
+                    section.Notes
+            });
+    }
+
+    public async Task<MakeUnderwritingDecisionResult>
+    MakeDecisionAsync(
+        Guid applicationId,
+        MakeUnderwritingDecisionRequest request,
+        string underwriterIdentityUserId)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (applicationId == Guid.Empty)
+        {
+            return MakeUnderwritingDecisionResult.Missing(
+                "Underwriting application was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                underwriterIdentityUserId))
+        {
+            throw new ArgumentException(
+                "Underwriter Identity User ID is required.",
+                nameof(underwriterIdentityUserId));
+        }
+
+        if (!Enum.TryParse<UnderwritingDecisionType>(
+                request.Decision,
+                ignoreCase: true,
+                out var decisionType) ||
+            !Enum.IsDefined(
+                typeof(UnderwritingDecisionType),
+                decisionType))
+        {
+            return MakeUnderwritingDecisionResult.Invalid(
+                "Decision must be Approved or Rejected.");
+        }
+
+        var rejectionReason =
+            string.IsNullOrWhiteSpace(
+                request.RejectionReason)
+                ? null
+                : request.RejectionReason.Trim();
+
+        if (decisionType ==
+                UnderwritingDecisionType.Rejected &&
+            string.IsNullOrWhiteSpace(
+                rejectionReason))
+        {
+            return MakeUnderwritingDecisionResult.Invalid(
+                "A rejection reason is required when rejecting an application.");
+        }
+
+        if (decisionType ==
+                UnderwritingDecisionType.Approved &&
+            rejectionReason is not null)
+        {
+            return MakeUnderwritingDecisionResult.Invalid(
+                "A rejection reason must not be provided when approving an application.");
+        }
+
+        if (rejectionReason is not null &&
+            rejectionReason.Length > 2000)
+        {
+            return MakeUnderwritingDecisionResult.Invalid(
+                "Rejection reason cannot exceed 2000 characters.");
+        }
+
+        var application =
+            await _repository
+                .GetAssignedByIdForUpdateAsync(
+                    applicationId,
+                    underwriterIdentityUserId);
+
+        if (application is null)
+        {
+            var existingApplication =
+                await _repository.GetByIdAsync(
+                    applicationId);
+
+            if (existingApplication is null)
+            {
+                return MakeUnderwritingDecisionResult.Missing(
+                    "Underwriting application was not found.");
+            }
+
+            return MakeUnderwritingDecisionResult.AccessDenied(
+                "Underwriting application is not assigned to the current Underwriter.");
+        }
+
+        if (application.Status !=
+            ApplicationStatus.InReview)
+        {
+            return MakeUnderwritingDecisionResult.Invalid(
+                "Only an application that is InReview can receive an Underwriting decision.");
+        }
+
+        var decisionExists =
+            await _repository.DecisionExistsAsync(
+                applicationId);
+
+        if (decisionExists)
+        {
+            return MakeUnderwritingDecisionResult.Invalid(
+                "An Underwriting decision has already been recorded.");
+        }
+
+        var sections =
+            await _repository.GetReviewSectionsAsync(
+                applicationId);
+
+        var requiredSectionTypes =
+            Enum.GetValues<ReviewSectionType>();
+
+        if (sections.Count !=
+            requiredSectionTypes.Length)
+        {
+            return MakeUnderwritingDecisionResult
+                .ReviewIncomplete(
+                    "All four review sections must exist before a decision can be made.");
+        }
+
+        var allReviewed =
+            requiredSectionTypes.All(
+                requiredType =>
+                    sections.Any(
+                        section =>
+                            section.SectionType ==
+                                requiredType &&
+                            section.Reviewed));
+
+        if (!allReviewed)
+        {
+            return MakeUnderwritingDecisionResult
+                .ReviewIncomplete(
+                    "All four review sections must be reviewed before a decision can be made.");
+        }
+
+        var nowUtc =
+            DateTime.UtcNow;
+
+        var newStatus =
+            decisionType ==
+            UnderwritingDecisionType.Approved
+                ? ApplicationStatus.Approved
+                : ApplicationStatus.Rejected;
+
+        var decision =
+            new UnderwritingDecision
+            {
+                Id =
+                    Guid.NewGuid(),
+
+                UnderwritingApplicationId =
+                    application.Id,
+
+                DecisionType =
+                    decisionType,
+
+                DecidedByIdentityUserId =
+                    underwriterIdentityUserId,
+
+                DecidedAtUtc =
+                    nowUtc,
+
+                RejectionReason =
+                    rejectionReason
+            };
+
+        await _repository.ExecuteInTransactionAsync(
+            async () =>
+            {
+                await _repository.AddDecisionAsync(
+                    decision);
+
+                application.Status =
+                    newStatus;
+
+                application.DecisionAtUtc =
+                    nowUtc;
+
+                if (decisionType ==
+                    UnderwritingDecisionType.Approved)
+                {
+                    application.ApprovedAtUtc =
+                        nowUtc;
+
+                    application.OfferValidUntilUtc =
+                        nowUtc.AddDays(7);
+                }
+
+                var history =
+                    new ApplicationStatusHistory
+                    {
+                        Id =
+                            Guid.NewGuid(),
+
+                        UnderwritingApplicationId =
+                            application.Id,
+
+                        FromStatus =
+                            ApplicationStatus.InReview,
+
+                        ToStatus =
+                            newStatus,
+
+                        ChangedByIdentityUserId =
+                            underwriterIdentityUserId,
+
+                        ChangedAtUtc =
+                            nowUtc
+                    };
+
+                await _repository
+                    .AddStatusHistoryAsync(
+                        history);
+
+                await _repository
+                    .SaveChangesAsync();
+            });
+
+        return MakeUnderwritingDecisionResult.Success(
+            new UnderwritingDecisionDto
+            {
+                ApplicationId =
+                    application.Id,
+
+                Status =
+                    application.Status.ToString(),
+
+                Decision =
+                    decision.DecisionType.ToString(),
+
+                DecidedAtUtc =
+                    decision.DecidedAtUtc,
+
+                RejectionReason =
+                    decision.RejectionReason,
+
+                OfferValidUntilUtc =
+                    application.OfferValidUntilUtc
+            });
+    }
+
+    public async Task<UnderwriterReviewResult>
+        GetReviewAsync(
+            Guid applicationId,
+            string underwriterIdentityUserId)
+    {
+        if (applicationId == Guid.Empty)
+        {
+            return UnderwriterReviewResult.Missing(
+                "Underwriting application was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                underwriterIdentityUserId))
+        {
+            throw new ArgumentException(
+                "Underwriter Identity User ID is required.",
+                nameof(underwriterIdentityUserId));
+        }
+
+        var application =
+            await _repository
+                .GetAssignedByIdForUpdateAsync(
+                    applicationId,
+                    underwriterIdentityUserId);
+
+        if (application is null)
+        {
+            var existingApplication =
+                await _repository.GetByIdAsync(
+                    applicationId);
+
+            if (existingApplication is null)
+            {
+                return UnderwriterReviewResult.Missing(
+                    "Underwriting application was not found.");
+            }
+
+            return UnderwriterReviewResult.AccessDenied(
+                "Underwriting application is not assigned to the current Underwriter.");
+        }
+
+        if (application.Status ==
+            ApplicationStatus.PendingReview)
+        {
+            var nowUtc =
+                DateTime.UtcNow;
+
+            await _repository.ExecuteInTransactionAsync(
+                async () =>
+                {
+                    application.Status =
+                        ApplicationStatus.InReview;
+
+                    application.ReviewStartedAtUtc =
+                        nowUtc;
+
+                    var history =
+                        new ApplicationStatusHistory
+                        {
+                            Id = Guid.NewGuid(),
+
+                            UnderwritingApplicationId =
+                                application.Id,
+
+                            FromStatus =
+                                ApplicationStatus.PendingReview,
+
+                            ToStatus =
+                                ApplicationStatus.InReview,
+
+                            ChangedByIdentityUserId =
+                                underwriterIdentityUserId,
+
+                            ChangedAtUtc =
+                                nowUtc
+                        };
+
+                    await _repository
+                        .AddStatusHistoryAsync(
+                            history);
+
+                    await _repository
+                        .SaveChangesAsync();
+                });
+        }
+        else if (application.Status !=
+                 ApplicationStatus.InReview)
+        {
+            return UnderwriterReviewResult.Invalid(
+                "Underwriting application is not available for review.");
+        }
+
+        var reviewApplication =
+            await _repository.GetByIdAsync(
+                application.Id);
+
+        if (reviewApplication is null)
+        {
+            throw new InvalidOperationException(
+                "Underwriting application could not be reloaded after opening the review.");
+        }
+
+        return UnderwriterReviewResult.Success(
+            MapReview(
+                reviewApplication));
+    }
+
+    private static UnderwriterReviewDto MapReview(
+        UnderwritingApplication application)
+    {
+        var snapshot =
+            application.Snapshot ??
+            throw new InvalidOperationException(
+                "Underwriting application does not contain its immutable snapshot.");
+
+        return new UnderwriterReviewDto
+        {
+            ApplicationId =
+                application.Id,
+
+            OriginatingQuoteId =
+                application.OriginatingQuoteId,
+
+            CustomerProfileId =
+                application.CustomerProfileId,
+
+            VehicleId =
+                application.VehicleId,
+
+            Status =
+                application.Status.ToString(),
+
+            CreatedAtUtc =
+                application.CreatedAtUtc,
+
+            AssignedAtUtc =
+                application.AssignedAtUtc,
+
+            ReviewStartedAtUtc =
+                application.ReviewStartedAtUtc,
+
+            Driver =
+                new UnderwriterDriverReviewDto
+                {
+                    DriverId =
+                        snapshot.DriverId,
+
+                    CustomerDateOfBirth =
+                        snapshot.CustomerDateOfBirth,
+
+                    Geography =
+                        snapshot.Geography,
+
+                    DriverAge =
+                        snapshot.DriverAge,
+
+                    DrivingExperienceYears =
+                        snapshot.DrivingExperienceYears,
+
+                    LicenceIssueDate =
+                        snapshot.LicenceIssueDate,
+
+                    LicenceExpiryDate =
+                        snapshot.LicenceExpiryDate,
+
+                    LicenceValid =
+                        snapshot.LicenceValid,
+
+                    QualifyingClaimsCount =
+                        snapshot.QualifyingClaimsCount
+                },
+
+            Vehicle =
+                new UnderwriterVehicleReviewDto
+                {
+                    Vin =
+                        snapshot.VehicleVin,
+
+                    Make =
+                        snapshot.VehicleMake,
+
+                    Model =
+                        snapshot.VehicleModel,
+
+                    ManufacturingYear =
+                        snapshot.VehicleManufacturingYear,
+
+                    VehicleAge =
+                        snapshot.VehicleAge,
+
+                    VehicleType =
+                        snapshot.VehicleType,
+
+                    FuelType =
+                        snapshot.FuelType,
+
+                    VehicleValue =
+                        snapshot.VehicleValue,
+
+                    CurrentOdometer =
+                        snapshot.CurrentOdometer,
+
+                    AnnualMileage =
+                        snapshot.AnnualMileage,
+
+                    OwnershipType =
+                        snapshot.OwnershipType,
+
+                    PurchaseDate =
+                        snapshot.VehiclePurchaseDate
+                },
+
+            Quote =
+                new UnderwriterQuoteReviewDto
+                {
+                    PlanId =
+                        snapshot.PlanId,
+
+                    PlanName =
+                        snapshot.PlanName,
+
+                    AnnualPremium =
+                        snapshot.AnnualPremium,
+
+                    OverallRiskRating =
+                        snapshot.OverallRiskRating
+                            .ToString(),
+
+                    QuoteFinalizedAtUtc =
+                        snapshot.QuoteFinalizedAtUtc,
+
+                    QuoteValidUntilUtc =
+                        snapshot.QuoteValidUntilUtc,
+
+                    Coverages =
+                        snapshot.Coverages
+                            .Select(
+                                coverage =>
+                                    new UnderwriterCoverageDto
+                                    {
+                                        CoverageName =
+                                            coverage.CoverageName,
+
+                                        ResolvedLimitAmount =
+                                            coverage.ResolvedLimitAmount,
+
+                                        DeductibleAmount =
+                                            coverage.DeductibleAmount
+                                    })
+                            .ToList(),
+
+                    AddOns =
+                        snapshot.AddOns
+                            .Select(
+                                addOn =>
+                                    new UnderwriterAddOnDto
+                                    {
+                                        AddOnName =
+                                            addOn.AddOnName,
+
+                                        AnnualPrice =
+                                            addOn.AnnualPrice
+                                    })
+                            .ToList()
+                },
+
+            ReviewSections =
+                application.ReviewSections
+                    .OrderBy(
+                        section =>
+                            section.SectionType)
+                    .Select(
+                        section =>
+                            new UnderwriterReviewSectionDto
+                            {
+                                SectionId =
+                                    section.Id,
+
+                                SectionType =
+                                    section.SectionType
+                                        .ToString(),
+
+                                Reviewed =
+                                    section.Reviewed,
+
+                                ReviewedAtUtc =
+                                    section.ReviewedAtUtc,
+
+                                Notes =
+                                    section.Notes
+                            })
+                    .ToList()
+        };
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\Services\UnderwritingApplicationService.cs
+================================================================================
+using UnderwritingService.Application.Dtos.Applications;
+using UnderwritingService.Application.Interfaces;
+using UnderwritingService.Application.Interfaces.Repositories;
+using UnderwritingService.Domain.Entities;
+using UnderwritingService.Domain.Enums;
+
+namespace UnderwritingService.Application.Services;
+
+public class UnderwritingApplicationService : IUnderwritingApplicationService
+{
+    private readonly IUnderwritingApplicationRepository _repository;
+
+    public UnderwritingApplicationService(
+        IUnderwritingApplicationRepository repository)
+    {
+        _repository = repository;
+    }
+
+    public async Task<CreateUnderwritingApplicationResult> CreateAsync(
+        CreateUnderwritingApplicationRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var validationMessage = ValidateRequest(request);
+
+        if (validationMessage is not null)
+        {
+            return CreateUnderwritingApplicationResult.Failed(
+                validationMessage);
+        }
+
+        var existingApplication =
+            await _repository.GetByOriginatingQuoteIdAsync(
+                request.OriginatingQuoteId);
+
+        if (existingApplication is not null)
+        {
+            return CreateUnderwritingApplicationResult.Success(
+                MapResponse(
+                    existingApplication,
+                    existingApplication: true),
+                existingApplication: true);
+        }
+
+        var application = new UnderwritingApplication
+        {
+            Id = Guid.NewGuid(),
+            OriginatingQuoteId = request.OriginatingQuoteId,
+            CustomerProfileId = request.CustomerProfileId,
+            VehicleId = request.VehicleId,
+            AgentIdentityUserId =
+                request.AgentIdentityUserId.Trim(),
+            Status = ApplicationStatus.Unassigned,
+            CreatedAtUtc = DateTime.UtcNow
+        };
+
+        var snapshot = new ApplicationSnapshot
+        {
+            Id = Guid.NewGuid(),
+            UnderwritingApplicationId = application.Id,
+
+            QuoteFinalizedAtUtc =
+                request.QuoteFinalizedAtUtc,
+
+            QuoteValidUntilUtc =
+                request.QuoteValidUntilUtc,
+
+            CustomerDateOfBirth =
+                request.CustomerDateOfBirth,
+
+            Geography =
+                request.Geography.Trim(),
+
+            DriverId =
+                request.DriverId,
+
+            DriverAge =
+                request.DriverAge,
+
+            DrivingExperienceYears =
+                request.DrivingExperienceYears,
+
+            LicenceIssueDate =
+                request.LicenceIssueDate,
+
+            LicenceExpiryDate =
+                request.LicenceExpiryDate,
+
+            LicenceValid =
+                request.LicenceValid,
+
+            VehicleVin =
+                request.VehicleVin.Trim(),
+
+            VehicleMake =
+                request.VehicleMake.Trim(),
+
+            VehicleModel =
+                request.VehicleModel.Trim(),
+
+            VehicleManufacturingYear =
+                request.VehicleManufacturingYear,
+
+            VehicleAge =
+                request.VehicleAge,
+
+            VehicleType =
+                request.VehicleType.Trim(),
+
+            FuelType =
+                request.FuelType.Trim(),
+
+            VehicleValue =
+                request.VehicleValue,
+
+            CurrentOdometer =
+                request.CurrentOdometer,
+
+            AnnualMileage =
+                request.AnnualMileage,
+
+            OwnershipType =
+                request.OwnershipType.Trim(),
+
+            VehiclePurchaseDate =
+                request.VehiclePurchaseDate,
+
+            PlanId =
+                request.PlanId,
+
+            PlanName =
+                request.PlanName.Trim(),
+
+            AnnualPremium =
+                request.AnnualPremium,
+
+            QualifyingClaimsCount =
+                request.QualifyingClaimsCount,
+
+            OverallRiskRating =
+                request.OverallRiskRating
+        };
+
+        foreach (var coverage in request.Coverages)
+        {
+            snapshot.Coverages.Add(
+                new ApplicationCoverageSnapshot
+                {
+                    Id = Guid.NewGuid(),
+                    ApplicationSnapshotId = snapshot.Id,
+                    CoverageName =
+                        coverage.CoverageName.Trim(),
+                    ResolvedLimitAmount =
+                        coverage.ResolvedLimitAmount,
+                    DeductibleAmount =
+                        coverage.DeductibleAmount
+                });
+        }
+
+        foreach (var addOn in request.AddOns)
+        {
+            snapshot.AddOns.Add(
+                new ApplicationAddOnSnapshot
+                {
+                    Id = Guid.NewGuid(),
+                    ApplicationSnapshotId = snapshot.Id,
+                    AddOnName =
+                        addOn.AddOnName.Trim(),
+                    AnnualPrice =
+                        addOn.AnnualPrice
+                });
+        }
+
+        application.Snapshot = snapshot;
+
+        foreach (var sectionType in
+                 Enum.GetValues<ReviewSectionType>())
+        {
+            application.ReviewSections.Add(
+                new ApplicationReviewSection
+                {
+                    Id = Guid.NewGuid(),
+                    UnderwritingApplicationId =
+                        application.Id,
+                    SectionType = sectionType,
+                    Reviewed = false
+                });
+        }
+
+        try
+        {
+            await _repository.ExecuteInTransactionAsync(
+                async () =>
+                {
+                    await _repository.AddAsync(
+                        application);
+
+                    await _repository.SaveChangesAsync();
+                });
+        }
+        catch
+        {
+            var concurrentApplication =
+                await _repository
+                    .GetByOriginatingQuoteIdAsync(
+                        request.OriginatingQuoteId);
+
+            if (concurrentApplication is not null)
+            {
+                return CreateUnderwritingApplicationResult.Success(
+                    MapResponse(
+                        concurrentApplication,
+                        existingApplication: true),
+                    existingApplication: true);
+            }
+
+            throw;
+        }
+
+        return CreateUnderwritingApplicationResult.Success(
+            MapResponse(
+                application,
+                existingApplication: false),
+            existingApplication: false);
+    }
+
+    private static string? ValidateRequest(
+        CreateUnderwritingApplicationRequest request)
+    {
+        if (request.OriginatingQuoteId == Guid.Empty)
+        {
+            return "Originating Quote ID is required.";
+        }
+
+        if (request.CustomerProfileId == Guid.Empty)
+        {
+            return "Customer Profile ID is required.";
+        }
+
+        if (request.VehicleId == Guid.Empty)
+        {
+            return "Vehicle ID is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                request.AgentIdentityUserId))
+        {
+            return "Agent Identity User ID is required.";
+        }
+
+        if (request.QuoteFinalizedAtUtc == default)
+        {
+            return "Quote finalized timestamp is required.";
+        }
+
+        if (request.QuoteValidUntilUtc == default)
+        {
+            return "Quote validity timestamp is required.";
+        }
+
+        if (request.QuoteValidUntilUtc <=
+            request.QuoteFinalizedAtUtc)
+        {
+            return
+                "Quote validity timestamp must be after the finalized timestamp.";
+        }
+
+        if (request.CustomerDateOfBirth == default)
+        {
+            return "Customer Date of Birth is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                request.Geography))
+        {
+            return "Geography is required.";
+        }
+
+        if (request.DriverId == Guid.Empty)
+        {
+            return "Driver ID is required.";
+        }
+
+        if (request.DriverAge < 0)
+        {
+            return "Driver Age cannot be negative.";
+        }
+
+        if (request.DrivingExperienceYears < 0)
+        {
+            return
+                "Driving Experience cannot be negative.";
+        }
+
+        if (request.LicenceIssueDate == default)
+        {
+            return "Licence Issue Date is required.";
+        }
+
+        if (request.LicenceExpiryDate == default)
+        {
+            return "Licence Expiry Date is required.";
+        }
+
+        if (request.LicenceExpiryDate <=
+            request.LicenceIssueDate)
+        {
+            return
+                "Licence Expiry Date must be after Licence Issue Date.";
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                request.VehicleVin))
+        {
+            return "Vehicle VIN is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                request.VehicleMake))
+        {
+            return "Vehicle Make is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                request.VehicleModel))
+        {
+            return "Vehicle Model is required.";
+        }
+
+        if (request.VehicleManufacturingYear <= 0)
+        {
+            return
+                "Vehicle Manufacturing Year is invalid.";
+        }
+
+        if (request.VehicleAge < 0)
+        {
+            return "Vehicle Age cannot be negative.";
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                request.VehicleType))
+        {
+            return "Vehicle Type is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                request.FuelType))
+        {
+            return "Fuel Type is required.";
+        }
+
+        if (request.VehicleValue <= 0)
+        {
+            return
+                "Vehicle Value must be greater than zero.";
+        }
+
+        if (request.CurrentOdometer < 0)
+        {
+            return
+                "Current Odometer cannot be negative.";
+        }
+
+        if (request.AnnualMileage <= 0)
+        {
+            return
+                "Annual Mileage must be greater than zero.";
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                request.OwnershipType))
+        {
+            return "Ownership Type is required.";
+        }
+
+        if (request.VehiclePurchaseDate == default)
+        {
+            return "Vehicle Purchase Date is required.";
+        }
+
+        if (request.PlanId == Guid.Empty)
+        {
+            return "Plan ID is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                request.PlanName))
+        {
+            return "Plan Name is required.";
+        }
+
+        if (request.AnnualPremium < 0)
+        {
+            return
+                "Annual Premium cannot be negative.";
+        }
+
+        if (request.QualifyingClaimsCount < 0)
+        {
+            return
+                "Qualifying Claims Count cannot be negative.";
+        }
+
+        if (!Enum.IsDefined(
+                typeof(OverallRiskRating),
+                request.OverallRiskRating))
+        {
+            return
+                "Overall Risk Rating is invalid.";
+        }
+
+        if (request.Coverages is null ||
+            request.Coverages.Count == 0)
+        {
+            return
+                "At least one Coverage is required.";
+        }
+
+        foreach (var coverage in request.Coverages)
+        {
+            if (string.IsNullOrWhiteSpace(
+                    coverage.CoverageName))
+            {
+                return
+                    "Coverage Name is required.";
+            }
+
+            if (coverage.ResolvedLimitAmount <= 0)
+            {
+                return
+                    $"Coverage '{coverage.CoverageName}' has an invalid limit.";
+            }
+
+            if (coverage.DeductibleAmount.HasValue &&
+                coverage.DeductibleAmount.Value <= 0)
+            {
+                return
+                    $"Coverage '{coverage.CoverageName}' has an invalid deductible.";
+            }
+        }
+
+        if (request.AddOns is not null)
+        {
+            foreach (var addOn in request.AddOns)
+            {
+                if (string.IsNullOrWhiteSpace(
+                        addOn.AddOnName))
+                {
+                    return
+                        "Add-on Name is required.";
+                }
+
+                if (addOn.AnnualPrice < 0)
+                {
+                    return
+                        $"Add-on '{addOn.AddOnName}' has an invalid price.";
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static CreateUnderwritingApplicationResponse MapResponse(
+        UnderwritingApplication application,
+        bool existingApplication)
+    {
+        return new CreateUnderwritingApplicationResponse
+        {
+            ApplicationId =
+                application.Id,
+
+            OriginatingQuoteId =
+                application.OriginatingQuoteId,
+
+            Status =
+                application.Status.ToString(),
+
+            ExistingApplication =
+                existingApplication,
+
+            CreatedAtUtc =
+                application.CreatedAtUtc
+        };
+    }
+}
+
+================================================================================
+FILE: UnderwritingService.Application\UnderwritingService.Application.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UnderwritingService.Domain\UnderwritingService.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
+

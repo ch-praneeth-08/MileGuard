@@ -1,0 +1,401 @@
+
+================================================================================
+FILE: UnderwritingService.Domain\Class1.cs
+================================================================================
+namespace UnderwritingService.Domain
+{
+    public class Class1
+    {
+
+    }
+}
+
+
+================================================================================
+FILE: UnderwritingService.Domain\Entities\ApplicationAddOnSnapshot.cs
+================================================================================
+namespace UnderwritingService.Domain.Entities;
+
+public class ApplicationAddOnSnapshot
+{
+    public Guid Id { get; set; }
+
+    public Guid ApplicationSnapshotId { get; set; }
+
+    public string AddOnName { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPrice { get; set; }
+
+    public ApplicationSnapshot ApplicationSnapshot
+    {
+        get;
+        set;
+    } = null!;
+}
+
+
+================================================================================
+FILE: UnderwritingService.Domain\Entities\ApplicationCoverageSnapshot.cs
+================================================================================
+namespace UnderwritingService.Domain.Entities;
+
+public class ApplicationCoverageSnapshot
+{
+    public Guid Id { get; set; }
+
+    public Guid ApplicationSnapshotId { get; set; }
+
+    public string CoverageName { get; set; } =
+        string.Empty;
+
+    public decimal ResolvedLimitAmount { get; set; }
+
+    public decimal? DeductibleAmount { get; set; }
+
+    public ApplicationSnapshot ApplicationSnapshot
+    {
+        get;
+        set;
+    } = null!;
+}
+
+================================================================================
+FILE: UnderwritingService.Domain\Entities\ApplicationReviewSection.cs
+================================================================================
+using UnderwritingService.Domain.Enums;
+
+namespace UnderwritingService.Domain.Entities;
+
+public class ApplicationReviewSection
+{
+    public Guid Id { get; set; }
+
+    public Guid UnderwritingApplicationId { get; set; }
+
+    public ReviewSectionType SectionType { get; set; }
+
+    public bool Reviewed { get; set; }
+
+    public string? ReviewedByIdentityUserId { get; set; }
+
+    public DateTime? ReviewedAtUtc { get; set; }
+
+    public string? Notes { get; set; }
+
+    public UnderwritingApplication Application
+    {
+        get;
+        set;
+    } = null!;
+}
+
+================================================================================
+FILE: UnderwritingService.Domain\Entities\ApplicationSnapshot.cs
+================================================================================
+using UnderwritingService.Domain.Enums;
+
+namespace UnderwritingService.Domain.Entities;
+
+public class ApplicationSnapshot
+{
+    public Guid Id { get; set; }
+
+    public Guid UnderwritingApplicationId { get; set; }
+
+    public DateTime QuoteFinalizedAtUtc { get; set; }
+
+    public DateTime QuoteValidUntilUtc { get; set; }
+
+    // Customer
+    public DateOnly CustomerDateOfBirth { get; set; }
+
+    public string Geography { get; set; } =
+        string.Empty;
+
+    // Driver
+    public Guid DriverId { get; set; }
+
+    public int DriverAge { get; set; }
+
+    public int DrivingExperienceYears { get; set; }
+
+    public DateOnly LicenceIssueDate { get; set; }
+
+    public DateOnly LicenceExpiryDate { get; set; }
+
+    public bool LicenceValid { get; set; }
+
+    // Vehicle
+    public string VehicleVin { get; set; } =
+        string.Empty;
+
+    public string VehicleMake { get; set; } =
+        string.Empty;
+
+    public string VehicleModel { get; set; } =
+        string.Empty;
+
+    public int VehicleManufacturingYear { get; set; }
+
+    public int VehicleAge { get; set; }
+
+    public string VehicleType { get; set; } =
+        string.Empty;
+
+    public string FuelType { get; set; } =
+        string.Empty;
+
+    public decimal VehicleValue { get; set; }
+
+    public int CurrentOdometer { get; set; }
+
+    public int AnnualMileage { get; set; }
+
+    public string OwnershipType { get; set; } =
+        string.Empty;
+
+    public DateOnly VehiclePurchaseDate { get; set; }
+
+    // Quote
+    public Guid PlanId { get; set; }
+
+    public string PlanName { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPremium { get; set; }
+
+    public int QualifyingClaimsCount { get; set; }
+
+    public OverallRiskRating OverallRiskRating
+    {
+        get;
+        set;
+    }
+
+    public UnderwritingApplication Application
+    {
+        get;
+        set;
+    } = null!;
+
+    public ICollection<ApplicationCoverageSnapshot>
+        Coverages
+    { get; set; } =
+            new List<ApplicationCoverageSnapshot>();
+
+    public ICollection<ApplicationAddOnSnapshot>
+        AddOns
+    { get; set; } =
+            new List<ApplicationAddOnSnapshot>();
+}
+
+================================================================================
+FILE: UnderwritingService.Domain\Entities\ApplicationStatusHistory.cs.cs
+================================================================================
+using UnderwritingService.Domain.Enums;
+
+namespace UnderwritingService.Domain.Entities;
+
+public class ApplicationStatusHistory
+{
+    public Guid Id { get; set; }
+
+    public Guid UnderwritingApplicationId { get; set; }
+
+    public ApplicationStatus FromStatus { get; set; }
+
+    public ApplicationStatus ToStatus { get; set; }
+
+    public string ChangedByIdentityUserId { get; set; } =
+        string.Empty;
+
+    public DateTime ChangedAtUtc { get; set; }
+
+    public UnderwritingApplication Application
+    {
+        get;
+        set;
+    } = null!;
+}
+
+
+================================================================================
+FILE: UnderwritingService.Domain\Entities\CustomerOfferOutcome.cs
+================================================================================
+namespace UnderwritingService.Domain.Entities;
+
+public class CustomerOfferOutcome
+{
+    public Guid Id { get; set; }
+
+    public Guid UnderwritingApplicationId { get; set; }
+
+    public DateTime DeclinedAtUtc { get; set; }
+
+    public string DeclinedByIdentityUserId { get; set; } =
+        string.Empty;
+
+    public UnderwritingApplication Application
+    {
+        get;
+        set;
+    } = null!;
+}
+
+================================================================================
+FILE: UnderwritingService.Domain\Entities\UnderwritingApplication.cs
+================================================================================
+using UnderwritingService.Domain.Enums;
+
+namespace UnderwritingService.Domain.Entities;
+
+public class UnderwritingApplication
+{
+    public Guid Id { get; set; }
+
+    public Guid OriginatingQuoteId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public string AgentIdentityUserId { get; set; } =
+        string.Empty;
+
+    public string? AssignedUnderwriterIdentityUserId
+    {
+        get;
+        set;
+    }
+
+    public ApplicationStatus Status { get; set; }
+
+    public DateTime CreatedAtUtc { get; set; }
+
+    public DateTime? AssignedAtUtc { get; set; }
+
+    public string? AssignedByIdentityUserId { get; set; }
+
+    public DateTime? ReviewStartedAtUtc { get; set; }
+
+    public DateTime? DecisionAtUtc { get; set; }
+
+    public DateTime? ApprovedAtUtc { get; set; }
+
+    public DateTime? OfferValidUntilUtc { get; set; }
+
+    public ApplicationSnapshot Snapshot { get; set; } =
+        null!;
+
+    public ICollection<ApplicationReviewSection>
+        ReviewSections
+    { get; set; } =
+            new List<ApplicationReviewSection>();
+
+    public UnderwritingDecision? Decision { get; set; }
+
+    public CustomerOfferOutcome? CustomerOfferOutcome
+    {
+        get;
+        set;
+    }
+
+    public ICollection<ApplicationStatusHistory>
+        StatusHistory
+    { get; set; } =
+            new List<ApplicationStatusHistory>();
+}
+
+================================================================================
+FILE: UnderwritingService.Domain\Entities\UnderwritingDecision.cs
+================================================================================
+using UnderwritingService.Domain.Enums;
+
+namespace UnderwritingService.Domain.Entities;
+
+public class UnderwritingDecision
+{
+    public Guid Id { get; set; }
+
+    public Guid UnderwritingApplicationId { get; set; }
+
+    public UnderwritingDecisionType DecisionType { get; set; }
+
+    public string DecidedByIdentityUserId { get; set; } =
+        string.Empty;
+
+    public DateTime DecidedAtUtc { get; set; }
+
+    public string? RejectionReason { get; set; }
+
+    public UnderwritingApplication Application
+    {
+        get;
+        set;
+    } = null!;
+}
+
+================================================================================
+FILE: UnderwritingService.Domain\Enums\ApplicationStatus.cs
+================================================================================
+namespace UnderwritingService.Domain.Enums;
+
+public enum ApplicationStatus
+{
+    Unassigned = 1,
+    PendingReview = 2,
+    InReview = 3,
+    Approved = 4,
+    Rejected = 5
+}
+
+================================================================================
+FILE: UnderwritingService.Domain\Enums\OverallRiskRating.cs
+================================================================================
+namespace UnderwritingService.Domain.Enums;
+
+public enum OverallRiskRating
+{
+    Low = 1,
+    Moderate = 2,
+    High = 3
+}
+
+================================================================================
+FILE: UnderwritingService.Domain\Enums\ReviewSectionType.cs
+================================================================================
+namespace UnderwritingService.Domain.Enums;
+
+public enum ReviewSectionType
+{
+    Driver = 1,
+    Vehicle = 2,
+    InsuranceQuote = 3,
+    OverallRisk = 4
+}
+
+================================================================================
+FILE: UnderwritingService.Domain\Enums\UnderwritingDecisionType.cs
+================================================================================
+namespace UnderwritingService.Domain.Enums;
+
+public enum UnderwritingDecisionType
+{
+    Approved = 1,
+    Rejected = 2
+}
+
+================================================================================
+FILE: UnderwritingService.Domain\UnderwritingService.Domain.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
+

@@ -1,0 +1,835 @@
+
+================================================================================
+FILE: QuoteRatingService.Domain\Class1.cs
+================================================================================
+namespace QuoteRatingService.Domain
+{
+    public class Class1
+    {
+
+    }
+}
+
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\AddOn.cs
+================================================================================
+using QuoteRatingService.Domain.Enums;
+
+namespace QuoteRatingService.Domain.Entities;
+
+public class AddOn
+{
+    public Guid Id { get; set; }
+
+    public AddOnCode Code { get; set; }
+
+    public string Name { get; set; } =
+        string.Empty;
+
+    /*
+     * Admin-configurable annual price.
+     */
+    public decimal AnnualPrice {get; set; }
+
+    public ICollection<PlanAddOn>
+        PlanAddOns { get; set; } =
+        new List<PlanAddOn>();
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\Coverage.cs
+================================================================================
+using QuoteRatingService.Domain.Enums;
+
+namespace QuoteRatingService.Domain.Entities;
+
+public class Coverage
+{
+    public Guid Id { get; set; }
+
+    public CoverageCode Code { get; set; }
+
+    public string Name { get; set; } =
+        string.Empty;
+
+    public ICollection<CoverageLimitOption>
+        LimitOptions
+    { get; set; } =
+        new List<CoverageLimitOption>();
+
+    public ICollection<DeductibleOption>
+        DeductibleOptions
+    { get; set; } =
+        new List<DeductibleOption>();
+
+    public ICollection<PlanCoverage>
+        PlanCoverages
+    { get; set; } =
+        new List<PlanCoverage>();
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\CoverageLimitOption.cs
+================================================================================
+using QuoteRatingService.Domain.Enums;
+
+namespace QuoteRatingService.Domain.Entities;
+
+public class CoverageLimitOption
+{
+    public Guid Id { get; set; }
+
+    public Guid CoverageId { get; set; }
+
+    public Coverage Coverage { get; set; } =
+        null!;
+
+    public CoverageLimitTier Tier { get; set; }
+
+    /*
+     * Monetary limit represented by this option.
+     *
+     * Null is used only for the special
+     * UpToVehicleValue option.
+     */
+    public decimal? LimitAmount { get; set; }
+
+    /*
+     * Configurable annual price adjustment.
+     */
+    public decimal AnnualCharge {get; set; }
+
+    public bool IsDefault { get; set; }
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\DeductibleOption.cs
+================================================================================
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Domain.Entities;
+
+public class DeductibleOption
+{
+    public Guid Id { get; set; }
+
+public Guid CoverageId {get; set; }
+
+public Coverage Coverage { get; set; } =
+    null!;
+
+public decimal DeductibleAmount { get; set; }
+
+/*
+ * *onfigurable annual price adjustmen*.
+ */
+public decimal AnnualCharge { get; set; }
+
+public bool IsDefault { get; set; }
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\OverallRiskRating.cs
+================================================================================
+namespace QuoteRatingService.Domain.Enums;
+
+public enum OverallRiskRating
+{
+    Low = 1,
+    Moderate = 2,
+    High = 3
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\Plan.cs
+================================================================================
+using QuoteRatingService.Domain.Enums;
+
+namespace QuoteRatingService.Domain.Entities;
+
+public class Plan
+{
+    public Guid Id { get; set; }
+
+    public PlanCode Code { get; set; }
+
+    public string Name { get; set; } =
+        string.Empty;
+
+    public decimal BasePremium { get; set; }
+
+    public ICollection<PlanCoverage>
+        PlanCoverages
+    { get; set; } =
+        new List<PlanCoverage>();
+
+    public ICollection<PlanAddOn>
+        PlanAddOns
+    { get; set; } =
+        new List<PlanAddOn>();
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\PlanAddOn.cs
+================================================================================
+using QuoteRatingService.Domain.Entities;
+
+namespace QuoteRatingService.Domain.Entities;
+
+public class PlanAddOn
+{
+    public Guid PlanId { get; set; }
+
+    public Plan Plan { get; set; } =
+        null!;
+
+    public Guid AddOnId { get;set; }
+
+public AddOn AddOn { get; set; } =
+    null!;
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\PlanCoverage.cs
+================================================================================
+namespace QuoteRatingService.Domain.Entities;
+
+public class PlanCoverage
+{
+    public Guid PlanId { get; set; }
+
+    public Plan Plan { get; set; } =
+        null!;
+
+    public Guid CoverageId { get; set; }
+
+    public Coverage Coverage { get; set; } =
+        null!;
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\PricingAudit.cs
+================================================================================
+namespace QuoteRatingService.Domain.Entities;
+
+public class PricingAudit
+{
+    public Guid Id { get; set; }
+
+    public string ActorIdentityUserId { get; set; } =
+        string.Empty;
+
+    public string ConfigurationType { get; set; } =
+        string.Empty;
+
+    public string ConfigurationKey { get; set; } =
+        string.Empty;
+
+    public decimal PreviousValue { get; set; }
+
+    public decimal NewValue { get; set; }
+
+    public DateTime ChangedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\Quote.cs
+================================================================================
+using QuoteRatingService.Domain.Enums;
+
+namespace QuoteRatingService.Domain.Entities;
+
+public class Quote
+{
+    public Guid Id { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public string AgentIdentityUserId { get; set; } =
+        string.Empty;
+
+    public QuoteStatus Status { get; set; } =
+        QuoteStatus.Draft;
+
+    public Guid? SelectedPlanId { get; set; }
+
+    public Plan? SelectedPlan { get; set; }
+    public bool NeedsRecalculation { get; set; }
+
+    public DateTime CreatedAtUtc { get; set; }
+
+    public DateTime? UpdatedAtUtc { get; set; }
+
+    public DateTime? LastCalculatedAtUtc { get; set; }
+
+    public DateTime? FinalizedAtUtc { get; set; }
+
+    public DateTime? ValidUntilUtc { get; set; }
+
+    public Guid? UnderwritingApplicationId { get; set; }
+
+    public QuoteCalculation? Calculation { get; set; }
+
+    public ICollection<QuotePlanOption>
+        PlanOptions
+    { get; set; } =
+        new List<QuotePlanOption>();
+
+    public ICollection<QuoteCoverageSelection>
+        CoverageSelections
+    { get; set; } =
+        new List<QuoteCoverageSelection>();
+
+    public ICollection<QuoteAddOnSelection>
+        AddOnSelections
+    { get; set; } =
+        new List<QuoteAddOnSelection>();
+
+    public QuoteSnapshot? Snapshot { get; set; }
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\QuoteAddOnSelection.cs
+================================================================================
+namespace QuoteRatingService.Domain.Entities;
+
+public class QuoteAddOnSelection
+{
+    public Guid Id { get; set; }
+
+    public Guid QuoteId { get; set; }
+
+    public Quote Quote { get; set; } =
+        null!;
+
+    public Guid AddOnId { get; set; }
+
+    public AddOn AddOn { get; set; } =
+        null!;
+
+    public decimal AnnualPrice { get; set; }
+}   
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\QuoteAddOnSnapshot.cs
+================================================================================
+namespace QuoteRatingService.Domain.Entities;
+
+public class QuoteAddOnSnapshot
+{
+    public Guid Id { get; set; }
+
+    public Guid QuoteSnapshotId { get; set; }
+
+    public QuoteSnapshot QuoteSnapshot { get; set; } =
+        null!;
+
+    public string AddOnName { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPrice { get; set; }
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\QuoteCalculation.cs
+================================================================================
+namespace QuoteRatingService.Domain.Entities;
+
+public class QuoteCalculation
+{
+    public Guid Id { get; set; }
+
+    public Guid QuoteId { get; set; }
+
+    public Quote Quote { get; set; } =
+        null!;
+
+    public DateTime RatingAsOfUtc { get; set; }
+
+    public DateOnly? CustomerDateOfBirth { get; set; }
+
+    public string Geography { get; set; } =
+        string.Empty;
+
+    public Guid DriverId { get; set; }
+
+    public int DriverAge { get; set; }
+
+    public int DrivingExperienceYears { get; set; }
+
+    public DateOnly LicenceIssueDate { get; set; }
+
+    public DateOnly LicenceExpiryDate { get; set; }
+
+    public bool LicenceValid { get; set; }
+
+    public string VehicleVin { get; set; } =
+        string.Empty;
+
+    public string VehicleMake { get; set; } =
+        string.Empty;
+
+    public string VehicleModel { get; set; } =
+        string.Empty;
+
+    public int VehicleManufacturingYear { get; set; }
+
+    public int VehicleAge { get; set; }
+
+    public string VehicleType { get; set; } =
+        string.Empty;
+
+    public string FuelType { get; set; } =
+        string.Empty;
+
+    public decimal VehicleValue { get; set; }
+
+    public int CurrentOdometer { get; set; }
+
+    public int AnnualMileage { get; set; }
+
+    public string OwnershipType { get; set; } =
+        string.Empty;
+
+    public DateOnly VehiclePurchaseDate { get; set; }
+
+    public int QualifyingClaimsCount { get; set; }
+
+    public decimal TotalRiskSurchargePercent { get; set; }
+
+    public DateTime CalculatedAtUtc { get; set; }
+
+    public ICollection<QuotePlanOption>
+        PlanOptions
+    { get; set; } =
+        new List<QuotePlanOption>();
+
+    public ICollection<QuoteCalculationFactor>
+        RatingFactors
+    { get; set; } =
+        new List<QuoteCalculationFactor>();
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\QuoteCalculationFactor.cs
+================================================================================
+using QuoteRatingService.Domain.Enums;
+
+namespace QuoteRatingService.Domain.Entities;
+
+public class QuoteCalculationFactor
+{
+    public Guid Id { get; set; }
+
+    public Guid QuoteCalculationId { get; set; }
+
+    public QuoteCalculation QuoteCalculation
+    { get; set; } =
+        null!;
+
+    public RatingFactorCode Factor { get; set; }
+
+    public string BandCode { get; set; } =
+        string.Empty;
+
+    public string BandLabel { get; set; } =
+        string.Empty;
+
+    public decimal SurchargePercent { get; set; }
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\QuoteCoverageSelection.cs
+================================================================================
+namespace QuoteRatingService.Domain.Entities;
+
+public class QuoteCoverageSelection
+{
+    public Guid Id { get; set; }
+
+    public Guid QuoteId { get; set; }
+
+    public Quote Quote { get; set; } =
+        null!;
+
+    public Guid CoverageId { get; set; }
+
+    public Coverage Coverage { get; set; } =
+        null!;
+
+    public Guid CoverageLimitOptionId { get; set; }
+
+    public CoverageLimitOption CoverageLimitOption
+    { get; set; } =
+        null!;
+
+    public Guid? DeductibleOptionId { get; set; }
+
+    public DeductibleOption? DeductibleOption
+    { get; set; }
+
+    /*
+     * The actual contractual limit after applying any
+     * Vehicle Value cap.
+     *
+     * For an UpToVehicleValue option, this contains the
+     * resolved Vehicle Value used for the calculation.
+     */
+    public decimal ResolvedLimitAmount { get; set; }
+
+    public decimal CoverageLimitCharge { get; set; }
+
+    public decimal DeductibleCharge { get; set; }
+}
+
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\QuoteCoverageSnapshot.cs
+================================================================================
+namespace QuoteRatingService.Domain.Entities;
+
+public class QuoteCoverageSnapshot
+{
+    public Guid Id { get; set; }
+
+    public Guid QuoteSnapshotId { get; set; }
+
+    public QuoteSnapshot QuoteSnapshot { get; set; } =
+        null!;
+
+    public string CoverageName { get; set; } =
+        string.Empty;
+
+    public decimal ResolvedLimitAmount { get; set; }
+
+    public decimal? DeductibleAmount { get; set; }
+
+    public decimal CoverageLimitCharge { get; set; }
+
+    public decimal DeductibleCharge { get; set; }
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\QuotePlanOption.cs
+================================================================================
+namespace QuoteRatingService.Domain.Entities;
+
+public class QuotePlanOption
+{
+    public Guid Id { get; set; }
+
+    public Guid QuoteId { get; set; }
+
+    public Quote Quote { get; set; } =
+        null!;
+
+    public Guid QuoteCalculationId { get; set; }
+
+    public QuoteCalculation QuoteCalculation { get; set; } =
+        null!;
+
+    public Guid PlanId { get; set; }
+
+    public Plan Plan { get; set; } =
+        null!;
+
+    public decimal BasePremium { get; set; }
+
+    public decimal TotalRiskSurchargePercent { get; set; }
+
+    public decimal RiskAdjustedPremium { get; set; }
+
+    public decimal CoverageOptionCharges { get; set; }
+
+    public decimal DeductibleCharges { get; set; }
+
+    public decimal AddOnCharges { get; set; }
+
+    public decimal FinalAnnualPremium { get; set; }
+
+    public bool IsSelected { get; set; }
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\QuoteRatingFactorSnapshot.cs
+================================================================================
+using QuoteRatingService.Domain.Enums;
+
+namespace QuoteRatingService.Domain.Entities;
+
+public class QuoteRatingFactorSnapshot
+{
+    public Guid Id { get; set; }
+
+    public Guid QuoteSnapshotId { get; set; }
+
+    public QuoteSnapshot QuoteSnapshot { get; set; } =
+        null!;
+
+    public RatingFactorCode Factor { get; set; }
+
+    public string BandCode { get; set; } =
+        string.Empty;
+
+    public string BandLabel { get; set; } =
+        string.Empty;
+
+    public decimal SurchargePercent { get; set; }
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\QuoteSnapshot.cs
+================================================================================
+using QuoteRatingService.Domain.Enums;
+
+namespace QuoteRatingService.Domain.Entities;
+
+public class QuoteSnapshot
+{
+    public Guid Id { get; set; }
+
+    public Guid QuoteId { get; set; }
+
+    public Quote Quote { get; set; } =
+        null!;
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public string AgentIdentityUserId { get; set; } =
+        string.Empty;
+
+    public DateTime FinalizedAtUtc { get; set; }
+
+    public DateTime ValidUntilUtc { get; set; }
+
+    /*
+     * Customer risk context.
+     */
+    public DateOnly? CustomerDateOfBirth { get; set; }
+
+    public string Geography { get; set; } =
+        string.Empty;
+
+    /*
+     * Driver risk context.
+     */
+    public int DriverAge { get; set; }
+
+    public int DrivingExperienceYears { get; set; }
+
+    public DateOnly LicenceIssueDate { get; set; }
+
+    public DateOnly LicenceExpiryDate { get; set; }
+
+    public bool LicenceValid { get; set; }
+
+    /*
+     * Vehicle risk context.
+     */
+    public string VehicleVin { get; set; } =
+        string.Empty;
+
+    public string VehicleMake { get; set; } =
+        string.Empty;
+
+    public string VehicleModel { get; set; } =
+        string.Empty;
+
+    public int VehicleManufacturingYear { get; set; }
+
+    public int VehicleAge { get; set; }
+
+    public string VehicleType { get; set; } =
+        string.Empty;
+
+    public string FuelType { get; set; } =
+        string.Empty;
+
+    public decimal VehicleValue { get; set; }
+
+    public int CurrentOdometer { get; set; }
+
+    public int AnnualMileage { get; set; }
+
+    public string OwnershipType { get; set; } =
+        string.Empty;
+
+    public DateOnly VehiclePurchaseDate { get; set; }
+
+    /*
+     * Claims context.
+     */
+    public int QualifyingClaimsCount { get; set; }
+
+    public DateTime ClaimsRatingAsOfUtc { get; set; }
+
+    /*
+     * Selected product.
+     */
+    public Guid PlanId { get; set; }
+
+    public string PlanName { get; set; } =
+        string.Empty;
+
+    public decimal BasePremium { get; set; }
+
+    /*
+     * Rating result.
+     */
+    public decimal TotalRiskSurchargePercent { get; set; }
+
+    public Guid DriverId { get; set; }
+    public decimal RiskAdjustedPremium { get; set; }
+
+    /*
+     * Final financial result.
+     */
+    public decimal CoverageOptionCharges { get; set; }
+
+    public decimal DeductibleCharges { get; set; }
+
+    public decimal AddOnCharges { get; set; }
+
+    public OverallRiskRating OverallRiskRating { get; set; }
+    public decimal FinalAnnualPremium { get; set; }
+
+    public ICollection<QuoteCoverageSnapshot>
+        Coverages
+    { get; set; } =
+        new List<QuoteCoverageSnapshot>();
+
+    public ICollection<QuoteAddOnSnapshot>
+        AddOns
+    { get; set; } =
+        new List<QuoteAddOnSnapshot>();
+
+    public ICollection<QuoteRatingFactorSnapshot>
+        RatingFactors
+    { get; set; } =
+        new List<QuoteRatingFactorSnapshot>();
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Entities\RatingRule.cs
+================================================================================
+using System;
+
+using QuoteRatingService.Domain.Enums;
+
+namespace QuoteRatingService.Domain.Entities;
+
+public class RatingRule
+{
+    public Guid Id { get; set; }
+
+    public RatingFactorCode Factor { get; set; }
+
+
+    public string BandCode { get; set; } =
+  string.Empty;
+
+
+public string BandLabel { get; set; } =
+string.Empty;
+
+public decimal SurchargePercent { get; set; }
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Enums\AddOnCode.cs
+================================================================================
+namespace QuoteRatingService.Domain.Enums;
+
+public enum AddOnCode
+{
+    RoadsideAssistance = 1,
+    ZeroDepreciation = 2,
+    PersonalBelongingsProtection = 3
+}
+
+
+================================================================================
+FILE: QuoteRatingService.Domain\Enums\CoverageCode.cs
+================================================================================
+namespace QuoteRatingService.Domain.Enums;
+
+public enum CoverageCode
+{
+    ThirdPartyLiability = 1,
+    Collision = 2,
+    Comprehensive = 3,
+    UninsuredUnderinsuredMotorist = 4,
+    MedicalPaymentsPersonalInjuryProtection = 5
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Enums\CoverageLimitTier.cs
+================================================================================
+namespace QuoteRatingService.Domain.Enums;
+
+public enum CoverageLimitTier
+{
+    Low = 1,
+    Middle = 2,
+    High = 3,
+    UpToVehicleValue = 4
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Enums\PlanCode.cs
+================================================================================
+namespace QuoteRatingService.Domain.Enums;
+
+public enum PlanCode
+{
+    Basic = 1,
+    Standard = 2,
+    Premium = 3
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Enums\QuoteStatus.cs
+================================================================================
+namespace QuoteRatingService.Domain.Enums;
+
+public enum QuoteStatus
+{
+    Draft = 1,
+    Finalized = 2,
+    Submitted = 3
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\Enums\RatingFactorCode.cs
+================================================================================
+namespace QuoteRatingService.Domain.Enums;
+
+public enum RatingFactorCode
+{
+    DriverAge = 1,
+    DrivingExperience = 2,
+    VehicleAge = 3,
+    VehicleValue = 4,
+    AnnualMileage = 5,
+    Geography = 6,
+    ClaimsHistory = 7
+}
+
+================================================================================
+FILE: QuoteRatingService.Domain\QuoteRatingService.Domain.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
+

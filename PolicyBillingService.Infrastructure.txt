@@ -1,0 +1,2208 @@
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Class1.cs
+================================================================================
+namespace PolicyBillingService.Infrastructure
+{
+    public class Class1
+    {
+
+    }
+}
+
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Clients\CustomerVehicleClient.cs
+================================================================================
+using System.Net;
+using System.Net.Http.Json;
+using PolicyBillingService.Application.Dtos.CustomerVehicle;
+using PolicyBillingService.Application.Interfaces.Clients;
+
+namespace PolicyBillingService.Infrastructure.Clients;
+
+public class CustomerVehicleClient
+    : ICustomerVehicleClient
+{
+    private readonly HttpClient _httpClient;
+
+    public CustomerVehicleClient(
+        HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+    }
+
+    public async Task<AgentCustomerAssignmentResult>
+    CheckAgentAssignmentAsync(
+        Guid customerProfileId,
+        string agentIdentityUserId)
+    {
+        if (customerProfileId == Guid.Empty)
+        {
+            return AgentCustomerAssignmentResult.Missing(
+                "Customer Profile ID is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            return AgentCustomerAssignmentResult.Missing(
+                "Agent Identity User ID is required.");
+        }
+
+        try
+        {
+            var encodedAgentIdentityUserId =
+                Uri.EscapeDataString(
+                    agentIdentityUserId);
+
+            var requestUrl =
+                $"internal/customers/{customerProfileId}/assigned-agent/{encodedAgentIdentityUserId}";
+
+            using var response =
+                await _httpClient.GetAsync(
+                    requestUrl);
+            var responseBody =
+    await response.Content.ReadAsStringAsync();
+
+            Console.WriteLine(
+                $"CustomerVehicle request: {_httpClient.BaseAddress}{requestUrl}");
+
+            Console.WriteLine(
+                $"CustomerVehicle status: {(int)response.StatusCode} {response.StatusCode}");
+
+            Console.WriteLine(
+                $"CustomerVehicle response: {responseBody}");
+
+            if (response.StatusCode ==
+                HttpStatusCode.OK)
+            {
+                var assignment =
+    System.Text.Json.JsonSerializer
+        .Deserialize<AgentCustomerAssignmentDto>(
+            responseBody,
+            new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+                if (assignment is null)
+                {
+                    return AgentCustomerAssignmentResult.Unavailable(
+                        "CustomerVehicleService returned an invalid Agent assignment response.");
+                }
+
+                if (assignment.CustomerProfileId !=
+                    customerProfileId)
+                {
+                    return AgentCustomerAssignmentResult.Unavailable(
+                        "CustomerVehicleService returned an unexpected Customer Profile ID.");
+                }
+
+                return AgentCustomerAssignmentResult.Success(
+                    assignment.IsAssigned);
+            }
+
+            if (response.StatusCode ==
+                HttpStatusCode.NotFound)
+            {
+                return AgentCustomerAssignmentResult.Missing(
+                    "Customer profile was not found.");
+            }
+
+            return AgentCustomerAssignmentResult.Unavailable(
+                "CustomerVehicleService returned an unexpected response.");
+        }
+        catch (HttpRequestException)
+        {
+            return AgentCustomerAssignmentResult.Unavailable(
+                "CustomerVehicleService is temporarily unavailable.");
+        }
+        catch (TaskCanceledException)
+        {
+            return AgentCustomerAssignmentResult.Unavailable(
+                "CustomerVehicleService request timed out.");
+        }
+    }
+    public async Task<CustomerProfileReferenceResult>
+        GetCustomerProfileAsync(
+            string identityUserId)
+    {
+        if (string.IsNullOrWhiteSpace(identityUserId))
+        {
+            return CustomerProfileReferenceResult.Missing(
+                "Customer Identity User ID is required.");
+        }
+
+        try
+        {
+            var encodedIdentityUserId =
+                Uri.EscapeDataString(
+                    identityUserId);
+
+            using var response =
+                await _httpClient.GetAsync(
+                    $"internal/customers/by-identity/{encodedIdentityUserId}");
+
+            if (response.StatusCode ==
+                HttpStatusCode.OK)
+            {
+                var customer =
+                    await response.Content
+                        .ReadFromJsonAsync<
+                            CustomerProfileReferenceDto>();
+
+                if (customer is null ||
+                    customer.CustomerProfileId == Guid.Empty ||
+                    string.IsNullOrWhiteSpace(
+                        customer.IdentityUserId))
+                {
+                    return CustomerProfileReferenceResult
+                        .Unavailable(
+                            "CustomerVehicleService returned an invalid Customer response.");
+                }
+
+                return CustomerProfileReferenceResult.Success(
+                    customer);
+            }
+
+            if (response.StatusCode ==
+                HttpStatusCode.NotFound)
+            {
+                return CustomerProfileReferenceResult.Missing(
+                    "Customer profile was not found.");
+            }
+
+            return CustomerProfileReferenceResult.Unavailable(
+                "CustomerVehicleService is temporarily unavailable.");
+        }
+        catch (HttpRequestException)
+        {
+            return CustomerProfileReferenceResult.Unavailable(
+                "CustomerVehicleService is temporarily unavailable.");
+        }
+        catch (TaskCanceledException)
+        {
+            return CustomerProfileReferenceResult.Unavailable(
+                "CustomerVehicleService request timed out.");
+        }
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Clients\QuoteRatingClient.cs
+================================================================================
+using System.Net;
+using System.Net.Http.Json;
+using PolicyBillingService.Application.Dtos.QuoteRating;
+using PolicyBillingService.Application.Interfaces.Clients;
+
+namespace PolicyBillingService.Infrastructure.Clients;
+
+public class QuoteRatingClient : IQuoteRatingClient
+{
+    private readonly HttpClient _httpClient;
+
+    public QuoteRatingClient(
+        HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+    }
+
+    public async Task<StartRenewalQuoteResult>
+        StartRenewalQuoteAsync(
+            StartRenewalQuoteRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        try
+        {
+            using var response =
+                await _httpClient.PostAsJsonAsync(
+                    "internal/quotes/renewal",
+                    request);
+
+            if (response.StatusCode ==
+                HttpStatusCode.OK)
+            {
+                var quote =
+                    await response.Content
+                        .ReadFromJsonAsync<
+                            StartRenewalQuoteDto>();
+
+                if (quote is null ||
+                    quote.QuoteId == Guid.Empty ||
+                    quote.RenewalId != request.RenewalId ||
+                    quote.SourcePolicyId !=
+                        request.SourcePolicyId ||
+                    quote.CustomerProfileId !=
+                        request.CustomerProfileId ||
+                    quote.VehicleId !=
+                        request.VehicleId)
+                {
+                    return StartRenewalQuoteResult.Unavailable(
+                        "QuoteRatingService returned an invalid Renewal Quote response.");
+                }
+
+                return StartRenewalQuoteResult.Success(
+                    quote);
+            }
+
+            if (response.StatusCode ==
+                HttpStatusCode.Conflict)
+            {
+                return StartRenewalQuoteResult.ConflictResult(
+                    "Renewal Quote could not be started.");
+            }
+
+            return StartRenewalQuoteResult.Unavailable(
+                "QuoteRatingService is temporarily unavailable.");
+        }
+        catch (HttpRequestException)
+        {
+            return StartRenewalQuoteResult.Unavailable(
+                "QuoteRatingService is temporarily unavailable.");
+        }
+        catch (TaskCanceledException)
+        {
+            return StartRenewalQuoteResult.Unavailable(
+                "QuoteRatingService request timed out.");
+        }
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Clients\UnderwritingClient.cs
+================================================================================
+using System.Net;
+using System.Net.Http.Json;
+using PolicyBillingService.Application.Dtos.Underwriting;
+using PolicyBillingService.Application.Interfaces.Clients;
+
+namespace PolicyBillingService.Infrastructure.Clients;
+
+public class UnderwritingClient : IUnderwritingClient
+{
+    private readonly HttpClient _httpClient;
+
+    public UnderwritingClient(
+        HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+    }
+
+    public async Task<ApprovedOfferResult>
+        GetApprovedOfferAsync(
+            Guid underwritingApplicationId)
+    {
+        if (underwritingApplicationId == Guid.Empty)
+        {
+            return ApprovedOfferResult.Missing(
+                "Underwriting application was not found.");
+        }
+
+        try
+        {
+            using var response =
+                await _httpClient.GetAsync(
+                    $"internal/underwriting/applications/{underwritingApplicationId}/approved-offer");
+
+            if (response.StatusCode ==
+                HttpStatusCode.OK)
+            {
+                var offer =
+                    await response.Content
+                        .ReadFromJsonAsync<ApprovedOfferDto>();
+
+                if (offer is null ||
+                    offer.UnderwritingApplicationId ==
+                        Guid.Empty ||
+                    offer.CustomerProfileId ==
+                        Guid.Empty ||
+                    offer.VehicleId ==
+                        Guid.Empty ||
+                    offer.AnnualPremium <= 0)
+                {
+                    return ApprovedOfferResult.Unavailable(
+                        "UnderwritingService returned an invalid approved-offer response.");
+                }
+
+                return ApprovedOfferResult.Success(
+                    offer);
+            }
+
+            if (response.StatusCode ==
+                HttpStatusCode.NotFound)
+            {
+                return ApprovedOfferResult.Missing(
+                    "Underwriting application was not found.");
+            }
+
+            if (response.StatusCode ==
+                HttpStatusCode.Conflict)
+            {
+                return ApprovedOfferResult.Unusable(
+                    "Underwriting offer is not currently available for purchase.");
+            }
+
+            return ApprovedOfferResult.Unavailable(
+                "UnderwritingService is temporarily unavailable.");
+        }
+        catch (HttpRequestException)
+        {
+            return ApprovedOfferResult.Unavailable(
+                "UnderwritingService is temporarily unavailable.");
+        }
+        catch (TaskCanceledException)
+        {
+            return ApprovedOfferResult.Unavailable(
+                "UnderwritingService request timed out.");
+        }
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Documents\PolicyPdfGenerator.cs
+================================================================================
+using PolicyBillingService.Application.Interfaces.Documents;
+using PolicyBillingService.Domain.Entities;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
+
+namespace PolicyBillingService.Infrastructure.Documents;
+
+public class PolicyPdfGenerator
+    : IPolicyPdfGenerator
+{
+    public byte[] Generate(
+        Policy policy)
+    {
+        ArgumentNullException.ThrowIfNull(policy);
+
+        if (policy.Snapshot is null)
+        {
+            throw new InvalidOperationException(
+                "Policy does not contain its immutable snapshot.");
+        }
+
+        var snapshot =
+            policy.Snapshot;
+
+        var document =
+            Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+
+                    page.Margin(40);
+
+                    page.DefaultTextStyle(
+                        style =>
+                            style.FontSize(10));
+
+                    page.Header()
+                        .Column(column =>
+                        {
+                            column.Item()
+                                .Text("AUTO INSURANCE POLICY")
+                                .Bold()
+                                .FontSize(20)
+                                .FontColor(
+                                    Colors.Blue.Darken2);
+
+                            column.Item()
+                                .PaddingTop(5)
+                                .Text(
+                                    $"Policy Number: {policy.PolicyNumber}")
+                                .Bold();
+                        });
+
+                    page.Content()
+                        .PaddingVertical(20)
+                        .Column(column =>
+                        {
+                            column.Spacing(18);
+
+                            column.Item()
+                                .Element(
+                                    section =>
+                                        AddPolicySummary(
+                                            section,
+                                            policy,
+                                            snapshot));
+
+                            column.Item()
+                                .Element(
+                                    section =>
+                                        AddVehicleDetails(
+                                            section,
+                                            snapshot));
+
+                            column.Item()
+                                .Element(
+                                    section =>
+                                        AddDriverDetails(
+                                            section,
+                                            snapshot));
+
+                            column.Item()
+                                .Element(
+                                    section =>
+                                        AddCoverageDetails(
+                                            section,
+                                            snapshot));
+
+                            column.Item()
+                                .Element(
+                                    section =>
+                                        AddAddOnDetails(
+                                            section,
+                                            snapshot));
+                        });
+
+                    page.Footer()
+                        .AlignCenter()
+                        .Text(text =>
+                        {
+                            text.Span(
+                                "Generated from the immutable Policy contract. ");
+
+                            text.Span(
+                                $"Issued {policy.IssuedAtUtc:yyyy-MM-dd HH:mm} UTC");
+                        });
+                });
+            });
+
+        return document.GeneratePdf();
+    }
+
+    private static void AddPolicySummary(
+        IContainer container,
+        Policy policy,
+        PolicySnapshot snapshot)
+    {
+        container.Column(column =>
+        {
+            AddSectionHeading(
+                column,
+                "Policy Summary");
+
+            column.Item()
+                .Table(table =>
+                {
+                    table.ColumnsDefinition(
+                        columns =>
+                        {
+                            columns.RelativeColumn();
+
+                            columns.RelativeColumn();
+                        });
+
+                    AddRow(
+                        table,
+                        "Policy Number",
+                        policy.PolicyNumber);
+
+                    AddRow(
+                        table,
+                        "Plan",
+                        snapshot.PlanName);
+
+                    AddRow(
+                        table,
+                        "Annual Premium",
+                        snapshot.AnnualPremium
+                            .ToString("0.00"));
+
+                    AddRow(
+                        table,
+                        "Payment Frequency",
+                        snapshot.PaymentFrequency
+                            .ToString());
+
+                    AddRow(
+                        table,
+                        "Effective Date",
+                        policy.EffectiveDate
+                            .ToString("yyyy-MM-dd"));
+
+                    AddRow(
+                        table,
+                        "Expiration Date",
+                        policy.ExpirationDate
+                            .ToString("yyyy-MM-dd"));
+                });
+        });
+    }
+
+    private static void AddVehicleDetails(
+        IContainer container,
+        PolicySnapshot snapshot)
+    {
+        container.Column(column =>
+        {
+            AddSectionHeading(
+                column,
+                "Vehicle");
+
+            column.Item()
+                .Table(table =>
+                {
+                    table.ColumnsDefinition(
+                        columns =>
+                        {
+                            columns.RelativeColumn();
+
+                            columns.RelativeColumn();
+                        });
+
+                    AddRow(
+                        table,
+                        "VIN",
+                        snapshot.VehicleVin);
+
+                    AddRow(
+                        table,
+                        "Make",
+                        snapshot.VehicleMake);
+
+                    AddRow(
+                        table,
+                        "Model",
+                        snapshot.VehicleModel);
+
+                    AddRow(
+                        table,
+                        "Manufacturing Year",
+                        snapshot.VehicleManufacturingYear
+                            .ToString());
+
+                    AddRow(
+                        table,
+                        "Vehicle Type",
+                        snapshot.VehicleType);
+
+                    AddRow(
+                        table,
+                        "Fuel Type",
+                        snapshot.FuelType);
+
+                    AddRow(
+                        table,
+                        "Vehicle Value",
+                        snapshot.VehicleValue
+                            .ToString("0.00"));
+
+                    AddRow(
+                        table,
+                        "Annual Mileage",
+                        snapshot.AnnualMileage
+                            .ToString());
+
+                    AddRow(
+                        table,
+                        "Ownership",
+                        snapshot.OwnershipType);
+                });
+        });
+    }
+
+    private static void AddDriverDetails(
+        IContainer container,
+        PolicySnapshot snapshot)
+    {
+        container.Column(column =>
+        {
+            AddSectionHeading(
+                column,
+                "Driver");
+
+            column.Item()
+                .Table(table =>
+                {
+                    table.ColumnsDefinition(
+                        columns =>
+                        {
+                            columns.RelativeColumn();
+
+                            columns.RelativeColumn();
+                        });
+
+                    AddRow(
+                        table,
+                        "Driver Age",
+                        snapshot.DriverAge
+                            .ToString());
+
+                    AddRow(
+                        table,
+                        "Driving Experience",
+                        $"{snapshot.DrivingExperienceYears} years");
+
+                    AddRow(
+                        table,
+                        "Licence Issue Date",
+                        snapshot.LicenceIssueDate
+                            .ToString("yyyy-MM-dd"));
+
+                    AddRow(
+                        table,
+                        "Licence Expiry Date",
+                        snapshot.LicenceExpiryDate
+                            .ToString("yyyy-MM-dd"));
+
+                    AddRow(
+                        table,
+                        "Licence Valid",
+                        snapshot.LicenceValid
+                            ? "Yes"
+                            : "No");
+                });
+        });
+    }
+
+    private static void AddCoverageDetails(
+        IContainer container,
+        PolicySnapshot snapshot)
+    {
+        container.Column(column =>
+        {
+            AddSectionHeading(
+                column,
+                "Coverages");
+
+            column.Item()
+                .Table(table =>
+                {
+                    table.ColumnsDefinition(
+                        columns =>
+                        {
+                            columns.RelativeColumn(2);
+
+                            columns.RelativeColumn();
+
+                            columns.RelativeColumn();
+                        });
+
+                    table.Header(header =>
+                    {
+                        header.Cell()
+                            .Element(HeaderCell)
+                            .Text("Coverage");
+
+                        header.Cell()
+                            .Element(HeaderCell)
+                            .Text("Limit");
+
+                        header.Cell()
+                            .Element(HeaderCell)
+                            .Text("Deductible");
+                    });
+
+                    foreach (var coverage
+                             in snapshot.Coverages)
+                    {
+                        table.Cell()
+                            .Element(BodyCell)
+                            .Text(
+                                coverage.CoverageName);
+
+                        table.Cell()
+                            .Element(BodyCell)
+                            .Text(
+                                coverage.ResolvedLimitAmount
+                                    .ToString("0.00"));
+
+                        table.Cell()
+                            .Element(BodyCell)
+                            .Text(
+                                coverage.DeductibleAmount
+                                    ?.ToString("0.00")
+                                ?? "N/A");
+                    }
+                });
+        });
+    }
+
+    private static void AddAddOnDetails(
+        IContainer container,
+        PolicySnapshot snapshot)
+    {
+        container.Column(column =>
+        {
+            AddSectionHeading(
+                column,
+                "Add-ons");
+
+            if (snapshot.AddOns.Count == 0)
+            {
+                column.Item()
+                    .Text(
+                        "No add-ons selected.");
+
+                return;
+            }
+
+            column.Item()
+                .Table(table =>
+                {
+                    table.ColumnsDefinition(
+                        columns =>
+                        {
+                            columns.RelativeColumn(2);
+
+                            columns.RelativeColumn();
+                        });
+
+                    table.Header(header =>
+                    {
+                        header.Cell()
+                            .Element(HeaderCell)
+                            .Text("Add-on");
+
+                        header.Cell()
+                            .Element(HeaderCell)
+                            .Text("Annual Price");
+                    });
+
+                    foreach (var addOn
+                             in snapshot.AddOns)
+                    {
+                        table.Cell()
+                            .Element(BodyCell)
+                            .Text(
+                                addOn.AddOnName);
+
+                        table.Cell()
+                            .Element(BodyCell)
+                            .Text(
+                                addOn.AnnualPrice
+                                    .ToString("0.00"));
+                    }
+                });
+        });
+    }
+
+    private static void AddSectionHeading(
+        ColumnDescriptor column,
+        string title)
+    {
+        column.Item()
+            .PaddingBottom(6)
+            .Text(title)
+            .Bold()
+            .FontSize(14)
+            .FontColor(
+                Colors.Blue.Darken2);
+    }
+
+    private static void AddRow(
+        TableDescriptor table,
+        string label,
+        string value)
+    {
+        table.Cell()
+            .Element(BodyCell)
+            .Text(label)
+            .SemiBold();
+
+        table.Cell()
+            .Element(BodyCell)
+            .Text(value);
+    }
+
+    private static IContainer HeaderCell(
+        IContainer container)
+    {
+        return container
+            .Background(
+                Colors.Grey.Lighten3)
+            .BorderBottom(1)
+            .BorderColor(
+                Colors.Grey.Lighten1)
+            .Padding(6);
+    }
+
+    private static IContainer BodyCell(
+        IContainer container)
+    {
+        return container
+            .BorderBottom(1)
+            .BorderColor(
+                Colors.Grey.Lighten2)
+            .Padding(6);
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Persistence\Configurations\InstallmentConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Infrastructure
+    .Persistence.Configurations;
+
+public class InstallmentConfiguration
+    : IEntityTypeConfiguration<Installment>
+{
+    public void Configure(
+        EntityTypeBuilder<Installment> builder)
+    {
+        builder.ToTable(
+            "Installments",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_Installments_Number_Positive",
+                    "[InstallmentNumber] > 0");
+
+                table.HasCheckConstraint(
+                    "CK_Installments_Amount_Positive",
+                    "[Amount] > 0");
+            });
+
+        builder.HasKey(
+            installment => installment.Id);
+
+        builder.HasIndex(
+                installment =>
+                    new
+                    {
+                        installment.PaymentScheduleId,
+                        installment.InstallmentNumber
+                    })
+            .IsUnique();
+
+        builder.Property(
+                installment => installment.Amount)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                installment => installment.ContractStatus)
+            .IsRequired();
+
+        builder.HasOne(
+                installment => installment.PaymentSchedule)
+            .WithMany(
+                schedule => schedule.Installments)
+            .HasForeignKey(
+                installment => installment.PaymentScheduleId)
+            .OnDelete(
+                DeleteBehavior.Cascade);
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Persistence\Configurations\PaymentScheduleConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Infrastructure
+    .Persistence.Configurations;
+
+public class PaymentScheduleConfiguration
+    : IEntityTypeConfiguration<PaymentSchedule>
+{
+    public void Configure(
+        EntityTypeBuilder<PaymentSchedule> builder)
+    {
+        builder.ToTable(
+            "PaymentSchedules",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_PaymentSchedules_AnnualPremium_Positive",
+                    "[AnnualPremium] > 0");
+            });
+
+        builder.HasKey(
+            schedule => schedule.Id);
+
+        builder.HasIndex(
+                schedule => schedule.PolicyId)
+            .IsUnique();
+
+        builder.Property(
+                schedule => schedule.Frequency)
+            .IsRequired();
+
+        builder.Property(
+                schedule => schedule.AnnualPremium)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                schedule => schedule.CreatedAtUtc)
+            .IsRequired();
+
+        builder.HasOne(
+                schedule => schedule.Policy)
+            .WithOne(
+                policy => policy.PaymentSchedule)
+            .HasForeignKey<PaymentSchedule>(
+                schedule => schedule.PolicyId)
+            .OnDelete(
+                DeleteBehavior.Cascade);
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Persistence\Configurations\PaymentTransactionConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Infrastructure
+    .Persistence.Configurations;
+
+public class PaymentTransactionConfiguration
+    : IEntityTypeConfiguration<PaymentTransaction>
+{
+    public void Configure(
+        EntityTypeBuilder<PaymentTransaction> builder)
+    {
+        builder.ToTable(
+            "PaymentTransactions",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_PaymentTransactions_Amount_Positive",
+                    "[Amount] > 0");
+
+                table.HasCheckConstraint(
+                    "CK_PaymentTransactions_Target",
+                    "([PurchaseId] IS NOT NULL AND [InstallmentId] IS NULL) OR " +
+                    "([PurchaseId] IS NULL AND [InstallmentId] IS NOT NULL)");
+            });
+
+        builder.HasKey(
+            transaction => transaction.Id);
+
+        builder.Property(
+                transaction => transaction.PaymentReference)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.HasIndex(
+                transaction => transaction.PaymentReference)
+            .IsUnique();
+
+        builder.Property(
+                transaction => transaction.Amount)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                transaction => transaction.Method)
+            .IsRequired();
+
+        builder.Property(
+                transaction => transaction.Result)
+            .IsRequired();
+
+        builder.Property(
+                transaction => transaction.AttemptedAtUtc)
+            .IsRequired();
+
+        builder.Property(
+                transaction => transaction.FailureCode)
+            .HasMaxLength(100);
+
+        builder.Property(
+                transaction => transaction.FailureMessage)
+            .HasMaxLength(500);
+
+        builder.HasOne(
+                transaction => transaction.Purchase)
+            .WithMany(
+                purchase => purchase.PaymentTransactions)
+            .HasForeignKey(
+                transaction => transaction.PurchaseId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+
+        builder.HasOne(
+                transaction => transaction.Installment)
+            .WithMany(
+                installment => installment.Transactions)
+            .HasForeignKey(
+                transaction => transaction.InstallmentId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Persistence\Configurations\PolicyAddOnSnapshotConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Infrastructure
+    .Persistence.Configurations;
+
+public class PolicyAddOnSnapshotConfiguration
+    : IEntityTypeConfiguration<PolicyAddOnSnapshot>
+{
+    public void Configure(
+        EntityTypeBuilder<PolicyAddOnSnapshot> builder)
+    {
+        builder.ToTable(
+            "PolicyAddOnSnapshots",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_PolicyAddOnSnapshots_Price_NonNegative",
+                    "[AnnualPrice] >= 0");
+            });
+
+        builder.HasKey(
+            addOn => addOn.Id);
+
+        builder.Property(
+                addOn => addOn.AddOnName)
+            .IsRequired()
+            .HasMaxLength(150);
+
+        builder.Property(
+                addOn => addOn.AnnualPrice)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.HasOne(
+                addOn => addOn.PolicySnapshot)
+            .WithMany(
+                snapshot => snapshot.AddOns)
+            .HasForeignKey(
+                addOn => addOn.PolicySnapshotId)
+            .OnDelete(
+                DeleteBehavior.Cascade);
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Persistence\Configurations\PolicyConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Infrastructure
+    .Persistence.Configurations;
+
+public class PolicyConfiguration
+    : IEntityTypeConfiguration<Policy>
+{
+    public void Configure(
+        EntityTypeBuilder<Policy> builder)
+    {
+        builder.ToTable(
+            "Policies");
+
+        builder.HasKey(
+            policy => policy.Id);
+
+        builder.Property(
+                policy => policy.PolicyNumber)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.HasIndex(
+                policy => policy.PolicyNumber)
+            .IsUnique();
+
+        builder.HasIndex(
+                policy =>
+                    policy.OriginatingUnderwritingApplicationId)
+            .IsUnique();
+
+        builder.Property(
+                policy => policy.IssuedAtUtc)
+            .IsRequired();
+
+        builder.HasOne(
+                policy => policy.PredecessorPolicy)
+            .WithOne(
+                policy => policy.SuccessorPolicy)
+            .HasForeignKey<Policy>(
+                policy => policy.PredecessorPolicyId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+
+        builder.HasIndex(
+            policy =>
+                new
+                {
+                    policy.CustomerProfileId,
+                    policy.VehicleId
+                });
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Persistence\Configurations\PolicyCoverageSnapshotConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Infrastructure
+    .Persistence.Configurations;
+
+public class PolicyCoverageSnapshotConfiguration
+    : IEntityTypeConfiguration<PolicyCoverageSnapshot>
+{
+    public void Configure(
+        EntityTypeBuilder<PolicyCoverageSnapshot> builder)
+    {
+        builder.ToTable(
+            "PolicyCoverageSnapshots",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_PolicyCoverageSnapshots_Limit_NonNegative",
+                    "[ResolvedLimitAmount] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_PolicyCoverageSnapshots_Deductible_NonNegative",
+                    "[DeductibleAmount] IS NULL OR [DeductibleAmount] >= 0");
+            });
+
+        builder.HasKey(
+            coverage => coverage.Id);
+
+        builder.Property(
+                coverage => coverage.CoverageName)
+            .IsRequired()
+            .HasMaxLength(150);
+
+        builder.Property(
+                coverage => coverage.ResolvedLimitAmount)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                coverage => coverage.DeductibleAmount)
+            .HasPrecision(18, 2);
+
+        builder.HasOne(
+                coverage => coverage.PolicySnapshot)
+            .WithMany(
+                snapshot => snapshot.Coverages)
+            .HasForeignKey(
+                coverage => coverage.PolicySnapshotId)
+            .OnDelete(
+                DeleteBehavior.Cascade);
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Persistence\Configurations\PolicyDocumentConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Infrastructure
+    .Persistence.Configurations;
+
+public class PolicyDocumentConfiguration
+    : IEntityTypeConfiguration<PolicyDocument>
+{
+    public void Configure(
+        EntityTypeBuilder<PolicyDocument> builder)
+    {
+        builder.ToTable(
+            "PolicyDocuments",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_PolicyDocuments_Size_NonNegative",
+                    "[SizeBytes] >= 0");
+            });
+
+        builder.HasKey(
+            document => document.Id);
+
+        builder.HasIndex(
+                document => document.PolicyId)
+            .IsUnique();
+
+        builder.Property(
+                document => document.FileName)
+            .IsRequired()
+            .HasMaxLength(255);
+
+        builder.Property(
+                document => document.StoredFileName)
+            .IsRequired()
+            .HasMaxLength(255);
+
+        builder.Property(
+                document => document.ContentType)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.HasOne(
+                document => document.Policy)
+            .WithOne(
+                policy => policy.Document)
+            .HasForeignKey<PolicyDocument>(
+                document => document.PolicyId)
+            .OnDelete(
+                DeleteBehavior.Cascade);
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Persistence\Configurations\PolicySnapshotConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Infrastructure
+    .Persistence.Configurations;
+
+public class PolicySnapshotConfiguration
+    : IEntityTypeConfiguration<PolicySnapshot>
+{
+    public void Configure(
+        EntityTypeBuilder<PolicySnapshot> builder)
+    {
+        builder.ToTable(
+            "PolicySnapshots",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_PolicySnapshots_DriverAge_NonNegative",
+                    "[DriverAge] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_PolicySnapshots_Experience_NonNegative",
+                    "[DrivingExperienceYears] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_PolicySnapshots_VehicleValue_Positive",
+                    "[VehicleValue] > 0");
+
+                table.HasCheckConstraint(
+                    "CK_PolicySnapshots_Odometer_NonNegative",
+                    "[CurrentOdometer] >= 0");
+
+                table.HasCheckConstraint(
+                    "CK_PolicySnapshots_AnnualMileage_Positive",
+                    "[AnnualMileage] > 0");
+
+                table.HasCheckConstraint(
+                    "CK_PolicySnapshots_AnnualPremium_Positive",
+                    "[AnnualPremium] > 0");
+            });
+
+        builder.HasKey(
+            snapshot => snapshot.Id);
+
+        builder.HasIndex(
+                snapshot => snapshot.PolicyId)
+            .IsUnique();
+
+        builder.Property(
+                snapshot =>
+                    snapshot.AgentIdentityUserId)
+            .IsRequired()
+            .HasMaxLength(450);
+
+        builder.Property(
+                snapshot => snapshot.Geography)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                snapshot => snapshot.VehicleVin)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                snapshot => snapshot.VehicleMake)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(
+                snapshot => snapshot.VehicleModel)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(
+                snapshot => snapshot.VehicleType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                snapshot => snapshot.FuelType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                snapshot => snapshot.OwnershipType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(
+                snapshot => snapshot.PlanName)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(
+                snapshot => snapshot.VehicleValue)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                snapshot => snapshot.AnnualPremium)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.HasOne(
+                snapshot => snapshot.Policy)
+            .WithOne(
+                policy => policy.Snapshot)
+            .HasForeignKey<PolicySnapshot>(
+                snapshot => snapshot.PolicyId)
+            .OnDelete(
+                DeleteBehavior.Cascade);
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Persistence\Configurations\PolicyStatusHistoryConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Infrastructure
+    .Persistence.Configurations;
+
+public class PolicyStatusHistoryConfiguration
+    : IEntityTypeConfiguration<PolicyStatusHistory>
+{
+    public void Configure(
+        EntityTypeBuilder<PolicyStatusHistory> builder)
+    {
+        builder.ToTable(
+            "PolicyStatusHistories");
+
+        builder.HasKey(
+            history => history.Id);
+
+        builder.Property(
+                history => history.Action)
+            .IsRequired();
+
+        builder.Property(
+                history => history.OccurredAtUtc)
+            .IsRequired();
+
+        builder.Property(
+                history =>
+                    history.PerformedByIdentityUserId)
+            .IsRequired()
+            .HasMaxLength(450);
+
+        builder.HasOne(
+                history => history.Policy)
+            .WithMany(
+                policy => policy.StatusHistory)
+            .HasForeignKey(
+                history => history.PolicyId)
+            .OnDelete(
+                DeleteBehavior.Cascade);
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Persistence\Configurations\PurchaseConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Infrastructure
+    .Persistence.Configurations;
+
+public class PurchaseConfiguration
+    : IEntityTypeConfiguration<Purchase>
+{
+    public void Configure(
+        EntityTypeBuilder<Purchase> builder)
+    {
+        builder.ToTable(
+            "Purchases",
+            table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_Purchases_AnnualPremium_Positive",
+                    "[AnnualPremium] > 0");
+            });
+
+        builder.HasKey(
+            purchase =>
+                purchase.Id);
+
+        builder.Property(
+                purchase =>
+                    purchase.UnderwritingApplicationId)
+            .IsRequired();
+
+        builder.Property(
+                purchase =>
+                    purchase.CustomerProfileId)
+            .IsRequired();
+
+        builder.Property(
+                purchase =>
+                    purchase.VehicleId)
+            .IsRequired();
+
+        builder.Property(
+                purchase =>
+                    purchase.EffectiveDate)
+            .IsRequired();
+
+        builder.Property(
+                purchase =>
+                    purchase.PaymentFrequency)
+            .IsRequired();
+
+        builder.Property(
+                purchase =>
+                    purchase.AnnualPremium)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        builder.Property(
+                purchase =>
+                    purchase.AcceptedAtUtc)
+            .IsRequired();
+
+        builder.HasIndex(
+                purchase =>
+                    purchase.UnderwritingApplicationId)
+            .IsUnique();
+
+        builder.HasIndex(
+                purchase =>
+                    purchase.RenewalId)
+            .IsUnique()
+            .HasFilter(
+                "[RenewalId] IS NOT NULL");
+
+        builder.HasIndex(
+            purchase =>
+                purchase.SourcePolicyId);
+
+        builder.HasOne(
+                purchase =>
+                    purchase.IssuedPolicy)
+            .WithOne()
+            .HasForeignKey<Purchase>(
+                purchase =>
+                    purchase.IssuedPolicyId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Persistence\Configurations\RenewalConfiguration.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Infrastructure
+    .Persistence.Configurations;
+
+public class RenewalConfiguration
+    : IEntityTypeConfiguration<Renewal>
+{
+    public void Configure(
+        EntityTypeBuilder<Renewal> builder)
+    {
+        builder.ToTable(
+            "Renewals");
+
+        builder.HasKey(
+            renewal => renewal.Id);
+
+        builder.HasIndex(
+                renewal => renewal.SourcePolicyId)
+            .IsUnique();
+
+        builder.Property(
+        renewal => renewal.StartedAtUtc)
+    .IsRequired();
+
+        builder.HasOne(
+                renewal => renewal.SourcePolicy)
+            .WithMany()
+            .HasForeignKey(
+                renewal => renewal.SourcePolicyId)
+            .OnDelete(
+                DeleteBehavior.Restrict);
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Persistence\PolicyBillingDbContext.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using PolicyBillingService.Domain.Entities;
+using System.Collections.Generic;
+using System.Reflection.Emit;
+
+namespace PolicyBillingService.Infrastructure.Persistence;
+
+public class PolicyBillingDbContext : DbContext
+{
+    public PolicyBillingDbContext(
+        DbContextOptions<PolicyBillingDbContext> options)
+        : base(options)
+    {
+    }
+
+    public DbSet<Purchase> Purchases =>
+        Set<Purchase>();
+
+    public DbSet<Policy> Policies =>
+        Set<Policy>();
+
+    public DbSet<PolicySnapshot> PolicySnapshots =>
+        Set<PolicySnapshot>();
+
+    public DbSet<PolicyCoverageSnapshot> PolicyCoverageSnapshots =>
+        Set<PolicyCoverageSnapshot>();
+
+    public DbSet<PolicyAddOnSnapshot> PolicyAddOnSnapshots =>
+        Set<PolicyAddOnSnapshot>();
+
+    public DbSet<PaymentSchedule> PaymentSchedules =>
+        Set<PaymentSchedule>();
+
+    public DbSet<Installment> Installments =>
+        Set<Installment>();
+
+    public DbSet<PaymentTransaction> PaymentTransactions =>
+        Set<PaymentTransaction>();
+
+    public DbSet<PolicyDocument> PolicyDocuments =>
+        Set<PolicyDocument>();
+
+    public DbSet<PolicyStatusHistory> PolicyStatusHistories =>
+        Set<PolicyStatusHistory>();
+
+    public DbSet<Renewal> Renewals =>
+        Set<Renewal>();
+
+    protected override void OnModelCreating(
+        ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            typeof(PolicyBillingDbContext).Assembly);
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\PolicyBillingService.Infrastructure.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PolicyBillingService.Application\PolicyBillingService.Application.csproj" />
+    <ProjectReference Include="..\PolicyBillingService.Domain\PolicyBillingService.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.19">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.19" />
+    <PackageReference Include="QuestPDF" Version="2026.9.1" />
+  </ItemGroup>
+
+</Project>
+
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Repositories\PaymentRepository.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using PolicyBillingService.Application.Interfaces.Repositories;
+using PolicyBillingService.Domain.Entities;
+using PolicyBillingService.Infrastructure.Persistence;
+
+namespace PolicyBillingService.Infrastructure.Repositories;
+
+public class PaymentRepository : IPaymentRepository
+{
+    private readonly PolicyBillingDbContext _dbContext;
+
+    public PaymentRepository(
+        PolicyBillingDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<Installment?>
+        GetInstallmentForUpdateAsync(
+            Guid installmentId)
+    {
+        return await _dbContext
+            .Installments
+            .Include(
+                installment =>
+                    installment.PaymentSchedule)
+                .ThenInclude(
+                    schedule =>
+                        schedule.Policy)
+            .SingleOrDefaultAsync(
+                installment =>
+                    installment.Id ==
+                    installmentId);
+    }
+
+    public async Task<IReadOnlyList<Installment>>
+        GetScheduleInstallmentsAsync(
+            Guid paymentScheduleId)
+    {
+        return await _dbContext
+            .Installments
+            .AsNoTracking()
+            .Where(
+                installment =>
+                    installment.PaymentScheduleId ==
+                    paymentScheduleId)
+            .OrderBy(
+                installment =>
+                    installment.InstallmentNumber)
+            .ToListAsync();
+    }
+
+    public async Task AddTransactionAsync(
+        PaymentTransaction transaction)
+    {
+        await _dbContext
+            .PaymentTransactions
+            .AddAsync(
+                transaction);
+    }
+
+    public async Task SaveChangesAsync()
+    {
+        await _dbContext.SaveChangesAsync();
+    }
+
+    public async Task ExecuteInTransactionAsync(
+        Func<Task> operation)
+    {
+        ArgumentNullException.ThrowIfNull(
+            operation);
+
+        await using var transaction =
+            await _dbContext.Database
+                .BeginTransactionAsync();
+
+        try
+        {
+            await operation();
+
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+
+            throw;
+        }
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Repositories\PolicyDocumentRepository.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using PolicyBillingService.Application.Interfaces.Repositories;
+using PolicyBillingService.Domain.Entities;
+using PolicyBillingService.Infrastructure.Persistence;
+
+namespace PolicyBillingService.Infrastructure.Repositories;
+
+public class PolicyDocumentRepository
+    : IPolicyDocumentRepository
+{
+    private readonly PolicyBillingDbContext _dbContext;
+
+    public PolicyDocumentRepository(
+        PolicyBillingDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<PolicyDocument?> GetByPolicyIdAsync(
+        Guid policyId)
+    {
+        return await _dbContext
+            .PolicyDocuments
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                document =>
+                    document.PolicyId == policyId);
+    }
+
+    public async Task AddAsync(
+        PolicyDocument document)
+    {
+        await _dbContext
+            .PolicyDocuments
+            .AddAsync(
+                document);
+    }
+
+    public async Task SaveChangesAsync()
+    {
+        await _dbContext.SaveChangesAsync();
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Repositories\PolicyIssuanceRepository.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using PolicyBillingService.Application.Interfaces.Repositories;
+using PolicyBillingService.Domain.Entities;
+using PolicyBillingService.Infrastructure.Persistence;
+
+namespace PolicyBillingService.Infrastructure.Repositories;
+
+public class PolicyIssuanceRepository
+    : IPolicyIssuanceRepository
+{
+    private readonly PolicyBillingDbContext
+        _dbContext;
+
+    public PolicyIssuanceRepository(
+        PolicyBillingDbContext dbContext)
+    {
+        _dbContext =
+            dbContext;
+    }
+
+    public async Task<Policy?> GetPolicyForUpdateAsync(
+        Guid policyId)
+    {
+        return await _dbContext
+            .Policies
+            .SingleOrDefaultAsync(
+                policy =>
+                    policy.Id == policyId);
+    }
+
+    public async Task<Renewal?> GetRenewalForUpdateAsync(
+        Guid renewalId)
+    {
+        return await _dbContext
+            .Renewals
+            .SingleOrDefaultAsync(
+                renewal =>
+                    renewal.Id == renewalId);
+    }
+
+    public async Task AddPolicyAsync(
+        Policy policy)
+    {
+        await _dbContext
+            .Policies
+            .AddAsync(
+                policy);
+    }
+
+    public async Task AddPaymentTransactionAsync(
+        PaymentTransaction transaction)
+    {
+        await _dbContext
+            .PaymentTransactions
+            .AddAsync(
+                transaction);
+    }
+
+    public async Task AddStatusHistoryAsync(
+        PolicyStatusHistory history)
+    {
+        await _dbContext
+            .PolicyStatusHistories
+            .AddAsync(
+                history);
+    }
+
+    public async Task SaveChangesAsync()
+    {
+        await _dbContext
+            .SaveChangesAsync();
+    }
+
+    public async Task ExecuteInTransactionAsync(
+        Func<Task> operation)
+    {
+        ArgumentNullException.ThrowIfNull(
+            operation);
+
+        await using var transaction =
+            await _dbContext.Database
+                .BeginTransactionAsync();
+
+        try
+        {
+            await operation();
+
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+
+            throw;
+        }
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Repositories\PolicyRepository.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using PolicyBillingService.Application.Interfaces.Repositories;
+using PolicyBillingService.Domain.Entities;
+using PolicyBillingService.Infrastructure.Persistence;
+
+namespace PolicyBillingService.Infrastructure.Repositories;
+
+public class PolicyRepository : IPolicyRepository
+{
+    private readonly PolicyBillingDbContext _dbContext;
+
+    public PolicyRepository(
+        PolicyBillingDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+    public async Task<Policy?>
+    GetByUnderwritingApplicationIdAsync(
+        Guid underwritingApplicationId)
+    {
+        return await _dbContext
+            .Policies
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                policy =>
+                    policy.OriginatingUnderwritingApplicationId ==
+                        underwritingApplicationId);
+    }
+    public async Task<IReadOnlyList<Policy>>
+    GetByCustomerProfileIdAsync(
+        Guid customerProfileId)
+    {
+        return await _dbContext
+            .Policies
+            .AsNoTracking()
+            .Include(
+                policy =>
+                    policy.Snapshot)
+            .Where(
+                policy =>
+                    policy.CustomerProfileId ==
+                        customerProfileId)
+            .OrderByDescending(
+                policy =>
+                    policy.IssuedAtUtc)
+            .ToListAsync();
+    }
+    public async Task<Policy?> GetByIdAsync(
+    Guid policyId)
+    {
+        return await _dbContext
+            .Policies
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(
+                policy =>
+                    policy.Snapshot)
+                .ThenInclude(
+                    snapshot =>
+                        snapshot.Coverages)
+            .Include(
+                policy =>
+                    policy.Snapshot)
+                .ThenInclude(
+                    snapshot =>
+                        snapshot.AddOns)
+            .Include(
+                policy =>
+                    policy.PaymentSchedule)
+                .ThenInclude(
+                    schedule =>
+                        schedule.Installments)
+                    .ThenInclude(
+                        installment =>
+                            installment.Transactions)
+            .Include(
+                policy =>
+                    policy.Document)
+            .Include(
+                policy =>
+                    policy.StatusHistory)
+            .SingleOrDefaultAsync(
+                policy =>
+                    policy.Id ==
+                        policyId);
+    }
+    public async Task<bool> HasOverlappingPolicyAsync(
+        Guid vehicleId,
+        DateOnly effectiveDate,
+        DateOnly expirationDate)
+    {
+        return await _dbContext
+            .Policies
+            .AsNoTracking()
+            .AnyAsync(
+                policy =>
+                    policy.VehicleId == vehicleId &&
+                    effectiveDate < policy.ExpirationDate &&
+                    expirationDate > policy.EffectiveDate &&
+                    (
+                        policy.CancellationEffectiveAtUtc == null ||
+                        DateOnly.FromDateTime(
+                            policy.CancellationEffectiveAtUtc.Value)
+                            > effectiveDate
+                    ));
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Repositories\PolicyServicingRepository.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using PolicyBillingService.Application.Interfaces.Repositories;
+using PolicyBillingService.Domain.Entities;
+using PolicyBillingService.Infrastructure.Persistence;
+
+namespace PolicyBillingService.Infrastructure.Repositories;
+
+public class PolicyServicingRepository
+    : IPolicyServicingRepository
+{
+    private readonly PolicyBillingDbContext _dbContext;
+
+    public PolicyServicingRepository(
+        PolicyBillingDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<Policy?> GetForUpdateAsync(
+        Guid policyId)
+    {
+        return await _dbContext
+            .Policies
+            .Include(
+                policy =>
+                    policy.PaymentSchedule)
+                .ThenInclude(
+                    schedule =>
+                        schedule.Installments)
+            .SingleOrDefaultAsync(
+                policy =>
+                    policy.Id == policyId);
+    }
+
+    public async Task AddStatusHistoryAsync(
+        PolicyStatusHistory history)
+    {
+        await _dbContext
+            .PolicyStatusHistories
+            .AddAsync(
+                history);
+    }
+
+    public async Task SaveChangesAsync()
+    {
+        await _dbContext.SaveChangesAsync();
+    }
+
+    public async Task ExecuteInTransactionAsync(
+        Func<Task> operation)
+    {
+        ArgumentNullException.ThrowIfNull(
+            operation);
+
+        await using var transaction =
+            await _dbContext.Database
+                .BeginTransactionAsync();
+
+        try
+        {
+            await operation();
+
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+
+            throw;
+        }
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Repositories\PurchaseRepository.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using PolicyBillingService.Application.Interfaces.Repositories;
+using PolicyBillingService.Domain.Entities;
+using PolicyBillingService.Infrastructure.Persistence;
+
+namespace PolicyBillingService.Infrastructure.Repositories;
+
+public class PurchaseRepository : IPurchaseRepository
+{
+    private readonly PolicyBillingDbContext _dbContext;
+
+    public PurchaseRepository(
+        PolicyBillingDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<Purchase?>
+        GetByUnderwritingApplicationIdAsync(
+            Guid underwritingApplicationId)
+    {
+        return await _dbContext
+            .Purchases
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                purchase =>
+                    purchase.UnderwritingApplicationId ==
+                    underwritingApplicationId);
+    }
+    public async Task<Purchase?> GetByIdForUpdateAsync(
+    Guid purchaseId)
+    {
+        return await _dbContext
+            .Purchases
+            .SingleOrDefaultAsync(
+                purchase =>
+                    purchase.Id == purchaseId);
+    }
+    public async Task AddAsync(
+        Purchase purchase)
+    {
+        await _dbContext
+            .Purchases
+            .AddAsync(
+                purchase);
+    }
+
+    public async Task SaveChangesAsync()
+    {
+        await _dbContext.SaveChangesAsync();
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Infrastructure\Repositories\RenewalRepository.cs
+================================================================================
+using Microsoft.EntityFrameworkCore;
+using PolicyBillingService.Application.Interfaces.Repositories;
+using PolicyBillingService.Domain.Entities;
+using PolicyBillingService.Infrastructure.Persistence;
+
+namespace PolicyBillingService.Infrastructure.Repositories;
+
+public class RenewalRepository : IRenewalRepository
+{
+    private readonly PolicyBillingDbContext
+        _dbContext;
+
+    public RenewalRepository(
+        PolicyBillingDbContext dbContext)
+    {
+        _dbContext =
+            dbContext;
+    }
+
+    public async Task<Renewal?>
+        GetBySourcePolicyIdAsync(
+            Guid sourcePolicyId)
+    {
+        return await _dbContext
+            .Renewals
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                renewal =>
+                    renewal.SourcePolicyId ==
+                    sourcePolicyId);
+    }
+    public async Task<Renewal?> GetByIdForUpdateAsync(
+    Guid renewalId)
+    {
+        return await _dbContext
+            .Renewals
+            .SingleOrDefaultAsync(
+                renewal =>
+                    renewal.Id == renewalId);
+    }
+
+    public async Task<Renewal?> GetByIdAsync(
+        Guid renewalId)
+    {
+        return await _dbContext
+            .Renewals
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                renewal =>
+                    renewal.Id ==
+                    renewalId);
+    }
+
+    public async Task AddAsync(
+        Renewal renewal)
+    {
+        await _dbContext
+            .Renewals
+            .AddAsync(
+                renewal);
+    }
+
+    public async Task SaveChangesAsync()
+    {
+        await _dbContext.SaveChangesAsync();
+    }
+}

@@ -1,0 +1,356 @@
+
+================================================================================
+FILE: agent\agent-dashboard\agent-dashboard.css
+================================================================================
+
+
+================================================================================
+FILE: agent\agent-dashboard\agent-dashboard.html
+================================================================================
+<div class="min-h-full space-y-8 p-6 lg:p-8">
+
+  <!-- Header -->
+  <div>
+    <p class="text-sm font-medium text-slate-500">
+      Agent Workspace
+    </p>
+
+    <h1 class="mt-1 text-3xl font-semibold tracking-tight text-slate-950">
+      Good morning, {{ agentName() }}
+    </h1>
+
+    <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+      Here is your current workload and the customers that may need attention.
+    </p>
+  </div>
+
+  <!-- Loading -->
+  @if (isLoading()) {
+    <section class="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div class="flex items-center gap-3">
+        <div class="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900"></div>
+        <p class="text-sm text-slate-600">
+          Loading your workspace...
+        </p>
+      </div>
+    </section>
+  }
+
+  <!-- Error -->
+  @if (!isLoading() && errorMessage()) {
+    <section class="rounded-2xl border border-red-200 bg-red-50 p-6">
+      <h2 class="text-base font-semibold text-red-900">
+        Workspace unavailable
+      </h2>
+
+      <p class="mt-2 text-sm leading-6 text-red-700">
+        {{ errorMessage() }}
+      </p>
+
+      <button
+        type="button"
+        class="mt-4 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
+        (click)="loadCustomers()"
+      >
+        Try Again
+      </button>
+    </section>
+  }
+
+  @if (!isLoading() && !errorMessage()) {
+
+    <!-- Work Summary -->
+    <section>
+      <div class="mb-4">
+        <h2 class="text-lg font-semibold text-slate-950">
+          Your work
+        </h2>
+
+        <p class="mt-1 text-sm text-slate-500">
+          A quick view of the areas you can work on.
+        </p>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+
+        <!-- Customers -->
+        <a
+          routerLink="/agent/customers"
+          class="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+        >
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-sm font-medium text-slate-500">
+                My Customers
+              </p>
+
+              <p class="mt-2 text-3xl font-semibold text-slate-950">
+                {{ customerCount() }}
+              </p>
+            </div>
+
+            <div class="rounded-xl bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700">
+              Customers
+            </div>
+          </div>
+
+          <p class="mt-4 text-sm leading-6 text-slate-500">
+            View and manage the customers assigned to you.
+          </p>
+
+          <span class="mt-5 inline-flex items-center text-sm font-semibold text-slate-950">
+            Open customers
+            <span class="ml-2 transition-transform group-hover:translate-x-1">
+              â†’
+            </span>
+          </span>
+        </a>
+
+        <!-- Quotes -->
+        <a
+          routerLink="/agent/customers"
+          class="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+        >
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-sm font-medium text-slate-500">
+                Quotes
+              </p>
+
+              <p class="mt-2 text-3xl font-semibold text-slate-950">
+                â€”
+              </p>
+            </div>
+
+            <div class="rounded-xl bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700">
+              Workflow
+            </div>
+          </div>
+
+          <p class="mt-4 text-sm leading-6 text-slate-500">
+            Start or continue quote work from a customer's workspace.
+          </p>
+
+          <span class="mt-5 inline-flex items-center text-sm font-semibold text-slate-950">
+            Open workspace
+            <span class="ml-2 transition-transform group-hover:translate-x-1">
+              â†’
+            </span>
+          </span>
+        </a>
+
+        <!-- Claims -->
+        <a
+          routerLink="/agent/customers"
+          class="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+        >
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-sm font-medium text-slate-500">
+                Claims
+              </p>
+
+              <p class="mt-2 text-3xl font-semibold text-slate-950">
+                â€”
+              </p>
+            </div>
+
+            <div class="rounded-xl bg-slate-100 px-3 py-2 text-xs font-medium text-slate-700">
+              Workflow
+            </div>
+          </div>
+
+          <p class="mt-4 text-sm leading-6 text-slate-500">
+            Access customer claim workflows from their workspace.
+          </p>
+
+          <span class="mt-5 inline-flex items-center text-sm font-semibold text-slate-950">
+            Open workspace
+            <span class="ml-2 transition-transform group-hover:translate-x-1">
+              â†’
+            </span>
+          </span>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- Customers Requiring Attention -->
+    <section>
+      <div class="mb-4 flex items-end justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-950">
+            Customers requiring attention
+          </h2>
+
+          <p class="mt-1 text-sm text-slate-500">
+            Customers whose profile is not yet complete.
+          </p>
+        </div>
+
+        <a
+          routerLink="/agent/customers"
+          class="text-sm font-semibold text-slate-950 hover:underline"
+        >
+          View all
+        </a>
+      </div>
+
+      @if (attentionCount() === 0) {
+        <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <h3 class="text-base font-semibold text-slate-950">
+            No immediate issues
+          </h3>
+
+          <p class="mt-2 text-sm text-slate-500">
+            Your assigned customer profiles are currently complete.
+          </p>
+        </div>
+      } @else {
+
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div class="divide-y divide-slate-100">
+
+            @for (
+              customer of customersRequiringAttention().slice(0, 5);
+              track customer.customerProfileId
+            ) {
+
+              <a
+                [routerLink]="[
+                  '/agent/customers',
+                  customer.customerProfileId
+                ]"
+                class="block p-5 transition hover:bg-slate-50"
+              >
+                <div class="flex items-center justify-between gap-4">
+
+                  <div>
+                    <p class="font-medium text-slate-950">
+                      Customer
+                    </p>
+
+                    <p class="mt-1 text-sm text-slate-500">
+                      Profile status:
+                      {{ customer.profileStatus }}
+                    </p>
+                  </div>
+
+                  <span class="shrink-0 text-sm font-medium text-slate-600">
+                    Review â†’
+                  </span>
+
+                </div>
+              </a>
+
+            }
+
+          </div>
+        </div>
+      }
+    </section>
+
+  }
+
+</div>
+
+
+
+================================================================================
+FILE: agent\agent-dashboard\agent-dashboard.ts
+================================================================================
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal
+} from '@angular/core';
+import { RouterLink } from '@angular/router';
+
+import { CustomerVehicleApi } from '../../customer-vehicle/services/customer-vehicle-api';
+import { AuthSession } from '../../../core/auth/auth-session';
+import { AgentCustomerListItem } from '../../../core/models/agent-customer.models';
+
+@Component({
+  selector: 'app-agent-dashboard',
+  standalone: true,
+  imports: [RouterLink],
+  templateUrl: './agent-dashboard.html',
+  styleUrl: './agent-dashboard.css',
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class AgentDashboard implements OnInit {
+  private readonly customerVehicleApi = inject(CustomerVehicleApi);
+  private readonly authSession = inject(AuthSession);
+
+  readonly customers = signal<AgentCustomerListItem[]>([]);
+  readonly isLoading = signal(true);
+  readonly errorMessage = signal<string | null>(null);
+
+  readonly customerCount = computed(() => this.customers().length);
+
+  readonly customersRequiringAttention = computed(() =>
+    this.customers().filter(customer =>
+      customer.profileStatus !== 'Completed'
+    )
+  );
+
+  readonly attentionCount = computed(
+    () => this.customersRequiringAttention().length
+  );
+
+  readonly agentName = computed(() => {
+    const user = this.authSession.currentUser();
+
+    if (!user) {
+      return 'Agent';
+    }
+
+    const possibleName =
+      (user as { firstName?: string | null }).firstName ??
+      (user as { userName?: string | null }).userName ??
+      (user as { username?: string | null }).username ??
+      '';
+
+    return possibleName.trim() || 'Agent';
+  });
+
+  ngOnInit(): void {
+    this.loadCustomers();
+  }
+
+  loadCustomers(): void {
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+
+    this.customerVehicleApi.getAgentCustomers().subscribe({
+      next: customers => {
+        this.customers.set(customers ?? []);
+        this.isLoading.set(false);
+      },
+      error: error => {
+        this.isLoading.set(false);
+
+        const status = error?.status;
+
+        if (status === 403) {
+          this.errorMessage.set(
+            'You are not authorized to view your assigned customers.'
+          );
+        } else if (status === 503) {
+          this.errorMessage.set(
+            'The customer service is temporarily unavailable.'
+          );
+        } else {
+          this.errorMessage.set(
+            'We could not load your agent workspace right now.'
+          );
+        }
+      }
+    });
+  }
+}
+
+

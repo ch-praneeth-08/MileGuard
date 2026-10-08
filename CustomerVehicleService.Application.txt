@@ -1,0 +1,4567 @@
+
+================================================================================
+FILE: CustomerVehicleService.Application\CustomerVehicleService.Application.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CustomerVehicleService.Domain\CustomerVehicleService.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.11.0" />
+  </ItemGroup>
+
+</Project>
+
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\AgentCustomerListItemDto.cs\AgentCustomerListItemDto.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.AgentCustomers;
+
+public class AgentCustomerListItemDto
+{
+    public Guid CustomerProfileId { get; set; }
+
+    public string IdentityUserId { get; set; } =
+        string.Empty;
+
+    public string ProfileStatus { get; set; } =
+        string.Empty;
+
+    public DateTime? ProfileCompletedAtUtc { get; set; }
+
+    public DateTime AssignedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\AgentCustomerListItemDto.cs\AgentCustomerResult.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.AgentCustomers;
+
+public class AgentCustomerResult
+{
+    public bool Succeeded { get; init; }
+
+    public bool NotFound { get; init; }
+
+    public bool NotAssignedToAgent { get; init; }
+
+    public AgentCustomerWorkspaceDto? Customer { get; init; }
+
+    public static AgentCustomerResult Success(
+        AgentCustomerWorkspaceDto customer)
+    {
+        return new AgentCustomerResult
+        {
+            Succeeded = true,
+            Customer = customer
+        };
+    }
+
+    public static AgentCustomerResult CustomerNotFound()
+    {
+        return new AgentCustomerResult
+        {
+            NotFound = true
+        };
+    }
+
+    public static AgentCustomerResult Forbidden()
+    {
+        return new AgentCustomerResult
+        {
+            NotAssignedToAgent = true
+        };
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\AgentCustomerListItemDto.cs\AgentCustomerWorkspaceDto.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.AgentCustomers;
+
+public class AgentCustomerWorkspaceDto
+{
+    public Guid CustomerProfileId { get; set; }
+
+    public string IdentityUserId { get; set; } =
+        string.Empty;
+
+    /*
+     * Identity-owned, read-only display information.
+     */
+    public string? FirstName { get; set; }
+
+    public string? LastName { get; set; }
+
+    public string? Email { get; set; }
+
+    /*
+     * CustomerVehicle-owned profile information.
+     */
+    public DateOnly? DateOfBirth { get; set; }
+
+    public string? Phone { get; set; }
+
+    public string? AddressLine1 { get; set; }
+
+    public string? AddressLine2 { get; set; }
+
+    public string? City { get; set; }
+
+    public string? State { get; set; }
+
+    public string? PostalCode { get; set; }
+
+    public string? AreaType { get; set; }
+
+    public string ProfileStatus { get; set; } =
+        string.Empty;
+
+    public DateTime? ProfileCompletedAtUtc { get; set; }
+
+    public DateTime AssignedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Assignments\AgentAssignmentDto.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Assignments;
+
+public class AgentAssignmentDto
+{
+    public Guid Id { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public string AgentIdentityUserId { get; set; } =
+        string.Empty;
+
+    public string AssignedByIdentityUserId { get; set; } =
+        string.Empty;
+
+    public DateTime AssignedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Assignments\AssignAgentRequest.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Assignments;
+
+public class AssignAgentRequest
+{
+    public string AgentIdentityUserId { get; set; } =
+        string.Empty;
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Assignments\AssignAgentResult.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Assignments;
+
+public class AssignAgentResult
+{
+    public bool Succeeded { get; init; }
+
+    public bool CustomerNotFound { get; init; }
+
+    public bool ProfileIncomplete { get; init; }
+
+    public bool AlreadyAssigned { get; init; }
+
+    public bool AgentIneligible { get; init; }
+
+    public bool IdentityUnavailable { get; init; }
+
+    public AgentAssignmentDto? Assignment { get; init; }
+
+    public static AssignAgentResult Success(
+        AgentAssignmentDto assignment)
+    {
+        return new AssignAgentResult
+        {
+            Succeeded = true,
+            Assignment = assignment
+        };
+    }
+
+    public static AssignAgentResult CustomerMissing()
+    {
+        return new AssignAgentResult
+        {
+            CustomerNotFound = true
+        };
+    }
+
+    public static AssignAgentResult Incomplete()
+    {
+        return new AssignAgentResult
+        {
+            ProfileIncomplete = true
+        };
+    }
+
+    public static AssignAgentResult Duplicate()
+    {
+        return new AssignAgentResult
+        {
+            AlreadyAssigned = true
+        };
+    }
+
+    public static AssignAgentResult Ineligible()
+    {
+        return new AssignAgentResult
+        {
+            AgentIneligible = true
+        };
+    }
+
+    public static AssignAgentResult DependencyUnavailable()
+    {
+        return new AssignAgentResult
+        {
+            IdentityUnavailable = true
+        };
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Assignments\AssignmentReviewCustomerDto.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Assignments;
+
+public class AssignmentReviewCustomerDto
+{
+    public Guid CustomerProfileId { get; set; }
+
+    public string IdentityUserId { get; set; } =
+        string.Empty;
+
+    public DateOnly? DateOfBirth { get; set; }
+
+    public string? Phone { get; set; }
+
+    public string? City { get; set; }
+
+    public string? State { get; set; }
+
+    public string? PostalCode { get; set; }
+
+    public string? AreaType { get; set; }
+
+    public string ProfileStatus { get; set; } =
+        string.Empty;
+
+    public DateTime? CompletedAtUtc { get; set; }
+
+    public bool IsAssigned { get; set; }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Assignments\UnassignedCustomerDto.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Assignments;
+
+public class UnassignedCustomerDto
+{
+    public Guid CustomerProfileId { get; set; }
+
+    public string IdentityUserId { get; set; } =
+        string.Empty;
+
+    public string ProfileStatus { get; set; } =
+        string.Empty;
+
+    public DateTime CompletedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Drivers\DriverDto.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Drivers;
+
+public class DriverDto
+{
+    public Guid Id { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public string LicenceNumber { get; set; } =
+        string.Empty;
+
+    public string LicenceState { get; set; } =
+        string.Empty;
+
+    public DateOnly LicenceIssueDate { get; set; }
+
+    public DateOnly LicenceExpiryDate { get; set; }
+
+    public int Age { get; set; }
+
+    public int DrivingExperienceYears { get; set; }
+
+    public bool LicenceValid { get; set; }
+
+    public bool Ready { get; set; }
+
+    public IReadOnlyList<string> ReadinessIssues
+    { get; set; } = [];
+
+    public DateTime CreatedAtUtc { get; set; }
+
+    public DateTime? UpdatedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Drivers\DriverOperationResult.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Drivers;
+
+public class DriverOperationResult
+{
+    public bool Succeeded { get; init; }
+
+    public bool CustomerNotFound { get; init; }
+
+    public bool DriverNotFound { get; init; }
+
+    public bool NotAssignedToAgent { get; init; }
+
+    public bool DuplicateLicence { get; init; }
+
+    public DriverDto? Driver { get; init; }
+
+    public static DriverOperationResult Success(
+        DriverDto driver)
+    {
+        return new DriverOperationResult
+        {
+            Succeeded = true,
+            Driver = driver
+        };
+    }
+
+    public static DriverOperationResult MissingCustomer()
+    {
+        return new DriverOperationResult
+        {
+            CustomerNotFound = true
+        };
+    }
+
+    public static DriverOperationResult MissingDriver()
+    {
+        return new DriverOperationResult
+        {
+            DriverNotFound = true
+        };
+    }
+
+    public static DriverOperationResult Forbidden()
+    {
+        return new DriverOperationResult
+        {
+            NotAssignedToAgent = true
+        };
+    }
+
+    public static DriverOperationResult LicenceConflict()
+    {
+        return new DriverOperationResult
+        {
+            DuplicateLicence = true
+        };
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Drivers\UpsertDriverRequest.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Drivers;
+
+public class UpsertDriverRequest
+{
+    public string LicenceNumber { get; set; } =
+        string.Empty;
+
+    public string LicenceState { get; set; } =
+        string.Empty;
+
+    public DateOnly? LicenceIssueDate { get; set; }
+
+    public DateOnly? LicenceExpiryDate { get; set; }
+}
+
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Identity\EligibleAgentDto.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Identity;
+
+public class EligibleAgentDto
+{
+    public string Id { get; set; } = string.Empty;
+
+    public string FirstName { get; set; } = string.Empty;
+
+    public string LastName { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Identity\EligibleAgentResult.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Identity;
+
+public class EligibleAgentResult
+{
+    public bool Succeeded { get; init; }
+
+    public bool NotEligible { get; init; }
+
+    public EligibleAgentDto? Agent { get; init; }
+
+    public static EligibleAgentResult Success(
+        EligibleAgentDto agent)
+    {
+        return new EligibleAgentResult
+        {
+            Succeeded = true,
+            Agent = agent
+        };
+    }
+
+    public static EligibleAgentResult Ineligible()
+    {
+        return new EligibleAgentResult
+        {
+            NotEligible = true
+        };
+    }
+
+    public static EligibleAgentResult Failed()
+    {
+        return new EligibleAgentResult();
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Identity\EligibleAgentsResult.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Identity;
+
+public class EligibleAgentsResult
+{
+    public bool Succeeded { get; init; }
+
+    public IReadOnlyList<EligibleAgentDto> Agents
+    { get; init; } = [];
+
+    public static EligibleAgentsResult Success(
+        IReadOnlyList<EligibleAgentDto> agents)
+    {
+        return new EligibleAgentsResult
+        {
+            Succeeded = true,
+            Agents = agents
+        };
+    }
+
+    public static EligibleAgentsResult Failed()
+    {
+        return new EligibleAgentsResult
+        {
+            Succeeded = false
+        };
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Identity\IdentityUserSummaryDto.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Identity;
+
+public class IdentityUserSummaryDto
+{
+    public string Id { get; set; } =
+        string.Empty;
+
+    public string FirstName { get; set; } =
+        string.Empty;
+
+    public string LastName { get; set; } =
+        string.Empty;
+
+    public string Email { get; set; } =
+        string.Empty;
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Profiles\CreateCustomerProfileRequest.cs
+================================================================================
+using CustomerVehicleService.Domain.Enums;
+
+namespace CustomerVehicleService.Application.Dtos.Profiles;
+
+public class CreateCustomerProfileRequest
+{
+    public DateOnly? DateOfBirth { get; set; }
+
+    public string Phone { get; set; } = string.Empty;
+
+    public string AddressLine1 { get; set; } = string.Empty;
+
+    public string? AddressLine2 { get; set; }
+
+    public string City { get; set; } = string.Empty;
+
+    public string State { get; set; } = string.Empty;
+
+    public string PostalCode { get; set; } = string.Empty;
+
+    public AreaType? AreaType { get; set; }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Profiles\CustomerProfileDto.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Profiles;
+
+public class CustomerProfileDto
+{
+    public Guid Id { get; set; }
+
+    public string IdentityUserId { get; set; } = string.Empty;
+
+    public DateOnly? DateOfBirth { get; set; }
+
+    public string? Phone { get; set; }
+
+    public string? AddressLine1 { get; set; }
+
+    public string? AddressLine2 { get; set; }
+
+    public string? City { get; set; }
+
+    public string? State { get; set; }
+
+    public string? PostalCode { get; set; }
+
+    public string? AreaType { get; set; }
+
+    public string ProfileStatus { get; set; } = string.Empty;
+
+    public DateTime CreatedAtUtc { get; set; }
+
+    public DateTime? UpdatedAtUtc { get; set; }
+
+    public DateTime? CompletedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Profiles\ProfileOperationResult.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Profiles;
+
+public class ProfileOperationResult
+{
+    public bool Succeeded { get; init; }
+
+    public bool AlreadyExists { get; init; }
+
+    public bool NotFound { get; init; }
+
+    public CustomerProfileDto? Profile { get; init; }
+
+    public IEnumerable<string> Errors { get; init; } = [];
+
+    public static ProfileOperationResult Success(
+        CustomerProfileDto profile)
+    {
+        return new ProfileOperationResult
+        {
+            Succeeded = true,
+            Profile = profile
+        };
+    }
+
+    public static ProfileOperationResult Duplicate()
+    {
+        return new ProfileOperationResult
+        {
+            AlreadyExists = true
+        };
+    }
+
+    public static ProfileOperationResult ProfileNotFound()
+    {
+        return new ProfileOperationResult
+        {
+            NotFound = true
+        };
+    }
+
+    public static ProfileOperationResult Failed(
+        IEnumerable<string> errors)
+    {
+        return new ProfileOperationResult
+        {
+            Errors = errors
+        };
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Profiles\UpdateCustomerProfileRequest.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Profiles;
+
+public class UpdateCustomerProfileRequest
+{
+    public string Phone { get; set; } = string.Empty;
+
+    public string AddressLine1 { get; set; } = string.Empty;
+
+    public string? AddressLine2 { get; set; }
+
+    public string City { get; set; } = string.Empty;
+
+    public string State { get; set; } = string.Empty;
+
+    public string PostalCode { get; set; } = string.Empty;
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Readiness\CustomerReadinessDto.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Readiness;
+
+public class CustomerReadinessDto
+{
+    public bool ReadyForQuote { get; set; }
+
+    public ReadinessStageDto Profile { get; set; } =
+        new();
+
+    public ReadinessStageDto Agent { get; set; } =
+        new();
+
+    public ReadinessStageDto Driver { get; set; } =
+        new();
+
+    public ReadinessStageDto Vehicle { get; set; } =
+        new();
+
+    public IReadOnlyList<string> ReadinessIssues
+    { get; set; } = [];
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Readiness\ReadinessStageDto.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Readiness;
+
+public class ReadinessStageDto
+{
+    public bool Complete { get; set; }
+
+    public IReadOnlyList<string> Issues
+    { get; set; } = [];
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Risk\CustomerRiskDto.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Risk;
+
+public class CustomerRiskDto
+{
+    public Guid CustomerProfileId { get; set; }
+
+    public string? AssignedAgentIdentityUserId
+    { get; set; }
+
+    public bool ReadyForQuote { get; set; }
+
+    public CustomerRiskProfileDto Profile
+    { get; set; } =
+        new CustomerRiskProfileDto();
+
+    public DriverRiskDto? Driver
+    { get; set; }
+
+    public IReadOnlyList<VehicleRiskDto>
+        Vehicles
+    { get; set; } =
+        Array.Empty<VehicleRiskDto>();
+
+    public IReadOnlyList<string>
+        ReadinessIssues
+    { get; set; } =
+        Array.Empty<string>();
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Risk\CustomerRiskProfileDto.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Risk;
+
+public class CustomerRiskProfileDto
+{
+    public DateOnly? DateOfBirth { get; set; }
+
+    public string Geography { get; set; } =
+        string.Empty;
+
+    public string ProfileStatus { get; set; } =
+        string.Empty;
+}
+
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Risk\DriverRiskDto.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Risk;
+
+public class DriverRiskDto
+{
+    public Guid DriverId { get; set; }
+
+    public int Age { get; set; }
+
+    public int DrivingExperienceYears { get; set; }
+
+    public DateOnly LicenceIssueDate { get; set; }
+
+    public DateOnly LicenceExpiryDate { get; set; }
+
+    public bool LicenceValid { get; set; }
+
+    public bool Ready { get; set; }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Risk\VehicleRiskDto.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Risk;
+
+public class VehicleRiskDto
+{
+    public Guid VehicleId { get; set; }
+
+    public string Vin { get; set; } =
+        string.Empty;
+
+    public string Make { get; set; } =
+        string.Empty;
+
+    public string Model { get; set; } =
+        string.Empty;
+
+    public int ManufacturingYear { get; set; }
+
+    public int VehicleAge { get; set; }
+
+    public string VehicleType { get; set; } =
+        string.Empty;
+
+    public decimal VehicleValue { get; set; }
+
+    public string FuelType { get; set; } =
+        string.Empty;
+
+    public int CurrentOdometer { get; set; }
+
+    public int AnnualMileage { get; set; }
+
+    public string OwnershipType { get; set; } =
+        string.Empty;
+
+    public DateOnly PurchaseDate { get; set; }
+
+    public bool Ready { get; set; }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\VehicleImages\VehicleImageResult.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.VehicleImages;
+
+public class VehicleImageResult
+{
+    public bool Succeeded { get; init; }
+
+    public bool VehicleNotFound { get; init; }
+
+    public bool NotAuthorized { get; init; }
+
+    public bool ImageNotFound { get; init; }
+
+    public bool InvalidFile { get; init; }
+
+    public string? Error { get; init; }
+
+    public string? ContentType { get; init; }
+
+    public string? FileName { get; init; }
+
+    public byte[]? Content { get; init; }
+
+    public static VehicleImageResult Success()
+    {
+        return new VehicleImageResult
+        {
+            Succeeded = true
+        };
+    }
+
+    public static VehicleImageResult Success(
+        string fileName,
+        string contentType,
+        byte[] content)
+    {
+        return new VehicleImageResult
+        {
+            Succeeded = true,
+            FileName = fileName,
+            ContentType = contentType,
+            Content = content
+        };
+    }
+
+    public static VehicleImageResult MissingVehicle()
+    {
+        return new VehicleImageResult
+        {
+            VehicleNotFound = true
+        };
+    }
+
+    public static VehicleImageResult Forbidden()
+    {
+        return new VehicleImageResult
+        {
+            NotAuthorized = true
+        };
+    }
+
+    public static VehicleImageResult MissingImage()
+    {
+        return new VehicleImageResult
+        {
+            ImageNotFound = true
+        };
+    }
+
+    public static VehicleImageResult Invalid(
+        string error)
+    {
+        return new VehicleImageResult
+        {
+            InvalidFile = true,
+            Error = error
+        };
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\VehicleImages\VehicleImageUpload.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.VehicleImages;
+
+public class VehicleImageUpload
+{
+    public string FileName { get; set; } =
+        string.Empty;
+
+    public string ContentType { get; set; } =
+        string.Empty;
+
+    public long Length { get; set; }
+
+    public Stream Content { get; set; } =
+        Stream.Null;
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Vehicles\UpsertVehicleRequest.cs
+================================================================================
+using CustomerVehicleService.Domain.Enums;
+
+namespace CustomerVehicleService.Application.Dtos.Vehicles;
+
+public class UpsertVehicleRequest
+{
+    public string Vin { get; set; } =
+        string.Empty;
+
+    public string RegistrationNumber { get; set; } =
+        string.Empty;
+
+    public string Make { get; set; } =
+        string.Empty;
+
+    public string Model { get; set; } =
+        string.Empty;
+
+    public int ManufacturingYear { get; set; }
+
+    public VehicleType VehicleType { get; set; }
+
+    public FuelType FuelType { get; set; }
+
+    public decimal VehicleValue { get; set; }
+
+    public int CurrentOdometer { get; set; }
+
+    public int AnnualMileage { get; set; }
+
+    public OwnershipType OwnershipType { get; set; }
+
+    public DateOnly? PurchaseDate { get; set; }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Vehicles\VehicleDto.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Vehicles;
+
+public class VehicleDto
+{
+    public Guid Id { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public string Vin { get; set; } =
+        string.Empty;
+
+    public string RegistrationNumber { get; set; } =
+        string.Empty;
+
+    public string Make { get; set; } =
+        string.Empty;
+
+    public string Model { get; set; } =
+        string.Empty;
+
+    public int ManufacturingYear { get; set; }
+
+    public string VehicleType { get; set; } =
+        string.Empty;
+
+    public bool HasImage { get; set; }
+    public string FuelType { get; set; } =
+        string.Empty;
+
+    public decimal VehicleValue { get; set; }
+
+    public int CurrentOdometer { get; set; }
+
+    public int AnnualMileage { get; set; }
+
+    public string OwnershipType { get; set; } =
+        string.Empty;
+
+    public DateOnly PurchaseDate { get; set; }
+
+    public int VehicleAge { get; set; }
+
+    public bool Ready { get; set; }
+
+    public IReadOnlyList<string> ReadinessIssues
+    { get; set; } = [];
+
+
+
+    public DateTime CreatedAtUtc { get; set; }
+
+    public DateTime? UpdatedAtUtc { get; set; }
+    public string? ImageFileName { get; set; }
+
+    public string? ImageContentType { get; set; }
+
+    public long? ImageSizeBytes { get; set; }
+
+    public DateTime? ImageUpdatedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Vehicles\VehicleListResult.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Vehicles;
+
+public class VehicleListResult
+{
+    public bool Succeeded { get; init; }
+
+    public bool CustomerNotFound { get; init; }
+
+    public bool NotAssignedToAgent { get; init; }
+
+    public IReadOnlyList<VehicleDto> Vehicles
+    { get; init; } = [];
+
+    public static VehicleListResult Success(
+        IReadOnlyList<VehicleDto> vehicles)
+    {
+        return new VehicleListResult
+        {
+            Succeeded = true,
+            Vehicles = vehicles
+        };
+    }
+
+    public static VehicleListResult MissingCustomer()
+    {
+        return new VehicleListResult
+        {
+            CustomerNotFound = true
+        };
+    }
+
+    public static VehicleListResult Forbidden()
+    {
+        return new VehicleListResult
+        {
+            NotAssignedToAgent = true
+        };
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Dtos\Vehicles\VehicleOperationResult.cs
+================================================================================
+namespace CustomerVehicleService.Application.Dtos.Vehicles;
+
+public class VehicleOperationResult
+{
+    public bool Succeeded { get; init; }
+
+    public bool CustomerNotFound { get; init; }
+
+    public bool VehicleNotFound { get; init; }
+
+    public bool NotAssignedToAgent { get; init; }
+
+    public bool DuplicateVin { get; init; }
+
+    public bool DuplicateRegistration { get; init; }
+
+    public VehicleDto? Vehicle { get; init; }
+
+    public static VehicleOperationResult Success(
+        VehicleDto vehicle)
+    {
+        return new VehicleOperationResult
+        {
+            Succeeded = true,
+            Vehicle = vehicle
+        };
+    }
+
+    public static VehicleOperationResult MissingCustomer()
+    {
+        return new VehicleOperationResult
+        {
+            CustomerNotFound = true
+        };
+    }
+
+    public static VehicleOperationResult MissingVehicle()
+    {
+        return new VehicleOperationResult
+        {
+            VehicleNotFound = true
+        };
+    }
+
+    public static VehicleOperationResult Forbidden()
+    {
+        return new VehicleOperationResult
+        {
+            NotAssignedToAgent = true
+        };
+    }
+
+    public static VehicleOperationResult VinConflict()
+    {
+        return new VehicleOperationResult
+        {
+            DuplicateVin = true
+        };
+    }
+
+    public static VehicleOperationResult RegistrationConflict()
+    {
+        return new VehicleOperationResult
+        {
+            DuplicateRegistration = true
+        };
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Interfaces\Clients\IIdentityServiceClient.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.Identity;
+
+namespace CustomerVehicleService.Application.Interfaces.Clients;
+
+public interface IIdentityServiceClient
+{
+    Task<EligibleAgentsResult>
+        GetEligibleAgentsAsync();
+
+    Task<EligibleAgentResult>
+        GetEligibleAgentAsync(
+            string identityUserId);
+
+    Task<IdentityUserSummaryDto?>
+        GetUserSummaryAsync(
+            string identityUserId);
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Interfaces\IAgentAssignmentService.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.Assignments;
+using CustomerVehicleService.Application.Dtos.Identity;
+
+namespace CustomerVehicleService.Application.Interfaces;
+
+public interface IAgentAssignmentService
+{
+    Task<IReadOnlyList<UnassignedCustomerDto>>
+        GetUnassignedCustomersAsync();
+
+    Task<AssignmentReviewCustomerDto?>
+        GetCustomerForAssignmentAsync(
+            Guid customerProfileId);
+
+    Task<EligibleAgentsResult>
+        GetEligibleAgentsAsync();
+
+    Task<AssignAgentResult>
+        AssignAgentAsync(
+            Guid customerProfileId,
+            string adminIdentityUserId,
+            AssignAgentRequest request);
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Interfaces\IAgentCustomerService.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.AgentCustomers;
+
+namespace CustomerVehicleService.Application.Interfaces;
+
+public interface IAgentCustomerService
+{
+    Task<IReadOnlyList<AgentCustomerListItemDto>>
+        GetMyCustomersAsync(
+            string agentIdentityUserId);
+
+    Task<AgentCustomerResult>
+        GetCustomerAsync(
+            string agentIdentityUserId,
+            Guid customerProfileId);
+}
+
+
+================================================================================
+FILE: CustomerVehicleService.Application\Interfaces\ICustomerProfileService.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.Profiles;
+
+namespace CustomerVehicleService.Application.Interfaces;
+
+public interface ICustomerProfileService
+{
+    Task<CustomerProfileDto?>
+        GetAsync(
+            string identityUserId);
+
+    Task<ProfileOperationResult>
+        CreateAsync(
+            string identityUserId,
+            CreateCustomerProfileRequest request);
+
+    Task<ProfileOperationResult>
+        UpdateAsync(
+            string identityUserId,
+            UpdateCustomerProfileRequest request);
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Interfaces\ICustomerReadinessService.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.Readiness;
+
+namespace CustomerVehicleService.Application.Interfaces;
+
+public interface ICustomerReadinessService
+{
+    Task<CustomerReadinessDto?>
+        GetForCustomerProfileAsync(
+            Guid customerProfileId);
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Interfaces\ICustomerRiskService.cs
+================================================================================
+using System;
+using System.Threading.Tasks;
+using CustomerVehicleService.Application.Dtos.Risk;
+
+namespace CustomerVehicleService.Application.Interfaces;
+
+public interface ICustomerRiskService
+{
+    Task<CustomerRiskDto?>
+        GetCustomerRiskAsync(
+            Guid customerProfileId);
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Interfaces\IDriverService.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.Drivers;
+
+namespace CustomerVehicleService.Application.Interfaces;
+
+public interface IDriverService
+{
+    Task<DriverOperationResult>
+        GetForAgentAsync(
+            string agentIdentityUserId,
+            Guid customerProfileId);
+
+    Task<DriverOperationResult>
+        UpsertForAgentAsync(
+            string agentIdentityUserId,
+            Guid customerProfileId,
+            UpsertDriverRequest request);
+
+    Task<DriverDto?>
+        GetForCustomerAsync(
+            string customerIdentityUserId);
+}
+
+
+================================================================================
+FILE: CustomerVehicleService.Application\Interfaces\IVehicleImageService.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.VehicleImages;
+
+namespace CustomerVehicleService.Application.Interfaces;
+
+public interface IVehicleImageService
+{
+    Task<VehicleImageResult> UploadForAgentAsync(
+        string agentIdentityUserId,
+        Guid vehicleId,
+        VehicleImageUpload upload);
+
+    Task<VehicleImageResult> GetForAgentAsync(
+        string agentIdentityUserId,
+        Guid vehicleId);
+
+    Task<VehicleImageResult> GetForCustomerAsync(
+        string customerIdentityUserId,
+        Guid vehicleId);
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Interfaces\IVehicleService.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.Vehicles;
+
+namespace CustomerVehicleService.Application.Interfaces;
+
+public interface IVehicleService
+{
+    Task<VehicleListResult>
+    GetForAgentAsync(
+        string agentIdentityUserId,
+        Guid customerProfileId);
+
+    Task<VehicleOperationResult>
+        CreateForAgentAsync(
+            string agentIdentityUserId,
+            Guid customerProfileId,
+            UpsertVehicleRequest request);
+
+    Task<VehicleOperationResult>
+        GetVehicleForAgentAsync(
+            string agentIdentityUserId,
+            Guid vehicleId);
+
+    Task<VehicleOperationResult>
+        UpdateForAgentAsync(
+            string agentIdentityUserId,
+            Guid vehicleId,
+            UpsertVehicleRequest request);
+
+    Task<IReadOnlyList<VehicleDto>?>
+        GetForCustomerAsync(
+            string customerIdentityUserId);
+
+    Task<VehicleOperationResult>
+        GetVehicleForCustomerAsync(
+            string customerIdentityUserId,
+            Guid vehicleId);
+}
+
+
+================================================================================
+FILE: CustomerVehicleService.Application\Interfaces\Repositories\IAgentAssignmentRepository.cs
+================================================================================
+using CustomerVehicleService.Domain.Entities;
+
+namespace CustomerVehicleService.Application.Interfaces.Repositories;
+
+public interface IAgentAssignmentRepository
+{
+    Task<List<CustomerProfile>>
+        GetUnassignedCompleteProfilesAsync();
+
+    Task<CustomerProfile?>
+        GetCustomerProfileAsync(
+            Guid customerProfileId);
+
+    Task<bool>
+        AssignmentExistsAsync(
+            Guid customerProfileId);
+
+    Task AddAsync(
+        AgentAssignment assignment);
+
+    Task SaveChangesAsync();
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Interfaces\Repositories\IAgentCustomerRepository.cs
+================================================================================
+using CustomerVehicleService.Domain.Entities;
+
+namespace CustomerVehicleService.Application.Interfaces.Repositories;
+
+public interface IAgentCustomerRepository
+{
+    Task<List<AgentAssignment>>
+        GetAssignmentsForAgentAsync(
+            string agentIdentityUserId);
+
+    Task<CustomerProfile?>
+        GetCustomerProfileAsync(
+            Guid customerProfileId);
+
+    Task<AgentAssignment?>
+        GetAssignmentAsync(
+            Guid customerProfileId);
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Interfaces\Repositories\ICustomerProfileRepository.cs
+================================================================================
+using CustomerVehicleService.Domain.Entities;
+
+namespace CustomerVehicleService.Application.Interfaces.Repositories;
+
+public interface ICustomerProfileRepository
+{
+    Task<CustomerProfile?> GetByIdentityUserIdAsync(
+        string identityUserId);
+
+    Task AddAsync(
+        CustomerProfile profile);
+
+    Task SaveChangesAsync();
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Interfaces\Repositories\IDriverRepository.cs
+================================================================================
+using CustomerVehicleService.Domain.Entities;
+
+namespace CustomerVehicleService.Application.Interfaces.Repositories;
+
+public interface IDriverRepository
+{
+    Task<DriverProfile?>
+        GetByCustomerProfileIdAsync(
+            Guid customerProfileId);
+
+    Task<bool>
+        LicenceExistsForAnotherDriverAsync(
+            string licenceNumber,
+            Guid? driverId = null);
+
+    Task AddAsync(
+        DriverProfile driver);
+
+    Task SaveChangesAsync();
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Interfaces\Repositories\IVehicleRepository.cs
+================================================================================
+using CustomerVehicleService.Domain.Entities;
+
+namespace CustomerVehicleService.Application.Interfaces.Repositories;
+
+public interface IVehicleRepository
+{
+    Task<List<Vehicle>>
+        GetByCustomerProfileIdAsync(
+            Guid customerProfileId);
+
+    Task<Vehicle?>
+        GetByIdAsync(
+            Guid vehicleId);
+
+    Task<bool>
+        VinExistsForAnotherVehicleAsync(
+            string vin,
+            Guid? vehicleId = null);
+
+    Task<bool>
+        RegistrationExistsForAnotherVehicleAsync(
+            string registrationNumber,
+            Guid? vehicleId = null);
+
+    Task AddAsync(
+        Vehicle vehicle);
+
+    Task SaveChangesAsync();
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Interfaces\Repositories\RepositoryOperationResult.cs
+================================================================================
+namespace CustomerVehicleService.Application.Interfaces.Repositories;
+
+public class RepositoryOperationResult
+{
+    public bool Succeeded { get; init; }
+
+    public IEnumerable<string> Errors { get; init; } = [];
+
+    public static RepositoryOperationResult Success()
+    {
+        return new RepositoryOperationResult
+        {
+            Succeeded = true
+        };
+    }
+
+    public static RepositoryOperationResult Failed(
+        IEnumerable<string> errors)
+    {
+        return new RepositoryOperationResult
+        {
+            Errors = errors
+        };
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Interfaces\Storage\IVehicleImageStorage.cs
+================================================================================
+namespace CustomerVehicleService.Application.Interfaces.Storage;
+
+public interface IVehicleImageStorage
+{
+    Task<string> SaveAsync(
+        Stream content,
+        string extension);
+
+    Task<byte[]?> ReadAsync(
+        string storedFileName);
+
+    Task DeleteAsync(
+        string storedFileName);
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Services\AgentAssignmentService.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.Assignments;
+using CustomerVehicleService.Application.Dtos.Identity;
+using CustomerVehicleService.Application.Interfaces;
+using CustomerVehicleService.Application.Interfaces.Clients;
+using CustomerVehicleService.Application.Interfaces.Repositories;
+using CustomerVehicleService.Domain.Entities;
+using CustomerVehicleService.Domain.Enums;
+
+namespace CustomerVehicleService.Application.Services;
+
+public class AgentAssignmentService
+    : IAgentAssignmentService
+{
+    private readonly IAgentAssignmentRepository
+        _assignmentRepository;
+
+    private readonly IIdentityServiceClient
+        _identityServiceClient;
+
+    public AgentAssignmentService(
+        IAgentAssignmentRepository assignmentRepository,
+        IIdentityServiceClient identityServiceClient)
+    {
+        _assignmentRepository =
+            assignmentRepository;
+
+        _identityServiceClient =
+            identityServiceClient;
+    }
+
+    public async Task<IReadOnlyList<UnassignedCustomerDto>>
+        GetUnassignedCustomersAsync()
+    {
+        var profiles =
+            await _assignmentRepository
+                .GetUnassignedCompleteProfilesAsync();
+        return profiles
+            .Select(profile =>
+                new UnassignedCustomerDto
+                {
+                    CustomerProfileId =
+                        profile.Id,
+
+                    IdentityUserId =
+                        profile.IdentityUserId,
+
+                    ProfileStatus =
+                        profile.ProfileStatus
+                            .ToString(),
+
+                    CompletedAtUtc =
+                        profile.CompletedAtUtc
+                        ?? profile.CreatedAtUtc
+                })
+            .ToList();
+    }
+    public async Task<AssignmentReviewCustomerDto?>
+     GetCustomerForAssignmentAsync(
+         Guid customerProfileId)
+    {
+        var profile =
+            await _assignmentRepository
+                .GetCustomerProfileAsync(
+                    customerProfileId);
+
+        if (profile is null)
+        {
+            return null;
+        }
+
+        var isAssigned =
+            await _assignmentRepository
+                .AssignmentExistsAsync(
+                    customerProfileId);
+
+        return new AssignmentReviewCustomerDto
+        {
+            CustomerProfileId =
+                profile.Id,
+
+            IdentityUserId =
+                profile.IdentityUserId,
+
+            DateOfBirth =
+                profile.DateOfBirth,
+
+            Phone =
+                profile.Phone,
+
+            City =
+                profile.City,
+
+            State =
+                profile.State,
+
+            PostalCode =
+                profile.PostalCode,
+
+            AreaType =
+                profile.AreaType?.ToString(),
+
+            ProfileStatus =
+                profile.ProfileStatus.ToString(),
+
+            CompletedAtUtc =
+                profile.CompletedAtUtc,
+
+            IsAssigned =
+                isAssigned
+        };
+    }
+    public async Task<EligibleAgentsResult>
+        GetEligibleAgentsAsync()
+    {
+        return await _identityServiceClient
+            .GetEligibleAgentsAsync();
+    }
+
+    public async Task<AssignAgentResult>
+        AssignAgentAsync(
+            Guid customerProfileId,
+            string adminIdentityUserId,
+            AssignAgentRequest request)
+    {
+        var profile =
+            await _assignmentRepository
+                .GetCustomerProfileAsync(
+                    customerProfileId);
+
+        if (profile is null)
+        {
+            return AssignAgentResult
+                .CustomerMissing();
+        }
+
+        if (
+            profile.ProfileStatus !=
+            ProfileStatus.Complete
+        )
+        {
+            return AssignAgentResult
+                .Incomplete();
+        }
+
+        var alreadyAssigned =
+            await _assignmentRepository
+                .AssignmentExistsAsync(
+                    customerProfileId);
+
+        if (alreadyAssigned)
+        {
+            return AssignAgentResult
+                .Duplicate();
+        }
+
+        /*
+         * Revalidate eligibility at assignment time.
+         * Do not trust the Agent list previously rendered
+         * to the Admin.
+         */
+        var agentResult =
+            await _identityServiceClient
+                .GetEligibleAgentAsync(
+                    request.AgentIdentityUserId);
+
+        if (
+            !agentResult.Succeeded &&
+            agentResult.NotEligible
+        )
+        {
+            return AssignAgentResult
+                .Ineligible();
+        }
+
+        if (!agentResult.Succeeded)
+        {
+            return AssignAgentResult
+                .DependencyUnavailable();
+        }
+
+        var assignment =
+            new AgentAssignment
+            {
+                Id = Guid.NewGuid(),
+
+                CustomerProfileId =
+                    customerProfileId,
+
+                AgentIdentityUserId =
+                    request.AgentIdentityUserId,
+
+                AssignedByIdentityUserId =
+                    adminIdentityUserId,
+
+                AssignedAtUtc =
+                    DateTime.UtcNow
+            };
+
+        await _assignmentRepository
+            .AddAsync(assignment);
+
+        try
+        {
+            await _assignmentRepository
+                .SaveChangesAsync();
+        }
+        catch (Exception)
+        {
+            /*
+             * CustomerProfileId has a unique index.
+             *
+             * If two Admin requests race, one succeeds
+             * and the other is reported as a conflict.
+             */
+            return AssignAgentResult
+                .Duplicate();
+        }
+
+        return AssignAgentResult.Success(
+            new AgentAssignmentDto
+            {
+                Id =
+                    assignment.Id,
+
+                CustomerProfileId =
+                    assignment.CustomerProfileId,
+
+                AgentIdentityUserId =
+                    assignment.AgentIdentityUserId,
+
+                AssignedByIdentityUserId =
+                    assignment
+                        .AssignedByIdentityUserId,
+
+                AssignedAtUtc =
+                    assignment.AssignedAtUtc
+            });
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Services\AgentCustomerService.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.AgentCustomers;
+using CustomerVehicleService.Application.Interfaces;
+using CustomerVehicleService.Application.Interfaces.Clients;
+using CustomerVehicleService.Application.Interfaces.Repositories;
+
+namespace CustomerVehicleService.Application.Services;
+
+public class AgentCustomerService
+    : IAgentCustomerService
+{
+    private readonly IAgentCustomerRepository
+        _agentCustomerRepository;
+
+    private readonly IIdentityServiceClient
+        _identityServiceClient;
+
+    public AgentCustomerService(
+        IAgentCustomerRepository agentCustomerRepository,
+        IIdentityServiceClient identityServiceClient)
+    {
+        _agentCustomerRepository =
+            agentCustomerRepository;
+
+        _identityServiceClient =
+            identityServiceClient;
+    }
+
+    public async Task<IReadOnlyList<AgentCustomerListItemDto>>
+        GetMyCustomersAsync(
+            string agentIdentityUserId)
+    {
+        var assignments =
+            await _agentCustomerRepository
+                .GetAssignmentsForAgentAsync(
+                    agentIdentityUserId);
+
+        return assignments
+            .Select(
+                assignment =>
+                    new AgentCustomerListItemDto
+                    {
+                        CustomerProfileId =
+                            assignment
+                                .CustomerProfileId,
+
+                        IdentityUserId =
+                            assignment
+                                .CustomerProfile
+                                .IdentityUserId,
+
+                        ProfileStatus =
+                            assignment
+                                .CustomerProfile
+                                .ProfileStatus
+                                .ToString(),
+
+                        ProfileCompletedAtUtc =
+                            assignment
+                                .CustomerProfile
+                                .CompletedAtUtc,
+
+                        AssignedAtUtc =
+                            assignment
+                                .AssignedAtUtc
+                    })
+            .ToList();
+    }
+
+    public async Task<AgentCustomerResult>
+        GetCustomerAsync(
+            string agentIdentityUserId,
+            Guid customerProfileId)
+    {
+        /*
+         * First verify that the CustomerProfile exists.
+         */
+        var profile =
+            await _agentCustomerRepository
+                .GetCustomerProfileAsync(
+                    customerProfileId);
+
+        if (profile is null)
+        {
+            return AgentCustomerResult
+                .CustomerNotFound();
+        }
+
+        /*
+         * The Customer exists.
+         *
+         * Now verify that the currently authenticated
+         * Agent owns the permanent assignment.
+         */
+        var assignment =
+            await _agentCustomerRepository
+                .GetAssignmentAsync(
+                    customerProfileId);
+
+        if (
+            assignment is null ||
+            assignment.AgentIdentityUserId !=
+                agentIdentityUserId)
+        {
+            return AgentCustomerResult
+                .Forbidden();
+        }
+
+        /*
+         * First Name, Last Name and Email belong to
+         * IdentityService.
+         *
+         * CustomerVehicleService only retrieves them for
+         * read-only display in the workspace.
+         *
+         * If IdentityService cannot provide the summary,
+         * the CustomerVehicle-owned workspace data still
+         * remains available.
+         */
+        var identitySummary =
+            await _identityServiceClient
+                .GetUserSummaryAsync(
+                    profile.IdentityUserId);
+
+        var customer =
+            new AgentCustomerWorkspaceDto
+            {
+                CustomerProfileId =
+                    profile.Id,
+
+                IdentityUserId =
+                    profile.IdentityUserId,
+
+                FirstName =
+                    identitySummary?.FirstName,
+
+                LastName =
+                    identitySummary?.LastName,
+
+                Email =
+                    identitySummary?.Email,
+
+                DateOfBirth =
+                    profile.DateOfBirth,
+
+                Phone =
+                    profile.Phone,
+
+                AddressLine1 =
+                    profile.AddressLine1,
+
+                AddressLine2 =
+                    profile.AddressLine2,
+
+                City =
+                    profile.City,
+
+                State =
+                    profile.State,
+
+                PostalCode =
+                    profile.PostalCode,
+
+                AreaType =
+                    profile.AreaType?
+                        .ToString(),
+
+                ProfileStatus =
+                    profile.ProfileStatus
+                        .ToString(),
+
+                ProfileCompletedAtUtc =
+                    profile.CompletedAtUtc,
+
+                AssignedAtUtc =
+                    assignment.AssignedAtUtc
+            };
+
+        return AgentCustomerResult
+            .Success(customer);
+    }
+}
+
+
+================================================================================
+FILE: CustomerVehicleService.Application\Services\CustomerProfileService.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.Profiles;
+using CustomerVehicleService.Application.Interfaces;
+using CustomerVehicleService.Application.Interfaces.Repositories;
+using CustomerVehicleService.Domain.Entities;
+using CustomerVehicleService.Domain.Enums;
+
+namespace CustomerVehicleService.Application.Services;
+
+public class CustomerProfileService
+    : ICustomerProfileService
+{
+    private readonly ICustomerProfileRepository
+        _profileRepository;
+
+    public CustomerProfileService(
+        ICustomerProfileRepository profileRepository)
+    {
+        _profileRepository = profileRepository;
+    }
+
+    public async Task<CustomerProfileDto?>
+        GetAsync(
+            string identityUserId)
+    {
+        var profile =
+            await _profileRepository
+                .GetByIdentityUserIdAsync(
+                    identityUserId);
+
+        return profile is null
+            ? null
+            : ToDto(profile);
+    }
+
+    public async Task<ProfileOperationResult>
+        CreateAsync(
+            string identityUserId,
+            CreateCustomerProfileRequest request)
+    {
+        var existing =
+            await _profileRepository
+                .GetByIdentityUserIdAsync(
+                    identityUserId);
+
+        if (existing is not null)
+        {
+            return ProfileOperationResult.Duplicate();
+        }
+
+        var now = DateTime.UtcNow;
+
+        var profile =
+            new CustomerProfile
+            {
+                Id = Guid.NewGuid(),
+
+                IdentityUserId =
+                    identityUserId,
+
+                DateOfBirth =
+                    request.DateOfBirth,
+
+                Phone =
+                    NormalizeRequired(request.Phone),
+
+                AddressLine1 =
+                    NormalizeRequired(
+                        request.AddressLine1),
+
+                AddressLine2 =
+                    NormalizeOptional(
+                        request.AddressLine2),
+
+                City =
+                    NormalizeRequired(request.City),
+
+                State =
+                    NormalizeRequired(request.State),
+
+                PostalCode =
+                    NormalizeRequired(
+                        request.PostalCode),
+
+                AreaType =
+                    request.AreaType,
+
+                CreatedAtUtc = now
+            };
+
+        /*
+         * Status is never taken from the request.
+         * It is derived from data owned by this service.
+         */
+        profile.ProfileStatus =
+            IsComplete(profile)
+                ? ProfileStatus.Complete
+                : ProfileStatus.Incomplete;
+
+        if (
+            profile.ProfileStatus ==
+            ProfileStatus.Complete
+        )
+        {
+            profile.CompletedAtUtc = now;
+        }
+
+        await _profileRepository.AddAsync(
+            profile);
+
+        await _profileRepository.SaveChangesAsync();
+
+        return ProfileOperationResult.Success(
+            ToDto(profile));
+    }
+
+    private static bool IsComplete(
+        CustomerProfile profile)
+    {
+        return
+            profile.DateOfBirth is not null &&
+            !string.IsNullOrWhiteSpace(
+                profile.Phone) &&
+            !string.IsNullOrWhiteSpace(
+                profile.AddressLine1) &&
+            !string.IsNullOrWhiteSpace(
+                profile.City) &&
+            !string.IsNullOrWhiteSpace(
+                profile.State) &&
+            !string.IsNullOrWhiteSpace(
+                profile.PostalCode) &&
+            profile.AreaType is not null;
+    }
+
+    private static string NormalizeRequired(
+        string value)
+    {
+        return value.Trim();
+    }
+
+    private static string? NormalizeOptional(
+        string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim();
+    }
+    public async Task<ProfileOperationResult>
+    UpdateAsync(
+        string identityUserId,
+        UpdateCustomerProfileRequest request)
+    {
+        var profile =
+            await _profileRepository
+                .GetByIdentityUserIdAsync(
+                    identityUserId);
+
+        if (profile is null)
+        {
+            return ProfileOperationResult
+                .ProfileNotFound();
+        }
+
+        profile.Phone =
+            NormalizeRequired(
+                request.Phone);
+
+        profile.AddressLine1 =
+            NormalizeRequired(
+                request.AddressLine1);
+
+        profile.AddressLine2 =
+            NormalizeOptional(
+                request.AddressLine2);
+
+        profile.City =
+            NormalizeRequired(
+                request.City);
+
+        profile.State =
+            NormalizeRequired(
+                request.State);
+
+        profile.PostalCode =
+            NormalizeRequired(
+                request.PostalCode);
+
+        profile.UpdatedAtUtc =
+            DateTime.UtcNow;
+
+        await _profileRepository
+            .SaveChangesAsync();
+
+        return ProfileOperationResult.Success(
+            ToDto(profile));
+    }
+    private static CustomerProfileDto ToDto(
+        CustomerProfile profile)
+    {
+        return new CustomerProfileDto
+        {
+            Id = profile.Id,
+
+            IdentityUserId =
+                profile.IdentityUserId,
+
+            DateOfBirth =
+                profile.DateOfBirth,
+
+            Phone =
+                profile.Phone,
+
+            AddressLine1 =
+                profile.AddressLine1,
+
+            AddressLine2 =
+                profile.AddressLine2,
+
+            City =
+                profile.City,
+
+            State =
+                profile.State,
+
+            PostalCode =
+                profile.PostalCode,
+
+            AreaType =
+                profile.AreaType?.ToString(),
+
+            ProfileStatus =
+                profile.ProfileStatus.ToString(),
+
+            CreatedAtUtc =
+                profile.CreatedAtUtc,
+
+            UpdatedAtUtc =
+                profile.UpdatedAtUtc,
+
+            CompletedAtUtc =
+                profile.CompletedAtUtc
+        };
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Services\CustomerReadinessService.cs
+================================================================================
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using CustomerVehicleService.Application.Dtos.Readiness;
+using CustomerVehicleService.Application.Interfaces;
+using CustomerVehicleService.Application.Interfaces.Repositories;
+using CustomerVehicleService.Domain.Entities;
+
+namespace CustomerVehicleService.Application.Services;
+
+public class CustomerReadinessService
+    : ICustomerReadinessService
+{
+    private readonly IAgentCustomerRepository
+        _agentCustomerRepository;
+
+    private readonly IDriverRepository
+        _driverRepository;
+
+    private readonly IVehicleRepository
+        _vehicleRepository;
+
+    public CustomerReadinessService(
+        IAgentCustomerRepository agentCustomerRepository,
+        IDriverRepository driverRepository,
+        IVehicleRepository vehicleRepository)
+    {
+        _agentCustomerRepository =
+            agentCustomerRepository;
+
+        _driverRepository =
+            driverRepository;
+
+        _vehicleRepository =
+            vehicleRepository;
+    }
+
+    public async Task<CustomerReadinessDto?>
+        GetForCustomerProfileAsync(
+            Guid customerProfileId)
+    {
+        /*
+         * -------------------------------------------------
+         * PROFILE
+         * -------------------------------------------------
+         *
+         * IAgentCustomerRepository already exposes the
+         * CustomerProfile lookup we need.
+         */
+        var profile =
+            await _agentCustomerRepository
+                .GetCustomerProfileAsync(
+                    customerProfileId);
+
+        if (profile is null)
+        {
+            return null;
+        }
+
+        /*
+         * -------------------------------------------------
+         * AGENT ASSIGNMENT
+         * -------------------------------------------------
+         */
+        var assignment =
+            await _agentCustomerRepository
+                .GetAssignmentAsync(
+                    customerProfileId);
+
+        /*
+         * -------------------------------------------------
+         * DRIVER
+         * -------------------------------------------------
+         */
+        var driver =
+            await _driverRepository
+                .GetByCustomerProfileIdAsync(
+                    customerProfileId);
+
+        /*
+         * -------------------------------------------------
+         * VEHICLES
+         * -------------------------------------------------
+         */
+        var vehicles =
+            await _vehicleRepository
+                .GetByCustomerProfileIdAsync(
+                    customerProfileId);
+
+        /*
+         * -------------------------------------------------
+         * EVALUATE EACH READINESS STAGE
+         * -------------------------------------------------
+         */
+        var profileStage =
+            EvaluateProfile(
+                profile);
+
+        var agentStage =
+            EvaluateAgent(
+                assignment);
+
+        var driverStage =
+            EvaluateDriver(
+                profile,
+                driver);
+
+        var vehicleStage =
+            EvaluateVehicles(
+                vehicles);
+
+        /*
+         * -------------------------------------------------
+         * AGGREGATE STRUCTURED ISSUES
+         * -------------------------------------------------
+         */
+        var readinessIssues =
+            new List<string>();
+
+        readinessIssues.AddRange(
+            profileStage.Issues);
+
+        readinessIssues.AddRange(
+            agentStage.Issues);
+
+        readinessIssues.AddRange(
+            driverStage.Issues);
+
+        readinessIssues.AddRange(
+            vehicleStage.Issues);
+
+        /*
+         * Overall CustomerVehicle readiness requires every
+         * stage to be complete.
+         */
+        var readyForQuote =
+            profileStage.Complete &&
+            agentStage.Complete &&
+            driverStage.Complete &&
+            vehicleStage.Complete;
+
+        return new CustomerReadinessDto
+        {
+            ReadyForQuote =
+                readyForQuote,
+
+            Profile =
+                profileStage,
+
+            Agent =
+                agentStage,
+
+            Driver =
+                driverStage,
+
+            Vehicle =
+                vehicleStage,
+
+            ReadinessIssues =
+                readinessIssues
+        };
+    }
+
+    /*
+     * =====================================================
+     * PROFILE READINESS
+     * =====================================================
+     */
+
+    private static ReadinessStageDto
+        EvaluateProfile(
+            CustomerProfile profile)
+    {
+        var issues =
+            new List<string>();
+
+        /*
+         * ProfileStatus is already calculated by the
+         * Customer Profile workflow.
+         *
+         * P14 should not duplicate all Profile completion
+         * validation rules here.
+         */
+        var profileComplete =
+            string.Equals(
+                profile.ProfileStatus.ToString(),
+                "Complete",
+                StringComparison.OrdinalIgnoreCase);
+
+        if (!profileComplete)
+        {
+            issues.Add(
+                "Customer profile is not complete.");
+        }
+
+        return CreateStage(
+            issues);
+    }
+
+    /*
+     * =====================================================
+     * AGENT READINESS
+     * =====================================================
+     */
+
+    private static ReadinessStageDto
+        EvaluateAgent(
+            AgentAssignment? assignment)
+    {
+        var issues =
+            new List<string>();
+
+        /*
+         * Agent stage is complete only when a permanent
+         * AgentAssignment exists.
+         */
+        if (assignment is null)
+        {
+            issues.Add(
+                "Customer does not have a permanent Agent assignment.");
+        }
+
+        return CreateStage(
+            issues);
+    }
+
+    /*
+     * =====================================================
+     * DRIVER READINESS
+     * =====================================================
+     */
+
+    private static ReadinessStageDto
+        EvaluateDriver(
+            CustomerProfile profile,
+            DriverProfile? driver)
+    {
+        var issues =
+            new List<string>();
+
+        /*
+         * A Primary Driver must exist.
+         */
+        if (driver is null)
+        {
+            issues.Add(
+                "Primary Driver has not been configured.");
+
+            return CreateStage(
+                issues);
+        }
+
+        var today =
+            DateOnly.FromDateTime(
+                DateTime.UtcNow);
+
+        /*
+         * -------------------------------------------------
+         * LICENCE ISSUE DATE
+         * -------------------------------------------------
+         */
+        if (
+            driver.LicenceIssueDate >
+            today)
+        {
+            issues.Add(
+                "Primary Driver licence issue date cannot be in the future.");
+        }
+
+        /*
+         * -------------------------------------------------
+         * LICENCE EXPIRY DATE
+         * -------------------------------------------------
+         */
+        if (
+            driver.LicenceExpiryDate <=
+            driver.LicenceIssueDate)
+        {
+            issues.Add(
+                "Primary Driver licence expiry date must be later than the issue date.");
+        }
+
+        /*
+         * An expired licence may exist in the database,
+         * but it does not satisfy Driver readiness.
+         */
+        if (
+            driver.LicenceExpiryDate <
+            today)
+        {
+            issues.Add(
+                "Primary Driver licence is expired.");
+        }
+
+        /*
+         * -------------------------------------------------
+         * DRIVER AGE
+         * -------------------------------------------------
+         *
+         * CustomerProfile.DateOfBirth is nullable in the
+         * Profile model exposed throughout this service,
+         * therefore pattern matching safely handles both
+         * the missing and populated cases.
+         */
+        if (
+            profile.DateOfBirth is DateOnly
+                dateOfBirth)
+        {
+            var age =
+                CalculateCompletedYears(
+                    dateOfBirth,
+                    today);
+
+            /*
+             * An under-18 Driver may remain persisted,
+             * but Driver readiness is false.
+             */
+            if (age < 18)
+            {
+                issues.Add(
+                    "Primary Driver must be at least 18 years old for readiness.");
+            }
+        }
+        else
+        {
+            issues.Add(
+                "Primary Driver age cannot be calculated because Date of Birth is unavailable.");
+        }
+
+        /*
+         * -------------------------------------------------
+         * DRIVING EXPERIENCE
+         * -------------------------------------------------
+         *
+         * Experience must be derivable from the licence
+         * issue date.
+         */
+        if (
+            driver.LicenceIssueDate <=
+            today)
+        {
+            var drivingExperienceYears =
+                CalculateCompletedYears(
+                    driver.LicenceIssueDate,
+                    today);
+
+            /*
+             * This is intentionally defensive.
+             *
+             * Zero completed years is valid. A negative
+             * result would indicate invalid persisted data.
+             */
+            if (
+                drivingExperienceYears < 0)
+            {
+                issues.Add(
+                    "Primary Driver driving experience cannot be calculated.");
+            }
+        }
+
+        return CreateStage(
+            issues);
+    }
+
+    /*
+     * =====================================================
+     * VEHICLE READINESS
+     * =====================================================
+     */
+
+    private static ReadinessStageDto
+        EvaluateVehicles(
+            IReadOnlyCollection<Vehicle>
+                vehicles)
+    {
+        var issues =
+            new List<string>();
+
+        /*
+         * The Customer needs at least one Vehicle.
+         */
+        if (vehicles.Count == 0)
+        {
+            issues.Add(
+                "At least one Vehicle is required.");
+
+            return CreateStage(
+                issues);
+        }
+
+        var currentYear =
+            DateTime.UtcNow.Year;
+
+        /*
+         * IMPORTANT:
+         *
+         * The Vehicle stage does NOT require every Vehicle
+         * to be ready.
+         *
+         * At least one ready Vehicle is sufficient.
+         */
+        var hasReadyVehicle =
+            vehicles.Any(
+                vehicle =>
+                    IsVehicleReady(
+                        vehicle,
+                        currentYear));
+
+        if (!hasReadyVehicle)
+        {
+            issues.Add(
+                "At least one Vehicle must meet the Vehicle readiness requirements.");
+        }
+
+        return CreateStage(
+            issues);
+    }
+
+    /*
+     * =====================================================
+     * INDIVIDUAL VEHICLE READINESS
+     * =====================================================
+     */
+
+    private static bool IsVehicleReady(
+        Vehicle vehicle,
+        int currentYear)
+    {
+        /*
+         * ManufacturingYear cannot be future through
+         * normal Vehicle validation.
+         *
+         * Math.Max keeps the derived age defensive if
+         * unexpected persisted data exists.
+         */
+        var vehicleAge =
+            Math.Max(
+                currentYear -
+                vehicle.ManufacturingYear,
+                0);
+
+        /*
+         * Required identification information.
+         */
+        var identificationComplete =
+            !string.IsNullOrWhiteSpace(
+                vehicle.Vin) &&
+            !string.IsNullOrWhiteSpace(
+                vehicle.RegistrationNumber) &&
+            !string.IsNullOrWhiteSpace(
+                vehicle.Make) &&
+            !string.IsNullOrWhiteSpace(
+                vehicle.Model);
+
+        /*
+         * Required financial/usage information.
+         */
+        var riskDataComplete =
+            vehicle.VehicleValue > 0 &&
+            vehicle.AnnualMileage > 0;
+
+        /*
+         * Vehicle age greater than 20 is allowed to exist,
+         * but cannot satisfy Vehicle readiness.
+         */
+        var ageEligible =
+            vehicleAge <= 20;
+
+        /*
+         * Vehicle image is intentionally NOT checked.
+         *
+         * Image upload is optional and never affects
+         * insurance readiness.
+         */
+        return
+            identificationComplete &&
+            riskDataComplete &&
+            ageEligible;
+    }
+
+    /*
+     * =====================================================
+     * COMPLETED-YEAR CALCULATION
+     * =====================================================
+     *
+     * Used for:
+     *
+     * - Customer/Driver age
+     * - completed driving experience years
+     *
+     * This calculates completed calendar years rather than
+     * simply subtracting the years.
+     */
+
+    private static int CalculateCompletedYears(
+        DateOnly startDate,
+        DateOnly endDate)
+    {
+        if (startDate > endDate)
+        {
+            return -1;
+        }
+
+        var completedYears =
+            endDate.Year -
+            startDate.Year;
+
+        /*
+         * Example:
+         *
+         * Start: 20 December 2020
+         * Today:  03 October 2026
+         *
+         * 6 calendar years have not yet been completed,
+         * therefore the result must be 5.
+         */
+        if (
+            startDate >
+            endDate.AddYears(
+                -completedYears))
+        {
+            completedYears--;
+        }
+
+        return completedYears;
+    }
+
+    /*
+     * =====================================================
+     * STAGE BUILDER
+     * =====================================================
+     */
+
+    private static ReadinessStageDto
+        CreateStage(
+            List<string> issues)
+    {
+        return new ReadinessStageDto
+        {
+            Complete =
+                issues.Count == 0,
+
+            Issues =
+                issues
+        };
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Services\CustomerRiskService.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.Risk;
+using CustomerVehicleService.Application.Interfaces;
+using CustomerVehicleService.Application.Interfaces.Repositories;
+using CustomerVehicleService.Domain.Entities;
+
+namespace CustomerVehicleService.Application.Services;
+
+public class CustomerRiskService
+    : ICustomerRiskService
+{
+    private readonly IAgentCustomerRepository
+        _agentCustomerRepository;
+
+    private readonly IDriverRepository
+        _driverRepository;
+
+    private readonly IVehicleRepository
+        _vehicleRepository;
+
+    private readonly ICustomerReadinessService
+        _customerReadinessService;
+
+    public CustomerRiskService(
+        IAgentCustomerRepository agentCustomerRepository,
+        IDriverRepository driverRepository,
+        IVehicleRepository vehicleRepository,
+        ICustomerReadinessService customerReadinessService)
+    {
+        _agentCustomerRepository =
+            agentCustomerRepository;
+
+        _driverRepository =
+            driverRepository;
+
+        _vehicleRepository =
+            vehicleRepository;
+
+        _customerReadinessService =
+            customerReadinessService;
+    }
+
+    public async Task<CustomerRiskDto?>
+        GetCustomerRiskAsync(
+            Guid customerProfileId)
+    {
+        var profile =
+            await _agentCustomerRepository
+                .GetCustomerProfileAsync(
+                    customerProfileId);
+
+        if (profile is null)
+        {
+            return null;
+        }
+
+        var assignment =
+            await _agentCustomerRepository
+                .GetAssignmentAsync(
+                    customerProfileId);
+
+        var driver =
+            await _driverRepository
+                .GetByCustomerProfileIdAsync(
+                    customerProfileId);
+
+        var vehicles =
+            await _vehicleRepository
+                .GetByCustomerProfileIdAsync(
+                    customerProfileId);
+
+        var readiness =
+            await _customerReadinessService
+                .GetForCustomerProfileAsync(
+                    customerProfileId);
+
+        if (readiness is null)
+        {
+            return null;
+        }
+
+        DriverRiskDto? driverRisk =
+            null;
+
+        if (driver is not null)
+        {
+            driverRisk =
+                ToDriverRiskDto(
+                    driver,
+                    profile.DateOfBirth);
+        }
+
+        var vehicleRisks =
+            vehicles
+                .Select(ToVehicleRiskDto)
+                .ToList();
+
+        return new CustomerRiskDto
+        {
+            CustomerProfileId =
+                profile.Id,
+
+            AssignedAgentIdentityUserId =
+                assignment?
+                    .AgentIdentityUserId,
+
+            ReadyForQuote =
+                readiness.ReadyForQuote,
+
+            Profile =
+                new CustomerRiskProfileDto
+                {
+                    DateOfBirth =
+                        profile.DateOfBirth,
+
+                    Geography =
+                        profile.AreaType?
+                            .ToString()
+                        ?? string.Empty,
+
+                    ProfileStatus =
+                        profile.ProfileStatus
+                            .ToString()
+                },
+
+            Driver =
+                driverRisk,
+
+            Vehicles =
+                vehicleRisks,
+
+            ReadinessIssues =
+                readiness.ReadinessIssues
+                    .ToList()
+        };
+    }
+
+    private static DriverRiskDto
+        ToDriverRiskDto(
+            DriverProfile driver,
+            DateOnly? dateOfBirth)
+    {
+        var today =
+            DateOnly.FromDateTime(
+                DateTime.UtcNow);
+
+        var age =
+            dateOfBirth is null
+                ? 0
+                : GetCompletedYears(
+                    dateOfBirth.Value,
+                    today);
+
+        var drivingExperienceYears =
+            GetCompletedYears(
+                driver.LicenceIssueDate,
+                today);
+
+        drivingExperienceYears =
+            Math.Max(
+                drivingExperienceYears,
+                0);
+
+        var licenceValid =
+            driver.LicenceExpiryDate >=
+            today;
+
+        var ready =
+            dateOfBirth is not null &&
+            age >= 18 &&
+            licenceValid;
+
+        return new DriverRiskDto
+        {
+            DriverId =
+                driver.Id,
+
+            Age =
+                age,
+
+            DrivingExperienceYears =
+                drivingExperienceYears,
+
+            LicenceIssueDate =
+                driver.LicenceIssueDate,
+
+            LicenceExpiryDate =
+                driver.LicenceExpiryDate,
+
+            LicenceValid =
+                licenceValid,
+
+            Ready =
+                ready
+        };
+    }
+
+    private static VehicleRiskDto
+        ToVehicleRiskDto(
+            Vehicle vehicle)
+    {
+        var currentYear =
+            DateTime.UtcNow.Year;
+
+        var vehicleAge =
+            Math.Max(
+                currentYear -
+                vehicle.ManufacturingYear,
+                0);
+
+        var ready =
+            vehicleAge <= 20 &&
+            vehicle.VehicleValue > 0 &&
+            vehicle.AnnualMileage > 0;
+
+        return new VehicleRiskDto
+        {
+            VehicleId =
+                vehicle.Id,
+
+            Vin =
+                vehicle.Vin,
+
+            Make =
+                vehicle.Make,
+
+            Model =
+                vehicle.Model,
+
+            ManufacturingYear =
+                vehicle.ManufacturingYear,
+
+            VehicleAge =
+                vehicleAge,
+
+            VehicleType =
+                vehicle.VehicleType
+                    .ToString(),
+
+            VehicleValue =
+                vehicle.VehicleValue,
+
+            FuelType =
+                vehicle.FuelType
+                    .ToString(),
+
+            CurrentOdometer =
+                vehicle.CurrentOdometer,
+
+            AnnualMileage =
+                vehicle.AnnualMileage,
+
+            OwnershipType =
+                vehicle.OwnershipType
+                    .ToString(),
+
+            PurchaseDate =
+                vehicle.PurchaseDate,
+
+            Ready =
+                ready
+        };
+    }
+
+    private static int GetCompletedYears(
+        DateOnly from,
+        DateOnly to)
+    {
+        var years =
+            to.Year -
+            from.Year;
+
+        if (
+            to <
+            from.AddYears(years))
+        {
+            years--;
+        }
+
+        return years;
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Services\DriverService.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.Drivers;
+using CustomerVehicleService.Application.Interfaces;
+using CustomerVehicleService.Application.Interfaces.Repositories;
+using CustomerVehicleService.Domain.Entities;
+
+namespace CustomerVehicleService.Application.Services;
+
+public class DriverService
+    : IDriverService
+{
+    private readonly IAgentCustomerRepository
+        _agentCustomerRepository;
+
+    private readonly ICustomerProfileRepository
+        _customerProfileRepository;
+
+    private readonly IDriverRepository
+        _driverRepository;
+
+    public DriverService(
+        IAgentCustomerRepository agentCustomerRepository,
+        ICustomerProfileRepository customerProfileRepository,
+        IDriverRepository driverRepository)
+    {
+        _agentCustomerRepository =
+            agentCustomerRepository;
+
+        _customerProfileRepository =
+            customerProfileRepository;
+
+        _driverRepository =
+            driverRepository;
+    }
+
+    public async Task<DriverOperationResult>
+        GetForAgentAsync(
+            string agentIdentityUserId,
+            Guid customerProfileId)
+    {
+        var profile =
+            await _agentCustomerRepository
+                .GetCustomerProfileAsync(
+                    customerProfileId);
+
+        if (profile is null)
+        {
+            return DriverOperationResult
+                .MissingCustomer();
+        }
+
+        var assignment =
+            await _agentCustomerRepository
+                .GetAssignmentAsync(
+                    customerProfileId);
+
+        if (
+            assignment is null ||
+            assignment.AgentIdentityUserId !=
+            agentIdentityUserId)
+        {
+            return DriverOperationResult
+                .Forbidden();
+        }
+
+        
+         var driver =
+    await _driverRepository
+        .GetByCustomerProfileIdAsync(
+            customerProfileId);
+
+        if (driver is null)
+        {
+            return DriverOperationResult
+                .MissingDriver();
+        }
+
+        return DriverOperationResult.Success(
+            ToDto(
+                driver,
+                profile.DateOfBirth));
+    }
+
+    public async Task<DriverOperationResult>
+        UpsertForAgentAsync(
+            string agentIdentityUserId,
+            Guid customerProfileId,
+            UpsertDriverRequest request)
+    {
+        var profile =
+            await _agentCustomerRepository
+                .GetCustomerProfileAsync(
+                    customerProfileId);
+
+        if (profile is null)
+        {
+            return DriverOperationResult
+                .MissingCustomer();
+        }
+
+        var assignment =
+            await _agentCustomerRepository
+                .GetAssignmentAsync(
+                    customerProfileId);
+
+        if (
+            assignment is null ||
+            assignment.AgentIdentityUserId !=
+            agentIdentityUserId)
+        {
+            return DriverOperationResult
+                .Forbidden();
+        }
+
+        var driver =
+            await _driverRepository
+                .GetByCustomerProfileIdAsync(
+                    customerProfileId);
+
+        var licenceNumber =
+            request.LicenceNumber
+                .Trim()
+                .ToUpperInvariant();
+
+        var duplicate =
+            await _driverRepository
+                .LicenceExistsForAnotherDriverAsync(
+                    licenceNumber,
+                    driver?.Id);
+
+        if (duplicate)
+        {
+            return DriverOperationResult
+                .LicenceConflict();
+        }
+
+        var now =
+            DateTime.UtcNow;
+
+        if (driver is null)
+        {
+            driver =
+                new DriverProfile
+                {
+                    Id =
+                        Guid.NewGuid(),
+
+                    CustomerProfileId =
+                        customerProfileId,
+
+                    CreatedAtUtc =
+                        now
+                };
+
+            await _driverRepository
+                .AddAsync(driver);
+        }
+        else
+        {
+            driver.UpdatedAtUtc =
+                now;
+        }
+
+        driver.LicenceNumber =
+            licenceNumber;
+
+        driver.LicenceState =
+            request.LicenceState
+                .Trim();
+
+        driver.LicenceIssueDate =
+            request.LicenceIssueDate!.Value;
+
+        driver.LicenceExpiryDate =
+            request.LicenceExpiryDate!.Value;
+
+        try
+        {
+            await _driverRepository
+                .SaveChangesAsync();
+        }
+        catch (Exception)
+        {
+            /*
+             * The database unique index remains
+             * authoritative against concurrent duplicate
+             * Licence Number writes.
+             */
+            return DriverOperationResult
+                .LicenceConflict();
+        }
+
+        return DriverOperationResult.Success(
+            ToDto(
+                driver,
+                profile.DateOfBirth));
+    }
+
+    public async Task<DriverDto?>
+        GetForCustomerAsync(
+            string customerIdentityUserId)
+    {
+        var profile =
+            await _customerProfileRepository
+                .GetByIdentityUserIdAsync(
+                    customerIdentityUserId);
+
+        if (profile is null)
+        {
+            return null;
+        }
+
+        var driver =
+            await _driverRepository
+                .GetByCustomerProfileIdAsync(
+                    profile.Id);
+
+        return driver is null
+            ? null
+            : ToDto(
+                driver,
+                profile.DateOfBirth);
+    }
+
+    private static DriverDto ToDto(
+        DriverProfile driver,
+        DateOnly? dateOfBirth)
+    {
+        var today =
+            DateOnly.FromDateTime(
+                DateTime.UtcNow);
+
+        var age =
+            dateOfBirth is null
+                ? 0
+                : GetCompletedYears(
+                    dateOfBirth.Value,
+                    today);
+
+        var experience =
+            GetCompletedYears(
+                driver.LicenceIssueDate,
+                today);
+
+        /*
+         * Future issue dates are rejected by validation,
+         * but guard against negative values anyway.
+         */
+        experience =
+            Math.Max(
+                experience,
+                0);
+
+        var licenceValid =
+            driver.LicenceExpiryDate >=
+            today;
+
+        var issues =
+            new List<string>();
+
+        if (dateOfBirth is null)
+        {
+            issues.Add(
+                "Customer date of birth is unavailable.");
+        }
+        else if (age < 18)
+        {
+            issues.Add(
+                "Driver must be at least 18 years old for insurance readiness.");
+        }
+
+        if (!licenceValid)
+        {
+            issues.Add(
+                "Driver licence has expired.");
+        }
+
+        var ready =
+            dateOfBirth is not null &&
+            age >= 18 &&
+            licenceValid;
+
+        return new DriverDto
+        {
+            Id =
+                driver.Id,
+
+            CustomerProfileId =
+                driver.CustomerProfileId,
+
+            LicenceNumber =
+                driver.LicenceNumber,
+
+            LicenceState =
+                driver.LicenceState,
+
+            LicenceIssueDate =
+                driver.LicenceIssueDate,
+
+            LicenceExpiryDate =
+                driver.LicenceExpiryDate,
+
+            Age =
+                age,
+
+            DrivingExperienceYears =
+                experience,
+
+            LicenceValid =
+                licenceValid,
+
+            Ready =
+                ready,
+
+            ReadinessIssues =
+                issues,
+
+            CreatedAtUtc =
+                driver.CreatedAtUtc,
+
+            UpdatedAtUtc =
+                driver.UpdatedAtUtc
+        };
+    }
+
+    private static int GetCompletedYears(
+        DateOnly from,
+        DateOnly to)
+    {
+        var years =
+            to.Year - from.Year;
+
+        if (
+            to <
+            from.AddYears(years))
+        {
+            years--;
+        }
+
+        return years;
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Services\VehicleImageService.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.VehicleImages;
+using CustomerVehicleService.Application.Interfaces;
+using CustomerVehicleService.Application.Interfaces.Repositories;
+using CustomerVehicleService.Application.Interfaces.Storage;
+
+namespace CustomerVehicleService.Application.Services;
+
+public class VehicleImageService
+    : IVehicleImageService
+{
+    private const long MaxFileSize =
+        5L * 1024L * 1024L;
+
+    private static readonly Dictionary<
+        string,
+        string> AllowedContentTypes =
+            new(
+                StringComparer.OrdinalIgnoreCase)
+            {
+                ["image/jpeg"] = ".jpg",
+                ["image/png"] = ".png"
+            };
+
+    private readonly IVehicleRepository
+        _vehicleRepository;
+
+    private readonly IAgentCustomerRepository
+        _agentCustomerRepository;
+
+    private readonly ICustomerProfileRepository
+        _customerProfileRepository;
+
+    private readonly IVehicleImageStorage
+        _imageStorage;
+
+    public VehicleImageService(
+        IVehicleRepository vehicleRepository,
+        IAgentCustomerRepository agentCustomerRepository,
+        ICustomerProfileRepository customerProfileRepository,
+        IVehicleImageStorage imageStorage)
+    {
+        _vehicleRepository =
+            vehicleRepository;
+
+        _agentCustomerRepository =
+            agentCustomerRepository;
+
+        _customerProfileRepository =
+            customerProfileRepository;
+
+        _imageStorage =
+            imageStorage;
+    }
+
+    public async Task<VehicleImageResult>
+        UploadForAgentAsync(
+            string agentIdentityUserId,
+            Guid vehicleId,
+            VehicleImageUpload upload)
+    {
+        var vehicle =
+            await _vehicleRepository
+                .GetByIdAsync(
+                    vehicleId);
+
+        if (vehicle is null)
+        {
+            return VehicleImageResult
+                .MissingVehicle();
+        }
+
+        var assignment =
+            await _agentCustomerRepository
+                .GetAssignmentAsync(
+                    vehicle.CustomerProfileId);
+
+        if (
+            assignment is null ||
+            assignment.AgentIdentityUserId !=
+                agentIdentityUserId)
+        {
+            return VehicleImageResult
+                .Forbidden();
+        }
+
+        var validationError =
+            ValidateUpload(upload);
+
+        if (validationError is not null)
+        {
+            return VehicleImageResult
+                .Invalid(
+                    validationError);
+        }
+
+        var extension =
+            AllowedContentTypes[
+                upload.ContentType];
+
+        string newStoredFileName;
+
+        try
+        {
+            newStoredFileName =
+                await _imageStorage.SaveAsync(
+                    upload.Content,
+                    extension);
+        }
+        catch
+        {
+            return VehicleImageResult.Invalid(
+                "Vehicle image could not be stored.");
+        }
+
+        var previousStoredFileName =
+            vehicle.ImageStoredFileName;
+
+        vehicle.ImageFileName =
+            Path.GetFileName(
+                upload.FileName);
+
+        vehicle.ImageStoredFileName =
+            newStoredFileName;
+
+        vehicle.ImageContentType =
+            upload.ContentType;
+
+        vehicle.ImageSizeBytes =
+            upload.Length;
+
+        vehicle.ImageUpdatedAtUtc =
+            DateTime.UtcNow;
+
+        vehicle.UpdatedAtUtc =
+            DateTime.UtcNow;
+
+        try
+        {
+            await _vehicleRepository
+                .SaveChangesAsync();
+        }
+        catch
+        {
+            await _imageStorage.DeleteAsync(
+                newStoredFileName);
+
+            throw;
+        }
+
+        if (
+            !string.IsNullOrWhiteSpace(
+                previousStoredFileName))
+        {
+            await _imageStorage.DeleteAsync(
+                previousStoredFileName);
+        }
+
+        return VehicleImageResult.Success();
+    }
+
+    public async Task<VehicleImageResult>
+        GetForAgentAsync(
+            string agentIdentityUserId,
+            Guid vehicleId)
+    {
+        var vehicle =
+            await _vehicleRepository
+                .GetByIdAsync(
+                    vehicleId);
+
+        if (vehicle is null)
+        {
+            return VehicleImageResult
+                .MissingVehicle();
+        }
+
+        var assignment =
+            await _agentCustomerRepository
+                .GetAssignmentAsync(
+                    vehicle.CustomerProfileId);
+
+        if (
+            assignment is null ||
+            assignment.AgentIdentityUserId !=
+                agentIdentityUserId)
+        {
+            return VehicleImageResult
+                .Forbidden();
+        }
+
+        return await ReadImageAsync(
+            vehicle);
+    }
+
+    public async Task<VehicleImageResult>
+        GetForCustomerAsync(
+            string customerIdentityUserId,
+            Guid vehicleId)
+    {
+        var profile =
+            await _customerProfileRepository
+                .GetByIdentityUserIdAsync(
+                    customerIdentityUserId);
+
+        if (profile is null)
+        {
+            return VehicleImageResult
+                .Forbidden();
+        }
+
+        var vehicle =
+            await _vehicleRepository
+                .GetByIdAsync(
+                    vehicleId);
+
+        if (vehicle is null)
+        {
+            return VehicleImageResult
+                .MissingVehicle();
+        }
+
+        if (
+            vehicle.CustomerProfileId !=
+            profile.Id)
+        {
+            return VehicleImageResult
+                .Forbidden();
+        }
+
+        return await ReadImageAsync(
+            vehicle);
+    }
+
+    private async Task<VehicleImageResult>
+        ReadImageAsync(
+            Domain.Entities.Vehicle vehicle)
+    {
+        if (
+            string.IsNullOrWhiteSpace(
+                vehicle.ImageStoredFileName) ||
+            string.IsNullOrWhiteSpace(
+                vehicle.ImageContentType))
+        {
+            return VehicleImageResult
+                .MissingImage();
+        }
+
+        var content =
+            await _imageStorage.ReadAsync(
+                vehicle.ImageStoredFileName);
+
+        if (content is null)
+        {
+            return VehicleImageResult
+                .MissingImage();
+        }
+
+        return VehicleImageResult.Success(
+            vehicle.ImageFileName
+                ?? "vehicle-image",
+            vehicle.ImageContentType,
+            content);
+    }
+
+    private static string? ValidateUpload(
+        VehicleImageUpload upload)
+    {
+        if (upload.Length <= 0)
+        {
+            return "Vehicle image is empty.";
+        }
+
+        if (upload.Length > MaxFileSize)
+        {
+            return
+                "Vehicle image cannot exceed 5 MB.";
+        }
+
+        if (
+            !AllowedContentTypes.ContainsKey(
+                upload.ContentType))
+        {
+            return
+                "Vehicle image must be JPG, JPEG, or PNG.";
+        }
+
+        return null;
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Services\VehicleService.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.Vehicles;
+using CustomerVehicleService.Application.Interfaces;
+using CustomerVehicleService.Application.Interfaces.Repositories;
+using CustomerVehicleService.Domain.Entities;
+
+namespace CustomerVehicleService.Application.Services;
+
+public class VehicleService : IVehicleService
+{
+    private readonly IAgentCustomerRepository
+        _agentCustomerRepository;
+
+    private readonly ICustomerProfileRepository
+        _customerProfileRepository;
+
+    private readonly IVehicleRepository
+        _vehicleRepository;
+
+    public VehicleService(
+        IAgentCustomerRepository agentCustomerRepository,
+        ICustomerProfileRepository customerProfileRepository,
+        IVehicleRepository vehicleRepository)
+    {
+        _agentCustomerRepository =
+            agentCustomerRepository;
+
+        _customerProfileRepository =
+            customerProfileRepository;
+
+        _vehicleRepository =
+            vehicleRepository;
+    }
+
+    public async Task<VehicleListResult>
+        GetForAgentAsync(
+            string agentIdentityUserId,
+            Guid customerProfileId)
+    {
+        var profile =
+            await _agentCustomerRepository
+                .GetCustomerProfileAsync(
+                    customerProfileId);
+
+        if (profile is null)
+        {
+            return VehicleListResult
+                .MissingCustomer();
+        }
+
+        if (
+            !await IsAssignedAgentAsync(
+                agentIdentityUserId,
+                customerProfileId))
+        {
+            return VehicleListResult
+                .Forbidden();
+        }
+
+        var vehicles =
+            await _vehicleRepository
+                .GetByCustomerProfileIdAsync(
+                    customerProfileId);
+
+        return VehicleListResult.Success(
+            vehicles
+                .Select(ToDto)
+                .ToList());
+    }
+
+    public async Task<VehicleOperationResult>
+        CreateForAgentAsync(
+            string agentIdentityUserId,
+            Guid customerProfileId,
+            UpsertVehicleRequest request)
+    {
+        var profile =
+            await _agentCustomerRepository
+                .GetCustomerProfileAsync(
+                    customerProfileId);
+
+        if (profile is null)
+        {
+            return VehicleOperationResult
+                .MissingCustomer();
+        }
+
+        if (
+            !await IsAssignedAgentAsync(
+                agentIdentityUserId,
+                customerProfileId))
+        {
+            return VehicleOperationResult
+                .Forbidden();
+        }
+
+        var vin =
+            NormalizeVin(
+                request.Vin);
+
+        var registration =
+            NormalizeRegistration(
+                request.RegistrationNumber);
+
+        var vinExists =
+            await _vehicleRepository
+                .VinExistsForAnotherVehicleAsync(
+                    vin);
+
+        if (vinExists)
+        {
+            return VehicleOperationResult
+                .VinConflict();
+        }
+
+        var registrationExists =
+            await _vehicleRepository
+                .RegistrationExistsForAnotherVehicleAsync(
+                    registration);
+
+        if (registrationExists)
+        {
+            return VehicleOperationResult
+                .RegistrationConflict();
+        }
+
+        var vehicle =
+            new Vehicle
+            {
+                Id =
+                    Guid.NewGuid(),
+
+                CustomerProfileId =
+                    customerProfileId,
+
+                CreatedAtUtc =
+                    DateTime.UtcNow
+            };
+
+        ApplyRequest(
+            vehicle,
+            request,
+            vin,
+            registration);
+
+        await _vehicleRepository
+            .AddAsync(vehicle);
+
+        try
+        {
+            await _vehicleRepository
+                .SaveChangesAsync();
+        }
+        catch (Exception)
+        {
+            return await ResolveConflictAsync(
+                vin,
+                registration,
+                vehicle.Id);
+        }
+
+        return VehicleOperationResult.Success(
+            ToDto(vehicle));
+    }
+
+    public async Task<VehicleOperationResult>
+        GetVehicleForAgentAsync(
+            string agentIdentityUserId,
+            Guid vehicleId)
+    {
+        var vehicle =
+            await _vehicleRepository
+                .GetByIdAsync(
+                    vehicleId);
+
+        if (vehicle is null)
+        {
+            return VehicleOperationResult
+                .MissingVehicle();
+        }
+
+        if (
+            !await IsAssignedAgentAsync(
+                agentIdentityUserId,
+                vehicle.CustomerProfileId))
+        {
+            return VehicleOperationResult
+                .Forbidden();
+        }
+
+        return VehicleOperationResult.Success(
+            ToDto(vehicle));
+    }
+
+    public async Task<VehicleOperationResult>
+        UpdateForAgentAsync(
+            string agentIdentityUserId,
+            Guid vehicleId,
+            UpsertVehicleRequest request)
+    {
+        var vehicle =
+            await _vehicleRepository
+                .GetByIdAsync(
+                    vehicleId);
+
+        if (vehicle is null)
+        {
+            return VehicleOperationResult
+                .MissingVehicle();
+        }
+
+        if (
+            !await IsAssignedAgentAsync(
+                agentIdentityUserId,
+                vehicle.CustomerProfileId))
+        {
+            return VehicleOperationResult
+                .Forbidden();
+        }
+
+        var vin =
+            NormalizeVin(
+                request.Vin);
+
+        var registration =
+            NormalizeRegistration(
+                request.RegistrationNumber);
+
+        var vinExists =
+            await _vehicleRepository
+                .VinExistsForAnotherVehicleAsync(
+                    vin,
+                    vehicle.Id);
+
+        if (vinExists)
+        {
+            return VehicleOperationResult
+                .VinConflict();
+        }
+
+        var registrationExists =
+            await _vehicleRepository
+                .RegistrationExistsForAnotherVehicleAsync(
+                    registration,
+                    vehicle.Id);
+
+        if (registrationExists)
+        {
+            return VehicleOperationResult
+                .RegistrationConflict();
+        }
+
+        ApplyRequest(
+            vehicle,
+            request,
+            vin,
+            registration);
+
+        vehicle.UpdatedAtUtc =
+            DateTime.UtcNow;
+
+        try
+        {
+            await _vehicleRepository
+                .SaveChangesAsync();
+        }
+        catch (Exception)
+        {
+            return await ResolveConflictAsync(
+                vin,
+                registration,
+                vehicle.Id);
+        }
+
+        return VehicleOperationResult.Success(
+            ToDto(vehicle));
+    }
+
+    public async Task<IReadOnlyList<VehicleDto>?>
+        GetForCustomerAsync(
+            string customerIdentityUserId)
+    {
+        var profile =
+            await _customerProfileRepository
+                .GetByIdentityUserIdAsync(
+                    customerIdentityUserId);
+
+        if (profile is null)
+        {
+            return null;
+        }
+
+        var vehicles =
+            await _vehicleRepository
+                .GetByCustomerProfileIdAsync(
+                    profile.Id);
+
+        return vehicles
+            .Select(ToDto)
+            .ToList();
+    }
+
+    public async Task<VehicleOperationResult>
+        GetVehicleForCustomerAsync(
+            string customerIdentityUserId,
+            Guid vehicleId)
+    {
+        var profile =
+            await _customerProfileRepository
+                .GetByIdentityUserIdAsync(
+                    customerIdentityUserId);
+
+        if (profile is null)
+        {
+            return VehicleOperationResult
+                .MissingCustomer();
+        }
+
+        var vehicle =
+            await _vehicleRepository
+                .GetByIdAsync(
+                    vehicleId);
+
+        if (vehicle is null)
+        {
+            return VehicleOperationResult
+                .MissingVehicle();
+        }
+
+        if (
+            vehicle.CustomerProfileId !=
+            profile.Id)
+        {
+            return VehicleOperationResult
+                .Forbidden();
+        }
+
+        return VehicleOperationResult.Success(
+            ToDto(vehicle));
+    }
+
+    private async Task<bool>
+        IsAssignedAgentAsync(
+            string agentIdentityUserId,
+            Guid customerProfileId)
+    {
+        var assignment =
+            await _agentCustomerRepository
+                .GetAssignmentAsync(
+                    customerProfileId);
+
+        return
+            assignment is not null &&
+            assignment.AgentIdentityUserId ==
+                agentIdentityUserId;
+    }
+
+    private static void ApplyRequest(
+        Vehicle vehicle,
+        UpsertVehicleRequest request,
+        string vin,
+        string registration)
+    {
+        vehicle.Vin =
+            vin;
+
+        vehicle.RegistrationNumber =
+            registration;
+
+        vehicle.Make =
+            request.Make.Trim();
+
+        vehicle.Model =
+            request.Model.Trim();
+
+        vehicle.ManufacturingYear =
+            request.ManufacturingYear;
+
+        vehicle.VehicleType =
+            request.VehicleType;
+
+        vehicle.FuelType =
+            request.FuelType;
+
+        vehicle.VehicleValue =
+            request.VehicleValue;
+
+        vehicle.CurrentOdometer =
+            request.CurrentOdometer;
+
+        vehicle.AnnualMileage =
+            request.AnnualMileage;
+
+        vehicle.OwnershipType =
+            request.OwnershipType;
+
+        vehicle.PurchaseDate =
+            request.PurchaseDate!.Value;
+    }
+
+    private static string NormalizeVin(
+        string vin)
+    {
+        return vin
+            .Trim()
+            .ToUpperInvariant();
+    }
+
+    private static string NormalizeRegistration(
+        string registrationNumber)
+    {
+        return registrationNumber
+            .Trim()
+            .ToUpperInvariant();
+    }
+
+    private static VehicleDto ToDto(
+        Vehicle vehicle)
+    {
+        var currentYear =
+            DateTime.UtcNow.Year;
+
+        var vehicleAge =
+            Math.Max(
+                currentYear -
+                vehicle.ManufacturingYear,
+                0);
+
+        var issues =
+            new List<string>();
+
+        if (vehicleAge > 20)
+        {
+            issues.Add(
+                "Vehicle is more than 20 years old.");
+        }
+
+        if (vehicle.VehicleValue <= 0)
+        {
+            issues.Add(
+                "Vehicle Value is required.");
+        }
+
+        if (vehicle.AnnualMileage <= 0)
+        {
+            issues.Add(
+                "Annual Mileage is required.");
+        }
+
+        var ready =
+            vehicleAge <= 20 &&
+            vehicle.VehicleValue > 0 &&
+            vehicle.AnnualMileage > 0;
+
+        return new VehicleDto
+        {
+            Id =
+                vehicle.Id,
+
+            CustomerProfileId =
+                vehicle.CustomerProfileId,
+
+            Vin =
+                vehicle.Vin,
+
+            RegistrationNumber =
+                vehicle.RegistrationNumber,
+
+            Make =
+                vehicle.Make,
+
+            Model =
+                vehicle.Model,
+
+            ManufacturingYear =
+                vehicle.ManufacturingYear,
+
+            VehicleType =
+                vehicle.VehicleType.ToString(),
+
+            FuelType =
+                vehicle.FuelType.ToString(),
+
+            VehicleValue =
+                vehicle.VehicleValue,
+
+            CurrentOdometer =
+                vehicle.CurrentOdometer,
+
+            AnnualMileage =
+                vehicle.AnnualMileage,
+
+            OwnershipType =
+                vehicle.OwnershipType.ToString(),
+
+            PurchaseDate =
+                vehicle.PurchaseDate,
+
+            VehicleAge =
+                vehicleAge,
+
+            Ready =
+                ready,
+
+            ReadinessIssues =
+                issues,
+
+            /*
+             * Image metadata.
+             *
+             * We expose whether an image exists and safe
+             * display metadata, but never expose the
+             * internally generated storage filename or
+             * physical filesystem path.
+             */
+            HasImage =
+                !string.IsNullOrWhiteSpace(
+                    vehicle.ImageStoredFileName),
+
+            ImageFileName =
+                vehicle.ImageFileName,
+
+            ImageContentType =
+                vehicle.ImageContentType,
+
+            ImageSizeBytes =
+                vehicle.ImageSizeBytes,
+
+            ImageUpdatedAtUtc =
+                vehicle.ImageUpdatedAtUtc,
+
+            CreatedAtUtc =
+                vehicle.CreatedAtUtc,
+
+            UpdatedAtUtc =
+                vehicle.UpdatedAtUtc
+        };
+    }
+
+    private async Task<VehicleOperationResult>
+        ResolveConflictAsync(
+            string vin,
+            string registrationNumber,
+            Guid vehicleId)
+    {
+        var vinExists =
+            await _vehicleRepository
+                .VinExistsForAnotherVehicleAsync(
+                    vin,
+                    vehicleId);
+
+        if (vinExists)
+        {
+            return VehicleOperationResult
+                .VinConflict();
+        }
+
+        var registrationExists =
+            await _vehicleRepository
+                .RegistrationExistsForAnotherVehicleAsync(
+                    registrationNumber,
+                    vehicleId);
+
+        if (registrationExists)
+        {
+            return VehicleOperationResult
+                .RegistrationConflict();
+        }
+
+        throw new InvalidOperationException(
+            "Vehicle could not be saved because of a database update error.");
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Validators\Assignments\AssignAgentRequestValidator.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.Assignments;
+using FluentValidation;
+
+namespace CustomerVehicleService.Application.Validators.Assignments;
+
+public class AssignAgentRequestValidator
+    : AbstractValidator<AssignAgentRequest>
+{
+    public AssignAgentRequestValidator()
+    {
+        RuleFor(
+                request =>
+                    request.AgentIdentityUserId)
+            .NotEmpty()
+            .WithMessage(
+                "Agent is required.");
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Validators\Drivers\UpsertDriverRequestValidator.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.Drivers;
+using FluentValidation;
+
+namespace CustomerVehicleService.Application.Validators.Drivers;
+
+public class UpsertDriverRequestValidator
+    : AbstractValidator<UpsertDriverRequest>
+{
+    public UpsertDriverRequestValidator()
+    {
+        RuleFor(
+                request =>
+                    request.LicenceNumber)
+            .NotEmpty()
+            .WithMessage(
+                "Licence number is required.")
+            .MaximumLength(50)
+            .WithMessage(
+                "Licence number cannot exceed 50 characters.");
+
+        RuleFor(
+                request =>
+                    request.LicenceState)
+            .NotEmpty()
+            .WithMessage(
+                "Licence state is required.")
+            .MaximumLength(100)
+            .WithMessage(
+                "Licence state cannot exceed 100 characters.");
+
+        RuleFor(
+                request =>
+                    request.LicenceIssueDate)
+            .NotNull()
+            .WithMessage(
+                "Licence issue date is required.")
+            .Must(
+                issueDate =>
+                    issueDate is null ||
+                    issueDate.Value <=
+                    DateOnly.FromDateTime(
+                        DateTime.UtcNow))
+            .WithMessage(
+                "Licence issue date cannot be in the future.");
+
+        RuleFor(
+                request =>
+                    request.LicenceExpiryDate)
+            .NotNull()
+            .WithMessage(
+                "Licence expiry date is required.");
+
+        RuleFor(request => request)
+            .Must(request =>
+            {
+                if (
+                    request.LicenceIssueDate is null ||
+                    request.LicenceExpiryDate is null)
+                {
+                    return true;
+                }
+
+                return
+                    request.LicenceExpiryDate.Value >
+                    request.LicenceIssueDate.Value;
+            })
+            .WithMessage(
+                "Licence expiry date must be later than the issue date.");
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Validators\Profiles\CreateCustomerProfileRequestValidator.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.Profiles;
+using CustomerVehicleService.Domain.Enums;
+using FluentValidation;
+
+namespace CustomerVehicleService.Application.Validators.Profiles;
+
+public class CreateCustomerProfileRequestValidator
+    : AbstractValidator<CreateCustomerProfileRequest>
+{
+    public CreateCustomerProfileRequestValidator()
+    {
+        RuleFor(request => request.DateOfBirth)
+            .NotNull()
+            .WithMessage("Date of birth is required.")
+            .Must(dateOfBirth =>
+                dateOfBirth is null ||
+                dateOfBirth.Value <= DateOnly.FromDateTime(DateTime.UtcNow))
+            .WithMessage("Date of birth cannot be in the future.");
+
+        RuleFor(request => request.Phone)
+            .NotEmpty()
+            .WithMessage("Phone is required.")
+            .MaximumLength(30)
+            .WithMessage("Phone cannot exceed 30 characters.");
+
+        RuleFor(request => request.AddressLine1)
+            .NotEmpty()
+            .WithMessage("Address line 1 is required.")
+            .MaximumLength(200)
+            .WithMessage(
+                "Address line 1 cannot exceed 200 characters.");
+
+        RuleFor(request => request.AddressLine2)
+            .MaximumLength(200)
+            .WithMessage(
+                "Address line 2 cannot exceed 200 characters.")
+            .When(request =>
+                !string.IsNullOrWhiteSpace(request.AddressLine2));
+
+        RuleFor(request => request.City)
+            .NotEmpty()
+            .WithMessage("City is required.")
+            .MaximumLength(100)
+            .WithMessage("City cannot exceed 100 characters.");
+
+        RuleFor(request => request.State)
+            .NotEmpty()
+            .WithMessage("State is required.")
+            .MaximumLength(100)
+            .WithMessage("State cannot exceed 100 characters.");
+
+        RuleFor(request => request.PostalCode)
+            .NotEmpty()
+            .WithMessage("Postal code is required.")
+            .MaximumLength(20)
+            .WithMessage(
+                "Postal code cannot exceed 20 characters.");
+
+        RuleFor(request => request.AreaType)
+            .NotNull()
+            .WithMessage("Urban or Rural area type is required.")
+            .Must(areaType =>
+                areaType is null ||
+                Enum.IsDefined(typeof(AreaType), areaType.Value))
+            .WithMessage("Area type is invalid.");
+    }
+}
+
+
+================================================================================
+FILE: CustomerVehicleService.Application\Validators\Profiles\UpdateCustomerProfileRequestValidator.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.Profiles;
+using FluentValidation;
+
+namespace CustomerVehicleService.Application.Validators.Profiles;
+
+public class UpdateCustomerProfileRequestValidator
+    : AbstractValidator<UpdateCustomerProfileRequest>
+{
+    public UpdateCustomerProfileRequestValidator()
+    {
+        RuleFor(request => request.Phone)
+            .NotEmpty()
+            .WithMessage("Phone is required.")
+            .MaximumLength(30)
+            .WithMessage(
+                "Phone cannot exceed 30 characters.");
+
+        RuleFor(request => request.AddressLine1)
+            .NotEmpty()
+            .WithMessage("Address line 1 is required.")
+            .MaximumLength(200)
+            .WithMessage(
+                "Address line 1 cannot exceed 200 characters.");
+
+        RuleFor(request => request.AddressLine2)
+            .MaximumLength(200)
+            .WithMessage(
+                "Address line 2 cannot exceed 200 characters.")
+            .When(request =>
+                !string.IsNullOrWhiteSpace(
+                    request.AddressLine2));
+
+        RuleFor(request => request.City)
+            .NotEmpty()
+            .WithMessage("City is required.")
+            .MaximumLength(100)
+            .WithMessage(
+                "City cannot exceed 100 characters.");
+
+        RuleFor(request => request.State)
+            .NotEmpty()
+            .WithMessage("State is required.")
+            .MaximumLength(100)
+            .WithMessage(
+                "State cannot exceed 100 characters.");
+
+        RuleFor(request => request.PostalCode)
+            .NotEmpty()
+            .WithMessage("Postal code is required.")
+            .MaximumLength(20)
+            .WithMessage(
+                "Postal code cannot exceed 20 characters.");
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.Application\Validators\Vehicles\UpsertVehicleRequestValidator.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.Vehicles;
+using CustomerVehicleService.Domain.Enums;
+using FluentValidation;
+
+namespace CustomerVehicleService.Application.Validators.Vehicles;
+
+public class UpsertVehicleRequestValidator
+    : AbstractValidator<UpsertVehicleRequest>
+{
+    public UpsertVehicleRequestValidator()
+    {
+        RuleFor(
+                request => request.Vin)
+            .NotEmpty()
+            .WithMessage("VIN is required.")
+            .Length(17)
+            .WithMessage(
+                "VIN must contain exactly 17 characters.");
+
+        RuleFor(
+                request =>
+                    request.RegistrationNumber)
+            .NotEmpty()
+            .WithMessage(
+                "Registration Number is required.")
+            .MaximumLength(50)
+            .WithMessage(
+                "Registration Number cannot exceed 50 characters.");
+
+        RuleFor(
+                request => request.Make)
+            .NotEmpty()
+            .WithMessage("Make is required.")
+            .MaximumLength(100);
+
+        RuleFor(
+                request => request.Model)
+            .NotEmpty()
+            .WithMessage("Model is required.")
+            .MaximumLength(100);
+
+        RuleFor(
+                request =>
+                    request.ManufacturingYear)
+            .GreaterThan(0)
+            .WithMessage(
+                "Manufacturing Year is required.")
+            .LessThanOrEqualTo(
+                DateTime.UtcNow.Year)
+            .WithMessage(
+                "Manufacturing Year cannot be in the future.");
+
+        RuleFor(
+                request => request.VehicleType)
+            .Must(value =>
+                Enum.IsDefined(
+                    typeof(VehicleType),
+                    value))
+            .WithMessage(
+                "Vehicle Type is invalid.");
+
+        RuleFor(
+                request => request.FuelType)
+            .Must(value =>
+                Enum.IsDefined(
+                    typeof(FuelType),
+                    value))
+            .WithMessage(
+                "Fuel Type is invalid.");
+
+        RuleFor(
+                request =>
+                    request.VehicleValue)
+            .GreaterThan(0)
+            .WithMessage(
+                "Vehicle Value must be greater than zero.");
+
+        RuleFor(
+                request =>
+                    request.CurrentOdometer)
+            .GreaterThanOrEqualTo(0)
+            .WithMessage(
+                "Current Odometer cannot be negative.");
+
+        RuleFor(
+                request =>
+                    request.AnnualMileage)
+            .GreaterThan(0)
+            .WithMessage(
+                "Annual Mileage must be greater than zero.");
+
+        RuleFor(
+                request =>
+                    request.OwnershipType)
+            .Must(value =>
+                Enum.IsDefined(
+                    typeof(OwnershipType),
+                    value))
+            .WithMessage(
+                "Ownership Type is invalid.");
+
+        RuleFor(
+                request =>
+                    request.PurchaseDate)
+            .NotNull()
+            .WithMessage(
+                "Purchase Date is required.")
+            .Must(date =>
+                date is null ||
+                date.Value <=
+                DateOnly.FromDateTime(
+                    DateTime.UtcNow))
+            .WithMessage(
+                "Purchase Date cannot be in the future.");
+    }
+}

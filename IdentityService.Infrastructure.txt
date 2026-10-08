@@ -1,0 +1,863 @@
+
+================================================================================
+FILE: IdentityService.Infrastructure\Class1.cs
+================================================================================
+namespace IdentityService.Infrastructure
+{
+    public class Class1
+    {
+
+    }
+}
+
+
+================================================================================
+FILE: IdentityService.Infrastructure\Identity\BootstrapAdminOptions.cs
+================================================================================
+namespace IdentityService.Infrastructure.Identity;
+
+public class BootstrapAdminOptions
+{
+    public const string SectionName = "BootstrapAdmin";
+
+    public string FirstName { get; set; } = string.Empty;
+
+    public string LastName { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
+
+    public string Password { get; set; } = string.Empty;
+}
+
+================================================================================
+FILE: IdentityService.Infrastructure\Identity\IdentitySeeder.cs
+================================================================================
+using IdentityService.Domain.Constants;
+using IdentityService.Domain.Entities;
+using IdentityService.Domain.Enums;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
+
+namespace IdentityService.Infrastructure.Identity;
+
+public class IdentitySeeder
+{
+    private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly BootstrapAdminOptions _adminOptions;
+
+    public IdentitySeeder(
+        RoleManager<IdentityRole> roleManager,
+        UserManager<ApplicationUser> userManager,
+        IOptions<BootstrapAdminOptions> adminOptions)
+    {
+        _roleManager = roleManager;
+        _userManager = userManager;
+        _adminOptions = adminOptions.Value;
+    }
+
+    public async Task SeedAsync()
+    {
+        await SeedRolesAsync();
+        await SeedAdminAsync();
+    }
+
+    private async Task SeedRolesAsync()
+    {
+        string[] roles =
+        [
+            ApplicationRoles.Customer,
+            ApplicationRoles.Agent,
+            ApplicationRoles.Underwriter,
+            ApplicationRoles.ClaimsAdjuster,
+            ApplicationRoles.Admin
+        ];
+
+        foreach (var role in roles)
+        {
+            if (await _roleManager.RoleExistsAsync(role))
+            {
+                continue;
+            }
+
+            var result = await _roleManager.CreateAsync(
+                new IdentityRole(role));
+
+            if (!result.Succeeded)
+            {
+                throw CreateException(
+                    $"Failed to create role '{role}'.",
+                    result.Errors);
+            }
+        }
+    }
+
+    private async Task SeedAdminAsync()
+    {
+        ValidateAdminConfiguration();
+
+        var admin = await _userManager.FindByEmailAsync(_adminOptions.Email);
+
+        if (admin is null)
+        {
+            admin = new ApplicationUser
+            {
+                FirstName = _adminOptions.FirstName.Trim(),
+                LastName = _adminOptions.LastName.Trim(),
+                Email = _adminOptions.Email.Trim(),
+                UserName = _adminOptions.Email.Trim(),
+                AccountType = AccountType.Internal,
+                AccountStatus = AccountStatus.Active,
+                CreatedAtUtc = DateTime.UtcNow
+            };
+
+            var createResult = await _userManager.CreateAsync(
+                admin,
+                _adminOptions.Password);
+
+            if (!createResult.Succeeded)
+            {
+                throw CreateException(
+                    "Failed to create the bootstrap Admin.",
+                    createResult.Errors);
+            }
+        }
+
+        if (!await _userManager.IsInRoleAsync(admin, ApplicationRoles.Admin))
+        {
+            var roleResult = await _userManager.AddToRoleAsync(
+                admin,
+                ApplicationRoles.Admin);
+
+            if (!roleResult.Succeeded)
+            {
+                throw CreateException(
+                    "Failed to assign the Admin role to the bootstrap Admin.",
+                    roleResult.Errors);
+            }
+        }
+    }
+
+    private void ValidateAdminConfiguration()
+    {
+        if (string.IsNullOrWhiteSpace(_adminOptions.FirstName) ||
+            string.IsNullOrWhiteSpace(_adminOptions.LastName) ||
+            string.IsNullOrWhiteSpace(_adminOptions.Email) ||
+            string.IsNullOrWhiteSpace(_adminOptions.Password))
+        {
+            throw new InvalidOperationException(
+                "Bootstrap Admin configuration is incomplete.");
+        }
+    }
+
+    private static InvalidOperationException CreateException(
+        string message,
+        IEnumerable<IdentityError> errors)
+    {
+        var details = string.Join(
+            "; ",
+            errors.Select(error => error.Description));
+
+        return new InvalidOperationException(
+            $"{message} {details}");
+    }
+}
+
+================================================================================
+FILE: IdentityService.Infrastructure\Identity\PreAuthTokenService.cs
+================================================================================
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Application.Interfaces;
+using IdentityService.Domain.Entities;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+
+namespace IdentityService.Infrastructure.Identity;
+
+public class PreAuthTokenService : IPreAuthTokenService
+{
+    public const string PurposeClaim = "purpose";
+    public const string PurposeValue = "internal-2fa";
+
+    private readonly JwtOptions _jwtOptions;
+
+    public PreAuthTokenService(
+        IOptions<JwtOptions> jwtOptions)
+    {
+        _jwtOptions = jwtOptions.Value;
+    }
+
+    public PreAuthTokenResult Create(ApplicationUser user)
+    {
+        var now = DateTime.UtcNow;
+        var expiresAtUtc = now.AddMinutes(5);
+
+        var claims = new List<Claim>
+        {
+            new(
+                JwtRegisteredClaimNames.Sub,
+                user.Id),
+
+            new(
+                PurposeClaim,
+                PurposeValue)
+        };
+
+        var key = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(_jwtOptions.Key));
+
+        var credentials = new SigningCredentials(
+            key,
+            SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: _jwtOptions.Issuer,
+            audience: _jwtOptions.Audience,
+            claims: claims,
+            notBefore: now,
+            expires: expiresAtUtc,
+            signingCredentials: credentials);
+
+        return new PreAuthTokenResult
+        {
+            Token = new JwtSecurityTokenHandler()
+                .WriteToken(token),
+
+            ExpiresAtUtc = expiresAtUtc
+        };
+    }
+}
+
+================================================================================
+FILE: IdentityService.Infrastructure\Identity\TokenHashService.cs
+================================================================================
+using System.Security.Cryptography;
+using System.Text;
+using IdentityService.Application.Interfaces;
+
+namespace IdentityService.Infrastructure.Identity;
+
+public class TokenHashService : ITokenHashService
+{
+    public string Hash(string token)
+    {
+        var bytes = Encoding.UTF8.GetBytes(token);
+
+        var hash = SHA256.HashData(bytes);
+
+        return Convert.ToHexString(hash);
+    }
+}
+
+
+================================================================================
+FILE: IdentityService.Infrastructure\Identity\TokenService.cs
+================================================================================
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Application.Interfaces;
+using IdentityService.Domain.Entities;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+
+namespace IdentityService.Infrastructure.Identity;
+
+public class TokenService : ITokenService
+{
+    private readonly JwtOptions _jwtOptions;
+
+    public TokenService(
+        IOptions<JwtOptions> jwtOptions)
+    {
+        _jwtOptions = jwtOptions.Value;
+    }
+
+    public TokenResult CreateToken(
+        ApplicationUser user,
+        string role)
+    {
+        var now = DateTime.UtcNow;
+
+        return CreateTokenResult(
+            user,
+            role,
+            now.AddDays(_jwtOptions.RefreshSessionDays));
+    }
+
+    public TokenResult CreateRefreshedToken(
+        ApplicationUser user,
+        string role,
+        DateTime refreshSessionExpiresAtUtc)
+    {
+        return CreateTokenResult(
+            user,
+            role,
+            refreshSessionExpiresAtUtc);
+    }
+
+    private TokenResult CreateTokenResult(
+        ApplicationUser user,
+        string role,
+        DateTime refreshSessionExpiresAtUtc)
+    {
+        var now = DateTime.UtcNow;
+
+        var accessTokenExpiresAt =
+            now.AddMinutes(_jwtOptions.AccessTokenMinutes);
+
+        var claims = new List<Claim>
+        {
+            new(
+                JwtRegisteredClaimNames.Sub,
+                user.Id),
+
+            new(
+                ClaimTypes.NameIdentifier,
+                user.Id),
+
+            new(
+                JwtRegisteredClaimNames.Email,
+                user.Email ?? string.Empty),
+
+            new(
+                ClaimTypes.Role,
+                role)
+        };
+
+        var key = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(_jwtOptions.Key));
+
+        var credentials = new SigningCredentials(
+            key,
+            SecurityAlgorithms.HmacSha256);
+
+        var jwt = new JwtSecurityToken(
+            issuer: _jwtOptions.Issuer,
+            audience: _jwtOptions.Audience,
+            claims: claims,
+            notBefore: now,
+            expires: accessTokenExpiresAt,
+            signingCredentials: credentials);
+
+        var accessToken =
+            new JwtSecurityTokenHandler().WriteToken(jwt);
+
+        var refreshToken =
+            Convert.ToBase64String(
+                RandomNumberGenerator.GetBytes(64));
+
+        return new TokenResult
+        {
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            AccessTokenExpiresAtUtc = accessTokenExpiresAt,
+            RefreshSessionExpiresAtUtc =
+                refreshSessionExpiresAtUtc
+        };
+    }
+}
+
+================================================================================
+FILE: IdentityService.Infrastructure\IdentityService.Infrastructure.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.19" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.19" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.19">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IdentityService.Application\IdentityService.Application.csproj" />
+    <ProjectReference Include="..\IdentityService.Domain\IdentityService.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
+
+
+================================================================================
+FILE: IdentityService.Infrastructure\Persistence\Configurations\ApplicationUserConfiguration.cs
+================================================================================
+using IdentityService.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace IdentityService.Infrastructure.Persistence.Configurations;
+
+public class ApplicationUserConfiguration : IEntityTypeConfiguration<ApplicationUser>
+{
+    public void Configure(EntityTypeBuilder<ApplicationUser> builder)
+    {
+        builder.Property(user => user.FirstName)
+            .HasMaxLength(100)
+            .IsRequired();
+
+        builder.Property(user => user.LastName)
+            .HasMaxLength(100)
+            .IsRequired();
+
+        builder.Property(user => user.AccountType)
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .IsRequired();
+
+        builder.Property(user => user.AccountStatus)
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .IsRequired();
+
+        builder.Property(user => user.CreatedAtUtc)
+            .IsRequired();
+
+        builder.Property(user => user.ApprovedByUserId)
+            .HasMaxLength(450);
+
+        builder.Property(user => user.RejectedByUserId)
+            .HasMaxLength(450);
+
+        builder.Property(user => user.DeactivatedByUserId)
+            .HasMaxLength(450);
+    }
+}
+
+================================================================================
+FILE: IdentityService.Infrastructure\Persistence\Configurations\RefreshSessionConfiguration.cs
+================================================================================
+using IdentityService.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace IdentityService.Infrastructure.Persistence.Configurations;
+
+public class RefreshSessionConfiguration
+    : IEntityTypeConfiguration<RefreshSession>
+{
+    public void Configure(
+        EntityTypeBuilder<RefreshSession> builder)
+    {
+        builder.HasKey(session => session.Id);
+
+        builder.Property(session => session.UserId)
+            .HasMaxLength(450)
+            .IsRequired();
+
+        builder.Property(session => session.TokenHash)
+            .HasMaxLength(64)
+            .IsRequired();
+
+        builder.Property(session => session.ReplacementTokenHash)
+            .HasMaxLength(64);
+
+        builder.Property(session => session.SessionStartedAtUtc)
+            .IsRequired();
+
+        builder.Property(session => session.AbsoluteExpiresAtUtc)
+            .IsRequired();
+
+        builder.HasIndex(session => session.TokenHash)
+            .IsUnique();
+
+        builder.HasIndex(session => session.UserId);
+
+        builder.HasOne(session => session.User)
+            .WithMany()
+            .HasForeignKey(session => session.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+
+================================================================================
+FILE: IdentityService.Infrastructure\Persistence\IdentityDbContext.cs
+================================================================================
+using IdentityService.Domain.Entities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+
+namespace IdentityService.Infrastructure.Persistence;
+
+public class IdentityDbContext
+    : IdentityDbContext<ApplicationUser>
+{
+    public IdentityDbContext(
+        DbContextOptions<IdentityDbContext> options)
+        : base(options)
+    {
+    }
+
+    public DbSet<RefreshSession> RefreshSessions =>
+        Set<RefreshSession>();
+
+    protected override void OnModelCreating(
+        ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+
+        builder.ApplyConfigurationsFromAssembly(
+            typeof(IdentityDbContext).Assembly);
+    }
+}
+
+================================================================================
+FILE: IdentityService.Infrastructure\Repostories\RefreshSessionRepository.cs
+================================================================================
+using IdentityService.Application.Interfaces.Repositories;
+using IdentityService.Domain.Entities;
+using IdentityService.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+
+namespace IdentityService.Infrastructure.Repositories;
+
+public class RefreshSessionRepository
+    : IRefreshSessionRepository
+{
+    private readonly IdentityDbContext _dbContext;
+
+    public RefreshSessionRepository(
+        IdentityDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<RefreshSession?>
+        GetActiveByUserIdAsync(
+            string userId)
+    {
+        return await _dbContext.RefreshSessions
+            .FirstOrDefaultAsync(session =>
+                session.UserId == userId &&
+                session.RevokedAtUtc == null);
+    }
+
+    public async Task<RefreshSession?>
+        GetByTokenHashAsync(
+            string tokenHash)
+    {
+        return await _dbContext.RefreshSessions
+            .FirstOrDefaultAsync(session =>
+                session.TokenHash == tokenHash);
+    }
+
+    public async Task AddAsync(
+        RefreshSession session)
+    {
+        await _dbContext.RefreshSessions
+            .AddAsync(session);
+    }
+
+    public async Task SaveChangesAsync()
+    {
+        await _dbContext.SaveChangesAsync();
+    }
+
+    public async Task RotateAsync(
+        RefreshSession currentSession,
+        RefreshSession replacementSession)
+    {
+        await using var transaction =
+            await _dbContext.Database
+                .BeginTransactionAsync();
+
+        currentSession.RevokedAtUtc =
+            DateTime.UtcNow;
+
+        currentSession.ReplacementTokenHash =
+            replacementSession.TokenHash;
+
+        await _dbContext.RefreshSessions
+            .AddAsync(replacementSession);
+
+        await _dbContext.SaveChangesAsync();
+
+        await transaction.CommitAsync();
+    }
+
+    public async Task RevokeAsync(
+        RefreshSession session,
+        DateTime revokedAtUtc)
+    {
+        session.RevokedAtUtc = revokedAtUtc;
+
+        await _dbContext.SaveChangesAsync();
+    }
+}
+
+================================================================================
+FILE: IdentityService.Infrastructure\Repostories\UserRepository.cs
+================================================================================
+using IdentityService.Application.Interfaces.Repositories;
+using IdentityService.Domain.Constants;
+using IdentityService.Domain.Entities;
+using IdentityService.Domain.Enums;
+using IdentityService.Domain.Enums;
+using IdentityService.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+namespace IdentityService.Infrastructure.Repositories;
+
+public class UserRepository : IUserRepository
+{
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IdentityDbContext _dbContext;
+
+    public UserRepository(
+    UserManager<ApplicationUser> userManager,
+    IdentityDbContext dbContext)
+    {
+        _userManager = userManager;
+        _dbContext = dbContext;
+    }
+
+    public async Task<IReadOnlyList<ApplicationUser>>
+    GetEligibleAgentsAsync()
+    {
+        var users =
+            await _userManager
+                .GetUsersInRoleAsync(
+                    ApplicationRoles.Agent);
+
+        return users
+            .Where(user =>
+                user.AccountStatus ==
+                    AccountStatus.Active &&
+                user.TwoFactorEnabled)
+            .OrderBy(user =>
+                user.FirstName)
+            .ThenBy(user =>
+                user.LastName)
+            .ToList();
+    }
+    public async Task<UserOperationResult>
+    ApproveInternalUserAsync(
+        ApplicationUser user,
+        string role,
+        string adminUserId,
+        DateTime approvedAtUtc)
+    {
+        await using var transaction =
+            await _dbContext.Database.BeginTransactionAsync();
+
+        var roleResult =
+            await _userManager.AddToRoleAsync(
+                user,
+                role);
+
+        if (!roleResult.Succeeded)
+        {
+            await transaction.RollbackAsync();
+
+            return ToOperationResult(roleResult);
+        }
+
+        user.AccountStatus = AccountStatus.Active;
+        user.ApprovedAtUtc = approvedAtUtc;
+        user.ApprovedByUserId = adminUserId;
+
+        var updateResult =
+            await _userManager.UpdateAsync(user);
+
+        if (!updateResult.Succeeded)
+        {
+            await transaction.RollbackAsync();
+
+            return ToOperationResult(updateResult);
+        }
+
+        await transaction.CommitAsync();
+
+        return UserOperationResult.Success();
+    }
+        
+    
+
+    public async Task<IReadOnlyList<ApplicationUser>>
+    GetEligibleUnderwritersAsync()
+    {
+        var users =
+            await _userManager
+                .GetUsersInRoleAsync(
+                    ApplicationRoles.Underwriter);
+
+        return users
+            .Where(user =>
+                user.AccountStatus ==
+                    AccountStatus.Active &&
+                user.TwoFactorEnabled)
+            .OrderBy(user =>
+                user.FirstName)
+            .ThenBy(user =>
+                user.LastName)
+            .ToList();
+    }
+    public async Task<ApplicationUser?> GetByEmailAsync(
+        string email)
+    {
+        return await _userManager.FindByEmailAsync(email);
+    }
+
+    public async Task<ApplicationUser?>
+    GetByIdAsync(
+        string identityUserId)
+    {
+        return await _userManager
+            .FindByIdAsync(
+                identityUserId);
+    }
+
+
+    public async Task<IReadOnlyList<ApplicationUser>>
+    GetPendingInternalUsersAsync()
+    {
+        return await _userManager.Users
+            .Where(user =>
+                user.AccountType == AccountType.Internal &&
+                user.AccountStatus == AccountStatus.Pending)
+            .OrderBy(user => user.CreatedAtUtc)
+            .ToListAsync();
+    }
+
+    public async Task<UserOperationResult> UpdateAsync(
+        ApplicationUser user)
+    {
+        var result = await _userManager.UpdateAsync(user);
+
+        return ToOperationResult(result);
+    }
+    public async Task<UserOperationResult> CreateAsync(
+        ApplicationUser user,
+        string password)
+    {
+        var result =
+            await _userManager.CreateAsync(user, password);
+
+        return ToOperationResult(result);
+    }
+
+    public async Task<UserOperationResult> AddToRoleAsync(
+        ApplicationUser user,
+        string role)
+    {
+        var result =
+            await _userManager.AddToRoleAsync(user, role);
+
+        return ToOperationResult(result);
+    }
+
+    public async Task<UserOperationResult> DeleteAsync(
+        ApplicationUser user)
+    {
+        var result =
+            await _userManager.DeleteAsync(user);
+
+        return ToOperationResult(result);
+    }
+
+    public async Task<bool> CheckPasswordAsync(
+        ApplicationUser user,
+        string password)
+    {
+        return await _userManager.CheckPasswordAsync(
+            user,
+            password);
+    }
+
+    public async Task<IList<string>> GetRolesAsync(
+        ApplicationUser user)
+    {
+        return await _userManager.GetRolesAsync(user);
+    }
+
+    public async Task<IReadOnlyList<ApplicationUser>>
+   GetEstablishedInternalUsersAsync()
+    {
+        return await _userManager.Users
+            .Where(user =>
+                user.AccountType == AccountType.Internal &&
+                user.AccountStatus != AccountStatus.Pending &&
+                user.AccountStatus != AccountStatus.Rejected)
+            .OrderBy(user => user.FirstName)
+            .ThenBy(user => user.LastName)
+            .ToListAsync();
+    }
+    public Task<bool> GetTwoFactorEnabledAsync(
+        ApplicationUser user)
+    {
+        return Task.FromResult(user.TwoFactorEnabled);
+    }
+
+    public async Task<string?> GetAuthenticatorKeyAsync(
+        ApplicationUser user)
+    {
+        return await _userManager
+            .GetAuthenticatorKeyAsync(user);
+    }
+
+    public async Task ResetAuthenticatorKeyAsync(
+        ApplicationUser user)
+    {
+        var result =
+            await _userManager
+                .ResetAuthenticatorKeyAsync(user);
+
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(
+                string.Join(
+                    "; ",
+                    result.Errors.Select(
+                        error => error.Description)));
+        }
+    }
+
+    public async Task<bool> VerifyAuthenticatorCodeAsync(
+        ApplicationUser user,
+        string code)
+    {
+        return await _userManager.VerifyTwoFactorTokenAsync(
+            user,
+            TokenOptions.DefaultAuthenticatorProvider,
+            code);
+    }
+
+    public async Task<UserOperationResult>
+        SetTwoFactorEnabledAsync(
+            ApplicationUser user,
+            bool enabled)
+    {
+        var result =
+            await _userManager.SetTwoFactorEnabledAsync(
+                user,
+                enabled);
+
+        return ToOperationResult(result);
+    }
+
+    private static UserOperationResult ToOperationResult(
+        IdentityResult result)
+    {
+        if (result.Succeeded)
+        {
+            return UserOperationResult.Success();
+        }
+
+        return UserOperationResult.Failed(
+            result.Errors.Select(
+                error => error.Description));
+    }
+}

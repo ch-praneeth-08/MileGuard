@@ -1,0 +1,91 @@
+@startuml
+!theme plain
+left to right direction
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+
+actor "Customer" as Customer
+actor "Agent" as Agent
+actor "Underwriter" as Underwriter
+actor "Claims Adjuster" as Adjuster
+actor "Admin" as Admin
+
+rectangle "Web Browser" as Browser
+rectangle "Angular 21 Single Application" as Angular
+rectangle "Ocelot API Gateway\nRouting / Auth Context / CORS / Correlation" as Ocelot
+
+package "Backend — .NET Microservices" {
+  component "IdentityService" as Identity
+  component "CustomerVehicleService" as CV
+  component "QuoteRatingService" as Quote
+  component "UnderwritingService" as UW
+  component "PolicyBillingService" as PB
+  component "ClaimsService" as Claims
+}
+
+package "Service-Owned Databases" {
+  database "IdentityDb" as IDb
+  database "CustomerVehicleDb" as CDb
+  database "QuoteRatingDb" as QDb
+  database "UnderwritingDb" as UDb
+  database "PolicyBillingDb" as PDb
+  database "ClaimsDb" as Cldb
+  database "LoggingDb\n(technical observability)" as LDb
+}
+
+Customer --> Browser
+Agent --> Browser
+Underwriter --> Browser
+Adjuster --> Browser
+Admin --> Browser
+Browser --> Angular : HTTPS
+Angular --> Ocelot : REST/JSON
+
+Ocelot --> Identity : /identity/api/*
+Ocelot --> CV : /customer-vehicle/api/*
+Ocelot --> Quote : /quotes/api/*
+Ocelot --> UW : /underwriting/api/*
+Ocelot --> PB : /policies/api/*
+Ocelot --> Claims : /claims/api/*
+
+Identity --> IDb
+CV --> CDb
+Quote --> QDb
+UW --> UDb
+PB --> PDb
+Claims --> Cldb
+
+Identity --> LDb : Serilog
+CV --> LDb : Serilog
+Quote --> LDb : Serilog
+UW --> LDb : Serilog
+PB --> LDb : Serilog
+Claims --> LDb : Serilog
+
+Quote ..> CV : REST: risk/readiness
+Quote ..> Claims : REST: prior-3-year claim count
+UW ..> Quote : REST: finalized/submitted quote context
+UW ..> CV : REST: customer/driver/vehicle context when needed
+PB ..> UW : REST: approved-offer validation
+Claims ..> PB : REST: historical policy-term coverage
+Identity ..> Identity : internal Identity/2FA state
+
+note right of Ocelot
+Thin gateway boundary.
+No insurance business logic.
+All browser traffic goes through gateway.
+end note
+
+note bottom of CDb
+No cross-database foreign keys.
+Each service owns its DbContext, migrations, persistence,
+validation and business logic.
+end note
+
+note bottom of LDb
+LoggingDb is observability infrastructure only;
+its failure does not roll back a successful business transaction.
+end note
+@enduml

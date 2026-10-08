@@ -1,0 +1,1522 @@
+
+================================================================================
+FILE: IdentityService.API\appsettings.Development.json
+================================================================================
+{
+  "BootstrapAdmin": {
+    "FirstName": "System",
+    "LastName": "Admin",
+    "Email": "admin@insurance.com",
+    "Password": "Admin@123"
+  },
+  "Jwt": {
+    "Key": "YOUR_LOCAL_DEVELOPMENT_SIGNING_KEY_AT_LEAST_32_CHARACTERS"
+  }
+}
+
+
+
+
+================================================================================
+FILE: IdentityService.API\appsettings.json
+================================================================================
+{
+  "ConnectionStrings": {
+    "IdentityDb": "Server=(localdb)\\MSSQLLocalDB;Database=IdentityDb;Trusted_Connection=True;TrustServerCertificate=True;"
+  },
+
+  "Jwt": {
+    "Issuer": "AutoInsurance.IdentityService",
+    "Audience": "AutoInsurance",
+    "AccessTokenMinutes": 15,
+    "RefreshSessionDays": 7,
+   
+  },
+
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "Serilog": {
+    "MinimumLevel": {
+      "Default": "Information",
+      "Override": {
+        "Microsoft": "Warning",
+        "Microsoft.AspNetCore": "Warning",
+        "Microsoft.EntityFrameworkCore": "Warning"
+      }
+    },
+    "WriteTo": [
+      {
+        "Name": "Console"
+      },
+      {
+        "Name": "File",
+        "Args": {
+          "path": "Logs/identity-.log",
+          "rollingInterval": "Day",
+          "retainedFileCountLimit": 14
+        }
+      }
+    ],
+    "Enrich": [
+      "FromLogContext"
+    ]
+  },
+  "AllowedHosts": "*"
+
+}
+
+
+
+================================================================================
+FILE: IdentityService.API\Controllers\AdminInternalRegistrationsController.cs
+================================================================================
+using System.Security.Claims;
+using FluentValidation;
+using IdentityService.Application.Dtos.Admin;
+using IdentityService.Application.Interfaces;
+using IdentityService.Domain.Constants;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace IdentityService.API.Controllers;
+
+[ApiController]
+[Route("api/admin/internal-registrations")]
+[Authorize(Roles = ApplicationRoles.Admin)]
+public class AdminInternalRegistrationsController
+    : ControllerBase
+{
+    private readonly IAdminIdentityService
+        _adminIdentityService;
+
+    private readonly IValidator<ApproveInternalRegistrationRequest>
+        _approveValidator;
+
+    public AdminInternalRegistrationsController(
+        IAdminIdentityService adminIdentityService,
+        IValidator<ApproveInternalRegistrationRequest>
+            approveValidator)
+    {
+        _adminIdentityService = adminIdentityService;
+        _approveValidator = approveValidator;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult>
+        GetPendingRegistrations()
+    {
+        var registrations =
+            await _adminIdentityService
+                .GetPendingRegistrationsAsync();
+
+        return Ok(registrations);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult>
+        GetPendingRegistration(string id)
+    {
+        var registration =
+            await _adminIdentityService
+                .GetPendingRegistrationAsync(id);
+
+        if (registration is null)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Pending registration was not found."
+            });
+        }
+
+        return Ok(registration);
+    }
+
+    [HttpPost("{id}/approve")]
+    public async Task<IActionResult>
+        Approve(
+            string id,
+            ApproveInternalRegistrationRequest request)
+    {
+        var validationResult =
+            await _approveValidator
+                .ValidateAsync(request);
+
+        if (!validationResult.IsValid)
+        {
+            var errors =
+                validationResult.Errors
+                    .GroupBy(error => error.PropertyName)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => group
+                            .Select(error => error.ErrorMessage)
+                            .ToArray());
+
+            return BadRequest(new
+            {
+                message = "Validation failed.",
+                errors
+            });
+        }
+
+        var adminUserId = GetCurrentUserId();
+
+        if (adminUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _adminIdentityService.ApproveAsync(
+                id,
+                request,
+                adminUserId);
+
+        if (result.NotFound)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Registration was not found."
+            });
+        }
+
+        if (result.InvalidState)
+        {
+            return Conflict(new
+            {
+                message =
+                    "Registration is no longer pending."
+            });
+        }
+
+        if (!result.Succeeded)
+        {
+            return BadRequest(new
+            {
+                message =
+                    "Registration could not be approved.",
+                errors = result.Errors
+            });
+        }
+
+        return Ok(new
+        {
+            message =
+                "Registration approved and activated."
+        });
+    }
+
+    [HttpPost("{id}/reject")]
+    public async Task<IActionResult>
+        Reject(string id)
+    {
+        var adminUserId = GetCurrentUserId();
+
+        if (adminUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _adminIdentityService.RejectAsync(
+                id,
+                adminUserId);
+
+        if (result.NotFound)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Registration was not found."
+            });
+        }
+
+        if (result.InvalidState)
+        {
+            return Conflict(new
+            {
+                message =
+                    "Registration is no longer pending."
+            });
+        }
+
+        if (!result.Succeeded)
+        {
+            return BadRequest(new
+            {
+                message =
+                    "Registration could not be rejected.",
+                errors = result.Errors
+            });
+        }
+
+        return Ok(new
+        {
+            message = "Registration rejected."
+        });
+    }
+
+    private string? GetCurrentUserId()
+    {
+        return User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+    }
+}
+
+================================================================================
+FILE: IdentityService.API\Controllers\AdminUsersController.cs
+================================================================================
+using IdentityService.Application.Interfaces;
+using IdentityService.Domain.Constants;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace IdentityService.API.Controllers;
+
+[ApiController]
+[Route("api/admin/users")]
+[Authorize(Roles = ApplicationRoles.Admin)]
+public class AdminUsersController : ControllerBase
+{
+    private readonly IAdminUserService _adminUserService;
+
+    public AdminUsersController(
+        IAdminUserService adminUserService)
+    {
+        _adminUserService = adminUserService;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetUsers()
+    {
+        var users =
+            await _adminUserService.GetUsersAsync();
+
+        return Ok(users);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetUser(
+        string id)
+    {
+        var user =
+            await _adminUserService.GetUserAsync(id);
+
+        if (user is null)
+        {
+            return NotFound(new
+            {
+                message = "Internal user was not found."
+            });
+        }
+
+        return Ok(user);
+    }
+}
+
+================================================================================
+FILE: IdentityService.API\Controllers\AuthController.cs
+================================================================================
+using FluentValidation;
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Application.Interfaces;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc;
+using AppAuthenticationService =
+    IdentityService.Application.Interfaces.IAuthenticationService;
+namespace IdentityService.API.Controllers;
+using Microsoft.AspNetCore.Authorization;
+
+using IdentityService.Application.Services;
+using IdentityService.Infrastructure.Identity;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+[ApiController]
+[Route("api/auth")]
+public class AuthController : ControllerBase
+{
+    private readonly IRegistrationService _registrationService;
+    private readonly AppAuthenticationService _authenticationService;
+    private readonly ITwoFactorService _twoFactorService;
+    private readonly JwtOptions _jwtOptions;
+    private readonly IValidator<TwoFactorVerifyRequest>
+    _twoFactorVerifyValidator;
+
+    private readonly IRefreshTokenService
+    _refreshTokenService;
+
+    private readonly ILogoutService
+        _logoutService;
+
+    private readonly ICurrentUserService
+        _currentUserService;
+    private readonly IValidator<RegisterCustomerRequest>
+        _registerCustomerValidator;
+
+    private readonly IValidator<InternalRegisterRequest>
+        _internalRegisterValidator;
+
+    private readonly IValidator<LoginRequest>
+        _loginValidator;
+
+    public AuthController(
+        IRegistrationService registrationService,
+        AppAuthenticationService authenticationService,
+        IValidator<RegisterCustomerRequest> registerCustomerValidator,
+        IValidator<InternalRegisterRequest> internalRegisterValidator,
+        IValidator<LoginRequest> loginValidator,
+        ITwoFactorService twoFactorService,
+        IOptions<JwtOptions> jwtOptions,
+        IValidator<TwoFactorVerifyRequest>
+    twoFactorVerifyValidator,
+        IRefreshTokenService refreshTokenService,
+ILogoutService logoutService,
+ICurrentUserService currentUserService)
+    {
+        _registrationService = registrationService;
+        _authenticationService = authenticationService;
+        _registerCustomerValidator = registerCustomerValidator;
+        _internalRegisterValidator = internalRegisterValidator;
+        _loginValidator = loginValidator;
+        _twoFactorService = twoFactorService;
+        _jwtOptions = jwtOptions.Value;
+        _twoFactorVerifyValidator =
+    twoFactorVerifyValidator;
+        _refreshTokenService = refreshTokenService;
+        _logoutService = logoutService;
+        _currentUserService = currentUserService;
+    }
+
+    [HttpPost("register")]
+    public async Task<IActionResult> RegisterCustomer(
+        RegisterCustomerRequest request)
+    {
+        var validationResult =
+            await _registerCustomerValidator.ValidateAsync(request);
+
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(new
+            {
+                message = "Validation failed.",
+                errors = GetValidationErrors(validationResult)
+            });
+        }
+
+        var result =
+            await _registrationService.RegisterCustomerAsync(request);
+
+        if (result.IsDuplicateEmail)
+        {
+            return BadRequest(new
+            {
+                message = "An account with this email already exists."
+            });
+        }
+
+        if (!result.Succeeded)
+        {
+            return BadRequest(new
+            {
+                message = "Registration failed.",
+                errors = result.Errors
+            });
+        }
+
+        return Ok(new
+        {
+            message = "Registration successful."
+        });
+    }
+
+    [HttpPost("internal/register")]
+    public async Task<IActionResult> RegisterInternal(
+        InternalRegisterRequest request)
+    {
+        var validationResult =
+            await _internalRegisterValidator.ValidateAsync(request);
+
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(new
+            {
+                message = "Validation failed.",
+                errors = GetValidationErrors(validationResult)
+            });
+        }
+
+        var result =
+            await _registrationService.RegisterInternalAsync(request);
+
+        if (result.IsDuplicateEmail)
+        {
+            return BadRequest(new
+            {
+                message = "An account with this email already exists."
+            });
+        }
+
+        if (!result.Succeeded)
+        {
+            return BadRequest(new
+            {
+                message = "Registration failed.",
+                errors = result.Errors
+            });
+        }
+
+        return Ok(new
+        {
+            message = "Registration submitted."
+        });
+    }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(
+    LoginRequest request)
+    {
+        var validationResult =
+            await _loginValidator.ValidateAsync(request);
+
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(new
+            {
+                message = "Validation failed.",
+                errors = GetValidationErrors(validationResult)
+            });
+        }
+
+        var result =
+            await _authenticationService.LoginAsync(request);
+
+        if (result.Status == LoginStatus.InvalidCredentials)
+        {
+            return Unauthorized(new
+            {
+                message = "Invalid email or password."
+            });
+        }
+
+        if (result.Status == LoginStatus.PendingApproval)
+        {
+            return Ok(new
+            {
+                status = "Pending",
+                message = "Account awaiting approval."
+            });
+        }
+
+        if (result.Status == LoginStatus.Rejected)
+        {
+            return Ok(new
+            {
+                status = "Rejected",
+                message = "Internal access not approved."
+            });
+        }
+
+        if (result.Status == LoginStatus.Inactive)
+        {
+            return Ok(new
+            {
+                status = "Inactive",
+                message =
+                    "Your internal account is currently inactive."
+            });
+        }
+
+        if (result.Status == LoginStatus.TwoFactorSetupRequired &&
+    result.PreAuth is not null)
+        {
+            return Ok(new
+            {
+                status = "TwoFactorSetupRequired",
+                preAuthToken = result.PreAuth.Token,
+                preAuthTokenExpiresAtUtc =
+                    result.PreAuth.ExpiresAtUtc,
+                result.Email,
+                result.Role
+            });
+        }
+
+        if (result.Status == LoginStatus.TwoFactorRequired &&
+    result.PreAuth is not null)
+        {
+            return Ok(new
+            {
+                status = "TwoFactorRequired",
+                preAuthToken = result.PreAuth.Token,
+                preAuthTokenExpiresAtUtc =
+                    result.PreAuth.ExpiresAtUtc,
+                result.Email,
+                result.Role
+            });
+        }
+
+        if (result.Status == LoginStatus.CustomerAuthenticated &&
+            result.Tokens is not null)
+        {
+            SetRefreshCookie(
+                result.Tokens.RefreshToken,
+                result.Tokens.RefreshSessionExpiresAtUtc);
+
+            return Ok(new
+            {
+                status = "Authenticated",
+                accessToken = result.Tokens.AccessToken,
+                accessTokenExpiresAtUtc =
+                    result.Tokens.AccessTokenExpiresAtUtc,
+                result.Email,
+                result.Role
+            });
+        }
+
+        return Unauthorized();
+    }
+    [HttpPost("2fa/enroll")]
+    public async Task<IActionResult> EnrollTwoFactor(
+    [FromHeader(Name = "X-Pre-Auth-Token")]
+    string preAuthToken)
+    {
+        var userId = ValidatePreAuthToken(preAuthToken);
+
+        if (userId is null)
+        {
+            return Unauthorized(new
+            {
+                message =
+                    "Invalid or expired pre-authentication token."
+            });
+        }
+
+        var result =
+            await _twoFactorService.BeginEnrollmentAsync(
+                userId);
+
+        if (result is null)
+        {
+            return BadRequest(new
+            {
+                message =
+                    "Two-factor enrollment is not available."
+            });
+        }
+
+        return Ok(result);
+    }
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh()
+    {
+        if (!Request.Cookies.TryGetValue(
+                "refreshToken",
+                out var refreshToken))
+        {
+            ClearRefreshCookie();
+
+            return Unauthorized(new
+            {
+                message =
+                    "Refresh session is invalid or expired."
+            });
+        }
+
+        var result =
+            await _refreshTokenService
+                .RefreshAsync(refreshToken);
+
+        if (!result.Succeeded ||
+            string.IsNullOrWhiteSpace(result.RefreshToken) ||
+            string.IsNullOrWhiteSpace(result.AccessToken) ||
+            result.RefreshSessionExpiresAtUtc is null)
+        {
+            ClearRefreshCookie();
+
+            return Unauthorized(new
+            {
+                message =
+                    "Refresh session is invalid or expired."
+            });
+        }
+
+        SetRefreshCookie(
+            result.RefreshToken,
+            result.RefreshSessionExpiresAtUtc.Value);
+
+        return Ok(new
+        {
+            accessToken = result.AccessToken,
+            accessTokenExpiresAtUtc =
+                result.AccessTokenExpiresAtUtc
+        });
+    }
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout()
+    {
+        if (Request.Cookies.TryGetValue(
+                "refreshToken",
+                out var refreshToken))
+        {
+            await _logoutService.LogoutAsync(
+                refreshToken);
+        }
+
+        ClearRefreshCookie();
+
+        return Ok(new
+        {
+            message = "Signed out successfully."
+        });
+    }
+
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<IActionResult> Me()
+    {
+        var userId =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized();
+        }
+
+        var currentUser =
+            await _currentUserService.GetAsync(
+                userId);
+
+        if (currentUser is null)
+        {
+            return Unauthorized();
+        }
+
+        return Ok(currentUser);
+    }
+    [HttpPost("2fa/verify")]
+    public async Task<IActionResult> VerifyTwoFactor(
+    TwoFactorVerifyRequest request,
+    [FromHeader(Name = "X-Pre-Auth-Token")]
+    string preAuthToken)
+    {
+        var validationResult =
+            await _twoFactorVerifyValidator
+                .ValidateAsync(request);
+
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(new
+            {
+                message = "Validation failed.",
+                errors =
+                    GetValidationErrors(validationResult)
+            });
+        }
+
+        var userId =
+            ValidatePreAuthToken(preAuthToken);
+
+        if (userId is null)
+        {
+            return Unauthorized(new
+            {
+                message =
+                    "Invalid or expired pre-authentication token."
+            });
+        }
+
+        var result =
+            await _twoFactorService.VerifyAsync(
+                userId,
+                request.Code);
+
+        if (!result.Succeeded ||
+            result.Tokens is null)
+        {
+            return BadRequest(new
+            {
+                message =
+                    result.Error ??
+                    "Two-factor verification failed."
+            });
+        }
+
+        SetRefreshCookie(
+            result.Tokens.RefreshToken,
+            result.Tokens.RefreshSessionExpiresAtUtc);
+
+        return Ok(new
+        {
+            status = "Authenticated",
+            accessToken =
+                result.Tokens.AccessToken,
+
+            accessTokenExpiresAtUtc =
+                result.Tokens.AccessTokenExpiresAtUtc,
+
+            result.Email,
+            result.Role
+        });
+    }
+    private string? ValidatePreAuthToken(
+    string preAuthToken)
+    {
+        if (string.IsNullOrWhiteSpace(preAuthToken))
+        {
+            return null;
+        }
+
+        var tokenHandler =
+            new JwtSecurityTokenHandler();
+
+        var key = Encoding.UTF8.GetBytes(
+            _jwtOptions.Key);
+
+        try
+        {
+            var principal =
+                tokenHandler.ValidateToken(
+                    preAuthToken,
+                    new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidIssuer = _jwtOptions.Issuer,
+
+                        ValidateAudience = true,
+                        ValidAudience = _jwtOptions.Audience,
+
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey =
+                            new SymmetricSecurityKey(key),
+
+                        ValidateLifetime = true,
+                        ClockSkew = TimeSpan.Zero
+                    },
+                    out _);
+
+            var purpose =
+                principal.FindFirst(
+                    PreAuthTokenService.PurposeClaim)
+                ?.Value;
+
+            if (purpose !=
+                PreAuthTokenService.PurposeValue)
+            {
+                return null;
+            }
+
+            return principal.FindFirst(
+            JwtRegisteredClaimNames.Sub)?.Value
+        ?? principal.FindFirst(
+            ClaimTypes.NameIdentifier)?.Value;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+    private static Dictionary<string, string[]> GetValidationErrors(
+        FluentValidation.Results.ValidationResult validationResult)
+    {
+        return validationResult.Errors
+            .GroupBy(error => error.PropertyName)
+            .ToDictionary(
+                group => group.Key,
+                group => group
+                    .Select(error => error.ErrorMessage)
+                    .ToArray());
+    }
+    private void ClearRefreshCookie()
+    {
+        Response.Cookies.Delete(
+            "refreshToken",
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Path = "/api/auth",
+                IsEssential = true
+            });
+    }
+    private void SetRefreshCookie(
+    string refreshToken,
+    DateTime expiresAtUtc)
+    {
+        Response.Cookies.Append(
+            "refreshToken",
+            refreshToken,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Path = "/api/auth",
+                Expires =
+                    new DateTimeOffset(
+                        expiresAtUtc),
+                IsEssential = true
+            });
+    }
+}
+
+================================================================================
+FILE: IdentityService.API\Controllers\InternalIdentityController.cs
+================================================================================
+using IdentityService.Application.Interfaces;
+using Microsoft.AspNetCore.Mvc;
+
+namespace IdentityService.API.Controllers;
+
+[ApiController]
+[Route("internal")]
+public class InternalIdentityController
+    : ControllerBase
+{
+    private readonly IInternalIdentityQueryService
+        _internalIdentityQueryService;
+
+    public InternalIdentityController(
+        IInternalIdentityQueryService
+            internalIdentityQueryService)
+    {
+        _internalIdentityQueryService =
+            internalIdentityQueryService;
+    }
+
+    [HttpGet("agents/eligible")]
+    public async Task<IActionResult>
+        GetEligibleAgents()
+    {
+        var agents =
+            await _internalIdentityQueryService
+                .GetEligibleAgentsAsync();
+
+        return Ok(agents);
+    }
+
+    [HttpGet("agents/{identityUserId}/eligible")]
+    public async Task<IActionResult>
+        GetEligibleAgent(
+            string identityUserId)
+    {
+        var agent =
+            await _internalIdentityQueryService
+                .GetEligibleAgentAsync(
+                    identityUserId);
+
+        if (agent is null)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Agent is not eligible."
+            });
+        }
+
+        return Ok(agent);
+    }
+    [HttpGet("underwriters/eligible")]
+    public async Task<IActionResult> GetEligibleUnderwriters()
+    {
+        var underwriters =
+            await _internalIdentityQueryService
+                .GetEligibleUnderwritersAsync();
+
+        return Ok(underwriters);
+    }
+
+    [HttpGet("underwriters/{identityUserId}/eligible")]
+    public async Task<IActionResult> GetEligibleUnderwriter(
+        string identityUserId)
+    {
+        if (string.IsNullOrWhiteSpace(identityUserId))
+        {
+            return BadRequest(
+                new
+                {
+                    message =
+                        "Identity User ID is required."
+                });
+        }
+
+        var underwriter =
+            await _internalIdentityQueryService
+                .GetEligibleUnderwriterAsync(
+                    identityUserId);
+
+        if (underwriter is null)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        "Underwriter is not eligible."
+                });
+        }
+
+        return Ok(underwriter);
+    }
+    [HttpGet("users/{identityUserId}")]
+    public async Task<IActionResult>
+        GetUserSummary(
+            string identityUserId)
+    {
+        if (
+            string.IsNullOrWhiteSpace(
+                identityUserId))
+        {
+            return BadRequest(new
+            {
+                message =
+                    "Identity User ID is required."
+            });
+        }
+
+        var user =
+            await _internalIdentityQueryService
+                .GetUserSummaryAsync(
+                    identityUserId);
+
+        if (user is null)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Identity user was not found."
+            });
+        }
+
+        return Ok(user);
+    }
+}
+
+================================================================================
+FILE: IdentityService.API\Controllers\WeatherForecastController.cs
+================================================================================
+using Microsoft.AspNetCore.Mvc;
+
+namespace IdentityService.API.Controllers
+{
+    [ApiController]
+    [Route("[controller]")]
+    public class WeatherForecastController : ControllerBase
+    {
+        private static readonly string[] Summaries = new[]
+        {
+            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+        };
+
+        private readonly ILogger<WeatherForecastController> _logger;
+
+        public WeatherForecastController(ILogger<WeatherForecastController> logger)
+        {
+            _logger = logger;
+        }
+
+        [HttpGet(Name = "GetWeatherForecast")]
+        public IEnumerable<WeatherForecast> Get()
+        {
+            return Enumerable.Range(1, 5).Select(index => new WeatherForecast
+            {
+                Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+                TemperatureC = Random.Shared.Next(-20, 55),
+                Summary = Summaries[Random.Shared.Next(Summaries.Length)]
+            })
+            .ToArray();
+        }
+    }
+}
+
+
+================================================================================
+FILE: IdentityService.API\IdentityService.API.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>ca128761-205c-48e8-933a-a78cce9c99ef</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.19" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.19">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IdentityService.Application\IdentityService.Application.csproj" />
+    <ProjectReference Include="..\IdentityService.Infrastructure\IdentityService.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
+
+
+================================================================================
+FILE: IdentityService.API\Middleware\CorrelationIdMiddleware.cs
+================================================================================
+namespace IdentityService.API.Middleware;
+
+public class CorrelationIdMiddleware
+{
+    private const string HeaderName = "X-Correlation-Id";
+
+    private readonly RequestDelegate _next;
+
+    public CorrelationIdMiddleware(
+        RequestDelegate next)
+    {
+        _next = next;
+    }
+
+    public async Task InvokeAsync(
+        HttpContext context)
+    {
+        var correlationId =
+            context.Request.Headers.TryGetValue(
+                HeaderName,
+                out var existingCorrelationId)
+                && !string.IsNullOrWhiteSpace(
+                    existingCorrelationId)
+            ? existingCorrelationId.ToString()
+            : Guid.NewGuid().ToString();
+
+        context.TraceIdentifier = correlationId;
+
+        context.Response.Headers[HeaderName] =
+            correlationId;
+
+        await _next(context);
+    }
+}
+
+================================================================================
+FILE: IdentityService.API\Middleware\ExceptionHandlingMiddleware.cs
+================================================================================
+using System.Net;
+using System.Text.Json;
+
+namespace IdentityService.API.Middleware;
+
+public class ExceptionHandlingMiddleware
+{
+    private readonly RequestDelegate _next;
+
+    private readonly ILogger<ExceptionHandlingMiddleware>
+        _logger;
+
+    public ExceptionHandlingMiddleware(
+        RequestDelegate next,
+        ILogger<ExceptionHandlingMiddleware> logger)
+    {
+        _next = next;
+        _logger = logger;
+    }
+
+    public async Task InvokeAsync(
+        HttpContext context)
+    {
+        try
+        {
+            await _next(context);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(
+                exception,
+                "Unhandled exception. CorrelationId: {CorrelationId}",
+                context.TraceIdentifier);
+
+            await WriteErrorResponseAsync(context);
+        }
+    }
+
+    private static async Task WriteErrorResponseAsync(
+        HttpContext context)
+    {
+        context.Response.StatusCode =
+            (int)HttpStatusCode.InternalServerError;
+
+        context.Response.ContentType =
+            "application/json";
+
+        var response = new
+        {
+            message =
+                "An unexpected error occurred.",
+            correlationId =
+                context.TraceIdentifier
+        };
+
+        var json =
+            JsonSerializer.Serialize(response);
+
+        await context.Response.WriteAsync(json);
+    }
+}
+
+================================================================================
+FILE: IdentityService.API\Program.cs
+================================================================================
+using FluentValidation;
+using IdentityService.API.Middleware;
+using IdentityService.Application.Dtos.Admin;
+using IdentityService.Application.Dtos.Authentication;
+using IdentityService.Application.Interfaces;
+using IdentityService.Application.Interfaces.Repositories;
+using IdentityService.Application.Services;
+using IdentityService.Application.Validators.Admin;
+using IdentityService.Application.Validators.Authentication;
+using IdentityService.Domain.Entities;
+using IdentityService.Infrastructure.Identity;
+using IdentityService.Infrastructure.Persistence;
+using IdentityService.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using Serilog;
+using System.Text;
+
+var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseSerilog(
+    (context, configuration) =>
+    {
+        configuration.ReadFrom.Configuration(
+            context.Configuration);
+    });
+builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(
+        "AngularDevelopment",
+        policy =>
+        {
+            policy
+                .WithOrigins("http://localhost:4200")
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        });
+});
+builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition(
+        "Bearer",
+        new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "Enter the JWT access token."
+        });
+
+    options.AddSecurityRequirement(
+        new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                Array.Empty<string>()
+            }
+        });
+});
+
+var connectionString =
+    builder.Configuration.GetConnectionString("IdentityDb")
+    ?? throw new InvalidOperationException(
+        "Connection string 'IdentityDb' was not found.");
+
+builder.Services.AddDbContext<IdentityDbContext>(options =>
+    options.UseSqlServer(connectionString));
+
+builder.Services
+    .AddIdentity<ApplicationUser, IdentityRole>(options =>
+    {
+        options.User.RequireUniqueEmail = true;
+
+        options.Password.RequiredLength = 8;
+        options.Password.RequireDigit = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireNonAlphanumeric = true;
+    })
+    .AddEntityFrameworkStores<IdentityDbContext>()
+    .AddDefaultTokenProviders();
+
+builder.Services.Configure<BootstrapAdminOptions>(
+    builder.Configuration.GetSection(
+        BootstrapAdminOptions.SectionName));
+
+builder.Services.Configure<JwtOptions>(
+    builder.Configuration.GetSection(
+        JwtOptions.SectionName));
+
+var jwtOptions = builder.Configuration
+    .GetSection(JwtOptions.SectionName)
+    .Get<JwtOptions>()
+    ?? throw new InvalidOperationException(
+        "JWT configuration was not found.");
+
+
+
+if (string.IsNullOrWhiteSpace(jwtOptions.Key))
+{
+    throw new InvalidOperationException(
+        "JWT signing key was not configured.");
+}
+
+builder.Services
+    .AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme =
+            JwtBearerDefaults.AuthenticationScheme;
+
+        options.DefaultChallengeScheme =
+            JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters =
+            new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = jwtOptions.Issuer,
+
+                ValidateAudience = true,
+                ValidAudience = jwtOptions.Audience,
+
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey =
+                    new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(
+                            jwtOptions.Key)),
+
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+            };
+    });
+
+builder.Services.AddScoped<IdentitySeeder>();
+
+builder.Services.AddScoped<
+    IUserRepository,
+    UserRepository>();
+
+builder.Services.AddScoped<
+    IRefreshSessionRepository,
+    RefreshSessionRepository>();
+
+builder.Services.AddScoped<
+    IRegistrationService,
+    RegistrationService>();
+
+builder.Services.AddScoped<
+    IAuthenticationService,
+    AuthenticationService>();
+
+builder.Services.AddScoped<
+    IAuthSessionService,
+    AuthSessionService>();
+
+builder.Services.AddScoped<
+    ITokenService,
+    TokenService>();
+
+builder.Services.AddScoped<
+    ITokenHashService,
+    TokenHashService>();
+
+builder.Services.AddScoped<
+    IValidator<RegisterCustomerRequest>,
+    RegisterCustomerRequestValidator>();
+
+builder.Services.AddScoped<
+    IValidator<InternalRegisterRequest>,
+    InternalRegisterRequestValidator>();
+
+builder.Services.AddScoped<
+    IValidator<LoginRequest>,
+    LoginRequestValidator>();
+builder.Services.AddScoped<
+    IPreAuthTokenService,
+    PreAuthTokenService>();
+
+builder.Services.AddScoped<
+    ITwoFactorService,
+    TwoFactorService>();
+
+builder.Services.AddScoped<
+    IPreAuthTokenService,
+    PreAuthTokenService>();
+
+builder.Services.AddScoped<
+    IValidator<TwoFactorVerifyRequest>,
+    TwoFactorVerifyRequestValidator>();
+
+builder.Services.AddScoped<
+    IAdminIdentityService,
+    AdminIdentityService>();
+
+builder.Services.AddScoped<
+    IRefreshTokenService,
+    RefreshTokenService>();
+
+builder.Services.AddScoped<
+    ILogoutService,
+    LogoutService>();
+
+builder.Services.AddScoped<
+    ICurrentUserService,
+    CurrentUserService>();
+builder.Services.AddScoped<
+    IAdminUserService,
+    AdminUserService>();
+builder.Services.AddScoped<
+    IValidator<ApproveInternalRegistrationRequest>,
+    ApproveInternalRegistrationRequestValidator>();
+
+builder.Services.AddScoped<
+    IInternalIdentityQueryService,
+    InternalIdentityQueryService>();
+
+builder.Services.AddHealthChecks();
+var app = builder.Build();
+
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseSerilogRequestLogging();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+if (!app.Environment.IsEnvironment("IntegrationTesting"))
+{
+    using var scope = app.Services.CreateScope();
+
+    var dbContext =
+        scope.ServiceProvider
+            .GetRequiredService<IdentityDbContext>();
+
+    await dbContext.Database.MigrateAsync();
+
+    var seeder =
+        scope.ServiceProvider
+            .GetRequiredService<IdentitySeeder>();
+
+    await seeder.SeedAsync();
+}
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("AngularDevelopment");
+}
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.MapHealthChecks("/health");
+
+app.Run();
+
+public partial class Program
+{
+}
+
+================================================================================
+FILE: IdentityService.API\Properties\launchSettings.json
+================================================================================
+{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:50146",
+      "sslPort": 44360
+    }
+  },
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "http://localhost:5290",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "https": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "https://localhost:7130;http://localhost:5290",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
+
+
+================================================================================
+FILE: IdentityService.API\WeatherForecast.cs
+================================================================================
+namespace IdentityService.API
+{
+    public class WeatherForecast
+    {
+        public DateOnly Date { get; set; }
+
+        public int TemperatureC { get; set; }
+
+        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+
+        public string? Summary { get; set; }
+    }
+}
+

@@ -1,0 +1,2162 @@
+
+================================================================================
+FILE: CustomerVehicleService.API\appsettings.Development.json
+================================================================================
+{
+  "Services": {
+    "IdentityService": {
+      "BaseUrl": "https://localhost:7130"
+    }
+  }
+}
+
+================================================================================
+FILE: CustomerVehicleService.API\appsettings.json
+================================================================================
+{
+  "ConnectionStrings": {
+    "CustomerVehicleDb": "Server=(localdb)\\MSSQLLocalDB;Database=CustomerVehicleDb;Trusted_Connection=True;TrustServerCertificate=True;"
+  },
+
+  "Jwt": {
+    "Issuer": "AutoInsurance.IdentityService",
+    "Audience": "AutoInsurance",
+    "Key": "YOUR_LOCAL_DEVELOPMENT_SIGNING_KEY_AT_LEAST_32_CHARACTERS"
+  },
+  "VehicleImages": {
+    "StoragePath": "VehicleImages"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+
+  "AllowedHosts": "*"
+}
+
+================================================================================
+FILE: CustomerVehicleService.API\Controllers\AdminAgentsController.cs
+================================================================================
+using CustomerVehicleService.Application.Interfaces;
+using CustomerVehicleService.Domain.Constants;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace CustomerVehicleService.API.Controllers;
+
+[ApiController]
+[Route("api/admin/agents")]
+[Authorize(Roles = ApplicationRoles.Admin)]
+public class AdminAgentsController
+    : ControllerBase
+{
+    private readonly IAgentAssignmentService
+        _assignmentService;
+
+    public AdminAgentsController(
+        IAgentAssignmentService assignmentService)
+    {
+        _assignmentService =
+            assignmentService;
+    }
+
+    [HttpGet("eligible")]
+    public async Task<IActionResult>
+        GetEligibleAgents()
+    {
+        var result =
+            await _assignmentService
+                .GetEligibleAgentsAsync();
+
+        if (!result.Succeeded)
+        {
+            return StatusCode(
+                StatusCodes
+                    .Status503ServiceUnavailable,
+                new
+                {
+                    message =
+                        "Identity service is currently unavailable."
+                });
+        }
+
+        return Ok(result.Agents);
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.API\Controllers\AdminCustomersController.cs
+================================================================================
+using System.Security.Claims;
+using CustomerVehicleService.Application.Dtos.Assignments;
+using CustomerVehicleService.Application.Interfaces;
+using CustomerVehicleService.Domain.Constants;
+using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace CustomerVehicleService.API.Controllers;
+
+[ApiController]
+[Route("api/admin/customers")]
+[Authorize(Roles = ApplicationRoles.Admin)]
+public class AdminCustomersController : ControllerBase
+{
+    private readonly IAgentAssignmentService _assignmentService;
+
+    private readonly IValidator<AssignAgentRequest>
+        _assignAgentValidator;
+
+    public AdminCustomersController(
+        IAgentAssignmentService assignmentService,
+        IValidator<AssignAgentRequest> assignAgentValidator)
+    {
+        _assignmentService = assignmentService;
+        _assignAgentValidator = assignAgentValidator;
+    }
+
+    [HttpGet("unassigned")]
+    public async Task<IActionResult> GetUnassignedCustomers()
+    {
+        var customers =
+            await _assignmentService
+                .GetUnassignedCustomersAsync();
+
+        return Ok(customers);
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetCustomer(
+        Guid id)
+    {
+        var customer =
+            await _assignmentService
+                .GetCustomerForAssignmentAsync(id);
+
+        if (customer is null)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Customer profile was not found."
+            });
+        }
+
+        return Ok(customer);
+    }
+
+    [HttpPost("{id:guid}/agent")]
+    public async Task<IActionResult> AssignAgent(
+        Guid id,
+        AssignAgentRequest request)
+    {
+        var validation =
+            await _assignAgentValidator
+                .ValidateAsync(request);
+
+        if (!validation.IsValid)
+        {
+            var errors =
+                validation.Errors
+                    .GroupBy(
+                        error =>
+                            error.PropertyName)
+                    .ToDictionary(
+                        group =>
+                            group.Key,
+                        group =>
+                            group
+                                .Select(
+                                    error =>
+                                        error.ErrorMessage)
+                                .ToArray());
+
+            return BadRequest(new
+            {
+                message =
+                    "Validation failed.",
+                errors
+            });
+        }
+
+        var adminIdentityUserId =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (
+            string.IsNullOrWhiteSpace(
+                adminIdentityUserId)
+        )
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _assignmentService
+                .AssignAgentAsync(
+                    id,
+                    adminIdentityUserId,
+                    request);
+
+        if (result.CustomerNotFound)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Customer profile was not found."
+            });
+        }
+
+        if (result.ProfileIncomplete)
+        {
+            return Conflict(new
+            {
+                message =
+                    "Customer profile is not complete."
+            });
+        }
+
+        if (result.AlreadyAssigned)
+        {
+            return Conflict(new
+            {
+                message =
+                    "Customer already has a permanent Agent assignment."
+            });
+        }
+
+        if (result.AgentIneligible)
+        {
+            return Conflict(new
+            {
+                message =
+                    "The selected Agent is no longer eligible for assignment."
+            });
+        }
+
+        if (result.IdentityUnavailable)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new
+                {
+                    message =
+                        "Identity service is currently unavailable."
+                });
+        }
+
+        if (
+            !result.Succeeded ||
+            result.Assignment is null)
+        {
+            return BadRequest(new
+            {
+                message =
+                    "Agent assignment could not be completed."
+            });
+        }
+
+        return Ok(result.Assignment);
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.API\Controllers\AgentCustomersController.cs
+================================================================================
+using System.Security.Claims;
+using CustomerVehicleService.Application.Interfaces;
+using CustomerVehicleService.Domain.Constants;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace CustomerVehicleService.API.Controllers;
+
+[ApiController]
+[Route("api/agent/customers")]
+[Authorize(Roles = ApplicationRoles.Agent)]
+public class AgentCustomersController
+    : ControllerBase
+{
+    private readonly IAgentCustomerService
+        _agentCustomerService;
+
+    public AgentCustomersController(
+        IAgentCustomerService agentCustomerService)
+    {
+        _agentCustomerService =
+            agentCustomerService;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult>
+        GetMyCustomers()
+    {
+        var agentIdentityUserId =
+            GetCurrentUserId();
+
+        if (
+            string.IsNullOrWhiteSpace(
+                agentIdentityUserId)
+        )
+        {
+            return Unauthorized();
+        }
+
+        var customers =
+            await _agentCustomerService
+                .GetMyCustomersAsync(
+                    agentIdentityUserId);
+
+        return Ok(customers);
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult>
+        GetCustomer(
+            Guid id)
+    {
+        var agentIdentityUserId =
+            GetCurrentUserId();
+
+        if (
+            string.IsNullOrWhiteSpace(
+                agentIdentityUserId)
+        )
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _agentCustomerService
+                .GetCustomerAsync(
+                    agentIdentityUserId,
+                    id);
+
+        if (result.NotFound)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Customer profile was not found."
+            });
+        }
+
+        if (result.NotAssignedToAgent)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        "Customer is not assigned to the current Agent."
+                });
+        }
+
+        if (
+            !result.Succeeded ||
+            result.Customer is null
+        )
+        {
+            return BadRequest(new
+            {
+                message =
+                    "Customer information could not be loaded."
+            });
+        }
+
+        return Ok(result.Customer);
+    }
+
+    private string? GetCurrentUserId()
+    {
+        return User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.API\Controllers\AgentDriversController.cs
+================================================================================
+using System.Security.Claims;
+using CustomerVehicleService.Application.Dtos.Drivers;
+using CustomerVehicleService.Application.Interfaces;
+using CustomerVehicleService.Domain.Constants;
+using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace CustomerVehicleService.API.Controllers;
+
+[ApiController]
+[Route("api/customers/{customerId:guid}/driver")]
+[Authorize(Roles = ApplicationRoles.Agent)]
+public class AgentDriversController
+    : ControllerBase
+{
+    private readonly IDriverService
+        _driverService;
+
+    private readonly IValidator<UpsertDriverRequest>
+        _validator;
+
+    public AgentDriversController(
+        IDriverService driverService,
+        IValidator<UpsertDriverRequest> validator)
+    {
+        _driverService =
+            driverService;
+
+        _validator =
+            validator;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetDriver(
+        Guid customerId)
+    {
+        var agentIdentityUserId =
+            GetCurrentUserId();
+
+        if (
+            string.IsNullOrWhiteSpace(
+                agentIdentityUserId)
+        )
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _driverService
+                .GetForAgentAsync(
+                    agentIdentityUserId,
+                    customerId);
+
+        if (result.CustomerNotFound)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Customer profile was not found."
+            });
+        }
+
+        if (result.NotAssignedToAgent)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        "Customer is not assigned to the current Agent."
+                });
+        }
+
+        if (result.DriverNotFound)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Primary Driver has not been configured."
+            });
+        }
+
+        return Ok(result.Driver);
+    }
+
+    [HttpPut]
+    public async Task<IActionResult> UpsertDriver(
+        Guid customerId,
+        UpsertDriverRequest request)
+    {
+        var validation =
+            await _validator
+                .ValidateAsync(request);
+
+        if (!validation.IsValid)
+        {
+            var errors =
+                validation.Errors
+                    .GroupBy(
+                        error =>
+                            error.PropertyName)
+                    .ToDictionary(
+                        group =>
+                            group.Key,
+                        group =>
+                            group
+                                .Select(
+                                    error =>
+                                        error.ErrorMessage)
+                                .ToArray());
+
+            return BadRequest(new
+            {
+                message =
+                    "Validation failed.",
+                errors
+            });
+        }
+
+        var agentIdentityUserId =
+            GetCurrentUserId();
+
+        if (
+            string.IsNullOrWhiteSpace(
+                agentIdentityUserId)
+        )
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _driverService
+                .UpsertForAgentAsync(
+                    agentIdentityUserId,
+                    customerId,
+                    request);
+
+        if (result.CustomerNotFound)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Customer profile was not found."
+            });
+        }
+
+        if (result.NotAssignedToAgent)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        "Customer is not assigned to the current Agent."
+                });
+        }
+
+        if (result.DuplicateLicence)
+        {
+            return Conflict(new
+            {
+                message =
+                    "Licence number is already in use."
+            });
+        }
+
+        return Ok(result.Driver);
+    }
+
+    private string? GetCurrentUserId()
+    {
+        return User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.API\Controllers\AgentVehiclesController.cs
+================================================================================
+using System.Security.Claims;
+using CustomerVehicleService.Application.Dtos.Vehicles;
+using CustomerVehicleService.Application.Interfaces;
+using CustomerVehicleService.Domain.Constants;
+using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace CustomerVehicleService.API.Controllers;
+
+[ApiController]
+[Route("api/customers/{customerId:guid}/vehicles")]
+[Authorize(Roles = ApplicationRoles.Agent)]
+public class AgentVehiclesController : ControllerBase
+{
+    private readonly IVehicleService _vehicleService;
+
+    private readonly IValidator<UpsertVehicleRequest>
+        _validator;
+
+    public AgentVehiclesController(
+        IVehicleService vehicleService,
+        IValidator<UpsertVehicleRequest> validator)
+    {
+        _vehicleService = vehicleService;
+        _validator = validator;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetVehicles(
+        Guid customerId)
+    {
+        var agentIdentityUserId =
+            GetCurrentUserId();
+
+        if (
+            string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _vehicleService
+                .GetForAgentAsync(
+                    agentIdentityUserId,
+                    customerId);
+
+        if (result.CustomerNotFound)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Customer profile was not found."
+            });
+        }
+
+        if (result.NotAssignedToAgent)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        "Customer is not assigned to the current Agent."
+                });
+        }
+
+        if (!result.Succeeded)
+        {
+            return BadRequest(new
+            {
+                message =
+                    "Vehicles could not be loaded."
+            });
+        }
+
+        return Ok(result.Vehicles);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateVehicle(
+        Guid customerId,
+        UpsertVehicleRequest request)
+    {
+        var validation =
+            await _validator
+                .ValidateAsync(request);
+
+        if (!validation.IsValid)
+        {
+            return BadRequest(
+                CreateValidationResponse(
+                    validation));
+        }
+
+        var agentIdentityUserId =
+            GetCurrentUserId();
+
+        if (
+            string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _vehicleService
+                .CreateForAgentAsync(
+                    agentIdentityUserId,
+                    customerId,
+                    request);
+
+        if (result.CustomerNotFound)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Customer profile was not found."
+            });
+        }
+
+        if (result.NotAssignedToAgent)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        "Customer is not assigned to the current Agent."
+                });
+        }
+
+        if (result.DuplicateVin)
+        {
+            return Conflict(new
+            {
+                message =
+                    "VIN is already in use."
+            });
+        }
+
+        if (result.DuplicateRegistration)
+        {
+            return Conflict(new
+            {
+                message =
+                    "Registration Number is already in use."
+            });
+        }
+
+        if (
+            !result.Succeeded ||
+            result.Vehicle is null)
+        {
+            return BadRequest(new
+            {
+                message =
+                    "Vehicle could not be created."
+            });
+        }
+
+        return CreatedAtRoute(
+            "GetVehicle",
+            new
+            {
+                id = result.Vehicle.Id
+            },
+            result.Vehicle);
+    }
+
+    private string? GetCurrentUserId()
+    {
+        return User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+    }
+
+    private static object CreateValidationResponse(
+        FluentValidation.Results.ValidationResult validation)
+    {
+        var errors =
+            validation.Errors
+                .GroupBy(
+                    error =>
+                        error.PropertyName)
+                .ToDictionary(
+                    group =>
+                        group.Key,
+                    group =>
+                        group
+                            .Select(
+                                error =>
+                                    error.ErrorMessage)
+                            .ToArray());
+
+        return new
+        {
+            message =
+                "Validation failed.",
+            errors
+        };
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.API\Controllers\CustomerDriverController.cs
+================================================================================
+using System.Security.Claims;
+using CustomerVehicleService.Application.Interfaces;
+using CustomerVehicleService.Domain.Constants;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace CustomerVehicleService.API.Controllers;
+
+[ApiController]
+[Route("api/customers/me/driver")]
+[Authorize(Roles = ApplicationRoles.Customer)]
+public class CustomerDriverController
+    : ControllerBase
+{
+    private readonly IDriverService
+        _driverService;
+
+    public CustomerDriverController(
+        IDriverService driverService)
+    {
+        _driverService =
+            driverService;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetDriver()
+    {
+        var customerIdentityUserId =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (
+            string.IsNullOrWhiteSpace(
+                customerIdentityUserId)
+        )
+        {
+            return Unauthorized();
+        }
+
+        var driver =
+            await _driverService
+                .GetForCustomerAsync(
+                    customerIdentityUserId);
+
+        if (driver is null)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Primary Driver has not been configured."
+            });
+        }
+
+        return Ok(driver);
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.API\Controllers\CustomerReadinessController.cs
+================================================================================
+using System.Security.Claims;
+using CustomerVehicleService.Application.Interfaces;
+using CustomerVehicleService.Application.Interfaces.Repositories;
+using CustomerVehicleService.Domain.Constants;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace CustomerVehicleService.API.Controllers;
+
+[ApiController]
+[Route("api")]
+public class CustomerReadinessController
+    : ControllerBase
+{
+    private readonly ICustomerReadinessService
+        _customerReadinessService;
+
+    private readonly ICustomerProfileRepository
+        _customerProfileRepository;
+
+    private readonly IAgentCustomerRepository
+        _agentCustomerRepository;
+
+    public CustomerReadinessController(
+        ICustomerReadinessService customerReadinessService,
+        ICustomerProfileRepository customerProfileRepository,
+        IAgentCustomerRepository agentCustomerRepository)
+    {
+        _customerReadinessService =
+            customerReadinessService;
+
+        _customerProfileRepository =
+            customerProfileRepository;
+
+        _agentCustomerRepository =
+            agentCustomerRepository;
+    }
+
+    /*
+     * Customer:
+     * retrieve readiness for the currently authenticated
+     * CustomerProfile.
+     */
+    [HttpGet("customers/me/readiness")]
+    [Authorize(
+        Roles = ApplicationRoles.Customer)]
+    public async Task<IActionResult>
+        GetMyReadiness()
+    {
+        var identityUserId =
+            GetCurrentUserId();
+
+        if (
+            string.IsNullOrWhiteSpace(
+                identityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var profile =
+            await _customerProfileRepository
+                .GetByIdentityUserIdAsync(
+                    identityUserId);
+
+        if (profile is null)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Customer profile was not found."
+            });
+        }
+
+        var readiness =
+            await _customerReadinessService
+                .GetForCustomerProfileAsync(
+                    profile.Id);
+
+        if (readiness is null)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Customer profile was not found."
+            });
+        }
+
+        return Ok(readiness);
+    }
+
+    /*
+     * Agent:
+     * retrieve readiness only for a Customer permanently
+     * assigned to the currently authenticated Agent.
+     */
+    [HttpGet(
+        "agent/customers/{customerProfileId:guid}/readiness")]
+    [Authorize(
+        Roles = ApplicationRoles.Agent)]
+    public async Task<IActionResult>
+        GetAgentCustomerReadiness(
+            Guid customerProfileId)
+    {
+        var agentIdentityUserId =
+            GetCurrentUserId();
+
+        if (
+            string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        /*
+         * Distinguish an unknown Customer from an
+         * unauthorized assigned-customer request.
+         */
+        var profile =
+            await _agentCustomerRepository
+                .GetCustomerProfileAsync(
+                    customerProfileId);
+
+        if (profile is null)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Customer profile was not found."
+            });
+        }
+
+        var assignment =
+            await _agentCustomerRepository
+                .GetAssignmentAsync(
+                    customerProfileId);
+
+        if (
+            assignment is null ||
+            assignment.AgentIdentityUserId !=
+                agentIdentityUserId)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        "Customer is not assigned to the current Agent."
+                });
+        }
+
+        var readiness =
+            await _customerReadinessService
+                .GetForCustomerProfileAsync(
+                    customerProfileId);
+
+        if (readiness is null)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Customer profile was not found."
+            });
+        }
+
+        return Ok(readiness);
+    }
+
+    private string? GetCurrentUserId()
+    {
+        return User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.API\Controllers\CustomersController.cs
+================================================================================
+using System.Security.Claims;
+using CustomerVehicleService.Application.Dtos.Profiles;
+using CustomerVehicleService.Application.Interfaces;
+using CustomerVehicleService.Domain.Constants;
+using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace CustomerVehicleService.API.Controllers;
+
+[ApiController]
+[Route("api/customers")]
+[Authorize(Roles = ApplicationRoles.Customer)]
+public class CustomersController : ControllerBase
+{
+    private readonly ICustomerProfileService
+        _profileService;
+
+    private readonly IValidator<CreateCustomerProfileRequest>
+        _createProfileValidator;
+    private readonly IValidator<UpdateCustomerProfileRequest>
+    _updateProfileValidator;
+
+    public CustomersController(
+    ICustomerProfileService profileService,
+    IValidator<CreateCustomerProfileRequest>
+        createProfileValidator,
+    IValidator<UpdateCustomerProfileRequest>
+        updateProfileValidator)
+    {
+        _profileService = profileService;
+
+        _createProfileValidator =
+            createProfileValidator;
+
+        _updateProfileValidator =
+            updateProfileValidator;
+    }
+
+    [HttpGet("me")]
+    public async Task<IActionResult> GetMe()
+    {
+        var identityUserId =
+            GetCurrentUserId();
+
+        if (identityUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var profile =
+            await _profileService.GetAsync(
+                identityUserId);
+
+        if (profile is null)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Customer profile has not been created."
+            });
+        }
+
+        return Ok(profile);
+    }
+
+    [HttpPut("me")]
+    public async Task<IActionResult> UpdateMe(
+    UpdateCustomerProfileRequest request)
+    {
+        var validation =
+            await _updateProfileValidator
+                .ValidateAsync(request);
+
+        if (!validation.IsValid)
+        {
+            var errors =
+                validation.Errors
+                    .GroupBy(
+                        error =>
+                            error.PropertyName)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => group
+                            .Select(
+                                error =>
+                                    error.ErrorMessage)
+                            .ToArray());
+
+            return BadRequest(new
+            {
+                message =
+                    "Validation failed.",
+                errors
+            });
+        }
+
+        var identityUserId =
+            GetCurrentUserId();
+
+        if (identityUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _profileService.UpdateAsync(
+                identityUserId,
+                request);
+
+        if (result.NotFound)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Customer profile has not been created."
+            });
+        }
+
+        if (!result.Succeeded ||
+            result.Profile is null)
+        {
+            return BadRequest(new
+            {
+                message =
+                    "Customer profile could not be updated.",
+                errors =
+                    result.Errors
+            });
+        }
+
+        return Ok(result.Profile);
+    }
+    [HttpPost("me")]
+    public async Task<IActionResult> CreateMe(
+        CreateCustomerProfileRequest request)
+    {
+        var validation =
+            await _createProfileValidator
+                .ValidateAsync(request);
+
+        if (!validation.IsValid)
+        {
+            var errors =
+                validation.Errors
+                    .GroupBy(
+                        error =>
+                            error.PropertyName)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => group
+                            .Select(
+                                error =>
+                                    error.ErrorMessage)
+                            .ToArray());
+
+            return BadRequest(new
+            {
+                message =
+                    "Validation failed.",
+                errors
+            });
+        }
+
+        var identityUserId =
+            GetCurrentUserId();
+
+        if (identityUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _profileService.CreateAsync(
+                identityUserId,
+                request);
+
+        if (result.AlreadyExists)
+        {
+            return Conflict(new
+            {
+                message =
+                    "Customer profile already exists."
+            });
+        }
+
+        if (!result.Succeeded ||
+            result.Profile is null)
+        {
+            return BadRequest(new
+            {
+                message =
+                    "Customer profile could not be created.",
+                errors =
+                    result.Errors
+            });
+        }
+
+        return CreatedAtAction(
+            nameof(GetMe),
+            result.Profile);
+    }
+
+    private string? GetCurrentUserId()
+    {
+        return User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.API\Controllers\CustomerVehiclesController.cs
+================================================================================
+using System.Security.Claims;
+using CustomerVehicleService.Application.Interfaces;
+using CustomerVehicleService.Domain.Constants;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace CustomerVehicleService.API.Controllers;
+
+[ApiController]
+[Route("api/customers/me/vehicles")]
+[Authorize(Roles = ApplicationRoles.Customer)]
+public class CustomerVehiclesController
+    : ControllerBase
+{
+    private readonly IVehicleService
+        _vehicleService;
+
+    public CustomerVehiclesController(
+        IVehicleService vehicleService)
+    {
+        _vehicleService = vehicleService;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetVehicles()
+    {
+        var customerIdentityUserId =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (
+            string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var vehicles =
+            await _vehicleService
+                .GetForCustomerAsync(
+                    customerIdentityUserId);
+
+        if (vehicles is null)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Customer profile was not found."
+            });
+        }
+
+        return Ok(vehicles);
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.API\Controllers\InternalCustomerRiskController.cs
+================================================================================
+using CustomerVehicleService.Application.Interfaces;
+using Microsoft.AspNetCore.Mvc;
+
+namespace CustomerVehicleService.API.Controllers;
+
+[ApiController]
+[Route("internal/customers")]
+public class InternalCustomerRiskController
+    : ControllerBase
+{
+    private readonly ICustomerRiskService
+        _customerRiskService;
+
+    public InternalCustomerRiskController(
+        ICustomerRiskService customerRiskService)
+    {
+        _customerRiskService =
+            customerRiskService;
+    }
+
+    [HttpGet("{customerProfileId:guid}/risk")]
+    public async Task<IActionResult>
+        GetCustomerRisk(
+            Guid customerProfileId)
+    {
+        var risk =
+            await _customerRiskService
+                .GetCustomerRiskAsync(
+                    customerProfileId);
+
+        if (risk is null)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Customer profile was not found."
+            });
+        }
+
+        return Ok(risk);
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.API\Controllers\VehiclesController.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.VehicleImages;
+using CustomerVehicleService.Application.Dtos.Vehicles;
+using CustomerVehicleService.Application.Interfaces;
+using CustomerVehicleService.Domain.Constants;
+using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+
+namespace CustomerVehicleService.API.Controllers;
+
+[ApiController]
+[Route("api/vehicles")]
+[Authorize]
+public class VehiclesController : ControllerBase
+{
+    private readonly IVehicleService _vehicleService;
+
+    private readonly IValidator<UpsertVehicleRequest>
+        _validator;
+    private readonly IVehicleImageService
+    _vehicleImageService;
+    public VehiclesController(
+      IVehicleService vehicleService,
+      IVehicleImageService vehicleImageService,
+      IValidator<UpsertVehicleRequest> validator)
+    {
+        _vehicleService =
+            vehicleService;
+
+        _vehicleImageService =
+            vehicleImageService;
+
+        _validator =
+            validator;
+    }
+
+    [HttpGet(
+        "{id:guid}",
+        Name = "GetVehicle")]
+    public async Task<IActionResult> GetVehicle(
+        Guid id)
+    {
+        var identityUserId =
+            GetCurrentUserId();
+
+        if (
+            string.IsNullOrWhiteSpace(
+                identityUserId))
+        {
+            return Unauthorized();
+        }
+
+        VehicleOperationResult result;
+
+        if (
+            User.IsInRole(
+                ApplicationRoles.Agent))
+        {
+            result =
+                await _vehicleService
+                    .GetVehicleForAgentAsync(
+                        identityUserId,
+                        id);
+        }
+        else if (
+            User.IsInRole(
+                ApplicationRoles.Customer))
+        {
+            result =
+                await _vehicleService
+                    .GetVehicleForCustomerAsync(
+                        identityUserId,
+                        id);
+        }
+        else
+        {
+            return Forbid();
+        }
+
+        if (result.CustomerNotFound)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Customer profile was not found."
+            });
+        }
+
+        if (result.VehicleNotFound)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Vehicle was not found."
+            });
+        }
+
+        if (result.NotAssignedToAgent)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        "You are not authorized to access this Vehicle."
+                });
+        }
+
+        if (
+            !result.Succeeded ||
+            result.Vehicle is null)
+        {
+            return BadRequest(new
+            {
+                message =
+                    "Vehicle could not be loaded."
+            });
+        }
+
+        return Ok(result.Vehicle);
+    }
+
+
+    [HttpPost("{id:guid}/image")]
+    [Authorize(Roles = ApplicationRoles.Agent)]
+    [RequestSizeLimit(6 * 1024 * 1024)]
+    public async Task<IActionResult> UploadImage(
+    Guid id,
+    IFormFile file)
+    {
+        var agentIdentityUserId =
+            GetCurrentUserId();
+
+        if (
+            string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        if (
+            file is null ||
+            file.Length == 0)
+        {
+            return BadRequest(new
+            {
+                message =
+                    "Vehicle image is required."
+            });
+        }
+
+        await using var stream =
+            file.OpenReadStream();
+
+        var result =
+            await _vehicleImageService
+                .UploadForAgentAsync(
+                    agentIdentityUserId,
+                    id,
+                    new()
+                    {
+                        FileName =
+                            file.FileName,
+
+                        ContentType =
+                            file.ContentType,
+
+                        Length =
+                            file.Length,
+
+                        Content =
+                            stream
+                    });
+
+        if (result.VehicleNotFound)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Vehicle was not found."
+            });
+        }
+
+        if (result.NotAuthorized)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        "You are not authorized to modify this Vehicle."
+                });
+        }
+
+        if (result.InvalidFile)
+        {
+            return BadRequest(new
+            {
+                message =
+                    result.Error
+            });
+        }
+
+        return Ok(new
+        {
+            message =
+                "Vehicle image uploaded successfully."
+        });
+    }
+    [HttpGet("{id:guid}/image")]
+    public async Task<IActionResult> GetImage(
+    Guid id)
+    {
+        var identityUserId =
+            GetCurrentUserId();
+
+        if (
+            string.IsNullOrWhiteSpace(
+                identityUserId))
+        {
+            return Unauthorized();
+        }
+
+        VehicleImageResult result;
+
+        if (
+            User.IsInRole(
+                ApplicationRoles.Agent))
+        {
+            result =
+                await _vehicleImageService
+                    .GetForAgentAsync(
+                        identityUserId,
+                        id);
+        }
+        else if (
+            User.IsInRole(
+                ApplicationRoles.Customer))
+        {
+            result =
+                await _vehicleImageService
+                    .GetForCustomerAsync(
+                        identityUserId,
+                        id);
+        }
+        else
+        {
+            return Forbid();
+        }
+
+        if (result.VehicleNotFound)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Vehicle was not found."
+            });
+        }
+
+        if (result.NotAuthorized)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        "You are not authorized to access this Vehicle image."
+                });
+        }
+
+        if (
+            result.ImageNotFound ||
+            result.Content is null ||
+            result.ContentType is null)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Vehicle image has not been uploaded."
+            });
+        }
+
+        return File(
+            result.Content,
+            result.ContentType,
+            result.FileName);
+    }
+    [HttpPut("{id:guid}")]
+    [Authorize(Roles = ApplicationRoles.Agent)]
+    public async Task<IActionResult> UpdateVehicle(
+        Guid id,
+        UpsertVehicleRequest request)
+    {
+        var validation =
+            await _validator
+                .ValidateAsync(request);
+
+        if (!validation.IsValid)
+        {
+            var errors =
+                validation.Errors
+                    .GroupBy(
+                        error =>
+                            error.PropertyName)
+                    .ToDictionary(
+                        group =>
+                            group.Key,
+                        group =>
+                            group
+                                .Select(
+                                    error =>
+                                        error.ErrorMessage)
+                            .ToArray());
+
+            return BadRequest(new
+            {
+                message =
+                    "Validation failed.",
+                errors
+            });
+        }
+
+        var agentIdentityUserId =
+            GetCurrentUserId();
+
+        if (
+            string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _vehicleService
+                .UpdateForAgentAsync(
+                    agentIdentityUserId,
+                    id,
+                    request);
+
+        if (result.VehicleNotFound)
+        {
+            return NotFound(new
+            {
+                message =
+                    "Vehicle was not found."
+            });
+        }
+
+        if (result.NotAssignedToAgent)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        "Customer is not assigned to the current Agent."
+                });
+        }
+
+        if (result.DuplicateVin)
+        {
+            return Conflict(new
+            {
+                message =
+                    "VIN is already in use."
+            });
+        }
+
+        if (result.DuplicateRegistration)
+        {
+            return Conflict(new
+            {
+                message =
+                    "Registration Number is already in use."
+            });
+        }
+
+        if (
+            !result.Succeeded ||
+            result.Vehicle is null)
+        {
+            return BadRequest(new
+            {
+                message =
+                    "Vehicle could not be updated."
+            });
+        }
+
+        return Ok(result.Vehicle);
+    }
+
+    private string? GetCurrentUserId()
+    {
+        return User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+    }
+}
+
+================================================================================
+FILE: CustomerVehicleService.API\CustomerVehicleService.API.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.19" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.19">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CustomerVehicleService.Application\CustomerVehicleService.Application.csproj" />
+    <ProjectReference Include="..\CustomerVehicleService.Tests.Integration\CustomerVehicleService.Tests.Integration.csproj" />
+  </ItemGroup>
+
+</Project>
+
+
+================================================================================
+FILE: CustomerVehicleService.API\Program.cs
+================================================================================
+using CustomerVehicleService.Application.Dtos.Assignments;
+using CustomerVehicleService.Application.Dtos.Drivers;
+using CustomerVehicleService.Application.Dtos.Profiles;
+using CustomerVehicleService.Application.Dtos.Vehicles;
+using CustomerVehicleService.Application.Interfaces;
+using CustomerVehicleService.Application.Interfaces.Clients;
+using CustomerVehicleService.Application.Interfaces.Repositories;
+using CustomerVehicleService.Application.Interfaces.Storage;
+using CustomerVehicleService.Application.Services;
+using CustomerVehicleService.Application.Validators.Assignments;
+using CustomerVehicleService.Application.Validators.Drivers;
+using CustomerVehicleService.Application.Validators.Profiles;
+using CustomerVehicleService.Application.Validators.Vehicles;
+using CustomerVehicleService.Infrastructure.Clients;
+using CustomerVehicleService.Infrastructure.Persistence;
+using CustomerVehicleService.Infrastructure.Repositories;
+using CustomerVehicleService.Infrastructure.Storage;
+using FluentValidation;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using System.Text;
+
+var builder = WebApplication.CreateBuilder(args);
+
+/*
+ * =====================================================
+ * CONTROLLERS
+ * =====================================================
+ */
+
+builder.Services.AddControllers();
+
+builder.Services.AddEndpointsApiExplorer();
+
+/*
+ * =====================================================
+ * SWAGGER
+ * =====================================================
+ */
+
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition(
+        "Bearer",
+        new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description =
+                "Enter the access token."
+        });
+
+    options.AddSecurityRequirement(
+        new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference =
+                        new OpenApiReference
+                        {
+                            Type =
+                                ReferenceType
+                                    .SecurityScheme,
+
+                            Id = "Bearer"
+                        }
+                },
+                Array.Empty<string>()
+            }
+        });
+});
+
+/*
+ * =====================================================
+ * DATABASE
+ * =====================================================
+ */
+
+var connectionString =
+    builder.Configuration
+        .GetConnectionString(
+            "CustomerVehicleDb")
+    ?? throw new InvalidOperationException(
+        "Connection string 'CustomerVehicleDb' was not found.");
+
+builder.Services.AddDbContext<
+    CustomerVehicleDbContext>(
+    options =>
+        options.UseSqlServer(
+            connectionString));
+
+/*
+ * =====================================================
+ * JWT AUTHENTICATION
+ * =====================================================
+ */
+
+var jwtKey =
+    builder.Configuration[
+        "Jwt:Key"]
+    ?? throw new InvalidOperationException(
+        "JWT signing key was not configured.");
+
+var jwtIssuer =
+    builder.Configuration[
+        "Jwt:Issuer"]
+    ?? throw new InvalidOperationException(
+        "JWT issuer was not configured.");
+
+var jwtAudience =
+    builder.Configuration[
+        "Jwt:Audience"]
+    ?? throw new InvalidOperationException(
+        "JWT audience was not configured.");
+
+builder.Services
+    .AddAuthentication(
+        JwtBearerDefaults
+            .AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters =
+            new TokenValidationParameters
+            {
+                ValidateIssuer =
+                    true,
+
+                ValidIssuer =
+                    jwtIssuer,
+
+                ValidateAudience =
+                    true,
+
+                ValidAudience =
+                    jwtAudience,
+
+                ValidateIssuerSigningKey =
+                    true,
+
+                IssuerSigningKey =
+                    new SymmetricSecurityKey(
+                        Encoding.UTF8
+                            .GetBytes(
+                                jwtKey)),
+
+                ValidateLifetime =
+                    true,
+
+                ClockSkew =
+                    TimeSpan.Zero
+            };
+    });
+
+builder.Services.AddAuthorization();
+
+/*
+ * =====================================================
+ * REPOSITORIES
+ * =====================================================
+ */
+
+builder.Services.AddScoped<
+    ICustomerProfileRepository,
+    CustomerProfileRepository>();
+
+builder.Services.AddScoped<
+    IAgentAssignmentRepository,
+    AgentAssignmentRepository>();
+
+builder.Services.AddScoped<
+    IAgentCustomerRepository,
+    AgentCustomerRepository>();
+
+builder.Services.AddScoped<
+    IDriverRepository,
+    DriverRepository>();
+
+builder.Services.AddScoped<
+    IVehicleRepository,
+    VehicleRepository>();
+
+/*
+ * =====================================================
+ * APPLICATION SERVICES
+ * =====================================================
+ */
+
+builder.Services.AddScoped<
+    ICustomerProfileService,
+    CustomerProfileService>();
+
+builder.Services.AddScoped<
+    IAgentAssignmentService,
+    AgentAssignmentService>();
+
+builder.Services.AddScoped<
+    IAgentCustomerService,
+    AgentCustomerService>();
+
+builder.Services.AddScoped<
+    IDriverService,
+    DriverService>();
+
+builder.Services.AddScoped<
+    IVehicleService,
+    VehicleService>();
+
+builder.Services.AddScoped<
+    ICustomerReadinessService,
+    CustomerReadinessService>();
+
+builder.Services.AddScoped<
+    ICustomerRiskService,
+    CustomerRiskService>();
+
+/*
+ * =====================================================
+ * VALIDATORS
+ * =====================================================
+ */
+
+builder.Services.AddScoped<
+    IValidator<
+        CreateCustomerProfileRequest>,
+    CreateCustomerProfileRequestValidator>();
+
+builder.Services.AddScoped<
+    IValidator<
+        UpdateCustomerProfileRequest>,
+    UpdateCustomerProfileRequestValidator>();
+
+builder.Services.AddScoped<
+    IValidator<
+        AssignAgentRequest>,
+    AssignAgentRequestValidator>();
+
+builder.Services.AddScoped<
+    IValidator<
+        UpsertDriverRequest>,
+    UpsertDriverRequestValidator>();
+
+builder.Services.AddScoped<
+    IValidator<
+        UpsertVehicleRequest>,
+    UpsertVehicleRequestValidator>();
+
+/*
+ * =====================================================
+ * CORS
+ * =====================================================
+ */
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(
+        "AngularDevelopment",
+        policy =>
+        {
+            policy
+                .WithOrigins(
+                    "http://localhost:4200")
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        });
+});
+
+/*
+ * =====================================================
+ * IDENTITY SERVICE CLIENT
+ * =====================================================
+ */
+
+var identityServiceBaseUrl =
+    builder.Configuration[
+        "Services:IdentityService:BaseUrl"]
+    ?? throw new InvalidOperationException(
+        "IdentityService base URL was not configured.");
+
+builder.Services.AddHttpClient<
+    IIdentityServiceClient,
+    IdentityServiceClient>(
+        client =>
+        {
+            client.BaseAddress =
+                new Uri(
+                    identityServiceBaseUrl);
+
+            client.Timeout =
+                TimeSpan.FromSeconds(10);
+        });
+
+/*
+ * =====================================================
+ * VEHICLE IMAGE STORAGE
+ * =====================================================
+ */
+
+var vehicleImageStoragePath =
+    builder.Configuration[
+        "VehicleImages:StoragePath"]
+    ?? "VehicleImages";
+
+var absoluteVehicleImageStoragePath =
+    Path.Combine(
+        builder.Environment
+            .ContentRootPath,
+        vehicleImageStoragePath);
+
+builder.Services.AddSingleton<
+    IVehicleImageStorage>(
+        new LocalVehicleImageStorage(
+            absoluteVehicleImageStoragePath));
+
+builder.Services.AddScoped<
+    IVehicleImageService,
+    VehicleImageService>();
+
+/*
+ * =====================================================
+ * APPLICATION
+ * =====================================================
+ */
+
+var app =
+    builder.Build();
+
+/*
+ * =====================================================
+ * DEVELOPMENT PIPELINE
+ * =====================================================
+ */
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+
+    app.UseSwaggerUI();
+
+    app.UseCors(
+        "AngularDevelopment");
+}
+
+/*
+ * =====================================================
+ * HTTP PIPELINE
+ * =====================================================
+ */
+
+app.UseHttpsRedirection();
+
+app.UseAuthentication();
+
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();
+
+================================================================================
+FILE: CustomerVehicleService.API\Properties\launchSettings.json
+================================================================================
+{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:15137",
+      "sslPort": 44333
+    }
+  },
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "http://localhost:5288",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "https": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "https://localhost:7133;http://localhost:5288",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
+

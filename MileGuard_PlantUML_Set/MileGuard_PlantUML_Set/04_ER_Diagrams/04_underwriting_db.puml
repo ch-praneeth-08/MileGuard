@@ -1,0 +1,87 @@
+@startuml
+!theme plain
+hide methods
+hide stereotypes
+skinparam linetype ortho
+skinparam shadowing false
+entity "UnderwritingApplications" as UA {
+  * Id : GUID
+  --
+  ApplicationNumber
+  OriginatingQuoteId
+  CustomerProfileId
+  VehicleId
+  AgentIdentityUserId
+  AssignedUnderwriterIdentityUserId
+  Status
+  CreatedAtUtc
+  AssignedAtUtc
+  ReviewStartedAtUtc
+  DecisionAtUtc
+  ApprovedAtUtc
+  OfferValidUntilUtc
+}
+entity "ApplicationSnapshot" as AS {
+  * Id : GUID
+  --
+  UnderwritingApplicationId : FK
+  QuoteFinalizedAtUtc
+  QuoteValidUntilUtc
+  CustomerDOB
+  Geography
+  DriverSnapshot
+  VehicleSnapshot
+  PlanName
+  AnnualPremium
+  QualifyingClaimsCount
+  OverallRiskRating
+}
+entity "ApplicationReviewSections" as ARS {
+  * Id : GUID
+  --
+  UnderwritingApplicationId : FK
+  SectionType
+  Reviewed
+  ReviewedByIdentityUserId
+  ReviewedAtUtc
+  Notes
+}
+entity "UnderwritingDecisions" as UD {
+  * Id : GUID
+  --
+  UnderwritingApplicationId : FK
+  DecisionType
+  DecidedByIdentityUserId
+  DecidedAtUtc
+  RejectionReason
+}
+entity "CustomerOfferOutcomes" as COO {
+  * Id : GUID
+  --
+  UnderwritingApplicationId : FK
+  DeclinedAtUtc
+  DeclinedByIdentityUserId
+}
+entity "ApplicationStatusHistory" as ASH {
+  * Id : GUID
+  --
+  UnderwritingApplicationId : FK
+  FromStatus
+  ToStatus
+  ChangedByIdentityUserId
+  ChangedAtUtc
+}
+UA ||--|| AS
+UA ||--o{ ARS
+UA ||--o| UD
+UA ||--o| COO
+UA ||--o{ ASH
+note right of UA
+Unique OriginatingQuoteId is the idempotency boundary.
+Only one application may originate from a finalized Quote.
+end note
+note bottom of ARS
+Persisted section types in supplied domain code:
+Driver, Vehicle, InsuranceQuote, OverallRisk.
+end note
+@enduml

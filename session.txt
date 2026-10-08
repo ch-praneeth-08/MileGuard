@@ -1,0 +1,44 @@
+
+================================================================================
+FILE: session\agent-workspace-context.ts
+================================================================================
+import {
+  Injectable,
+  signal
+} from '@angular/core';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AgentWorkspaceContext {
+  readonly customerName =
+    signal<string | null>(null);
+
+  readonly customerEmail =
+    signal<string | null>(null);
+
+  setCustomer(
+    name: string,
+    email: string | null
+  ): void {
+    this.customerName.set(
+      name
+    );
+
+    this.customerEmail.set(
+      email
+    );
+  }
+
+  clear(): void {
+    this.customerName.set(
+      null
+    );
+
+    this.customerEmail.set(
+      null
+    );
+  }
+}
+
+

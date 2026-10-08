@@ -1,0 +1,2269 @@
+
+================================================================================
+FILE: ClaimsService.Application\ClaimsService.Application.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\ClaimsService.Domain\ClaimsService.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
+
+
+================================================================================
+FILE: ClaimsService.Application\DependencyInjection.cs
+================================================================================
+using ClaimsService.Application.Interfaces;
+using ClaimsService.Application.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace ClaimsService.Application;
+
+public static class DependencyInjection
+{
+    public static IServiceCollection AddApplication(
+        this IServiceCollection services)
+    {
+        services.AddScoped<
+            IClaimService,
+            ClaimService>();
+
+        return services;
+    }
+}
+
+================================================================================
+FILE: ClaimsService.Application\Dtos\Admin\AdminClaimDetailDto.cs
+================================================================================
+using ClaimsService.Domain.Enums;
+
+namespace ClaimsService.Application.Dtos.Admin;
+
+public class AdminClaimDetailDto
+{
+    public Guid ClaimId { get; set; }
+
+    public string ClaimNumber { get; set; } =
+        string.Empty;
+
+    public Guid PolicyId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public ClaimType ClaimType { get; set; }
+
+    public DateTime IncidentAtUtc { get; set; }
+
+    public string IncidentLocation { get; set; } =
+        string.Empty;
+
+    public string IncidentDescription { get; set; } =
+        string.Empty;
+
+    public decimal EstimatedLossAmount { get; set; }
+
+    public ClaimStatus Status { get; set; }
+
+    public DateTime SubmittedAtUtc { get; set; }
+
+    public string? AssignedClaimsOfficerIdentityUserId { get; set; }
+
+    public string? AssignedByAdminIdentityUserId { get; set; }
+
+    public DateTime? AssignedAtUtc { get; set; }
+
+    public DateTime? ReviewStartedAtUtc { get; set; }
+
+    public string? ReviewedByIdentityUserId { get; set; }
+
+    public DateTime? DecidedAtUtc { get; set; }
+
+    public string? DecisionReason { get; set; }
+
+    public decimal? ApprovedAmount { get; set; }
+
+    public DateTime? SettledAtUtc { get; set; }
+
+    public DateTime? ClosedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: ClaimsService.Application\Dtos\Admin\AdminClaimListItemDto.cs
+================================================================================
+using ClaimsService.Domain.Enums;
+
+namespace ClaimsService.Application.Dtos.Admin;
+
+public class AdminClaimListItemDto
+{
+    public Guid ClaimId { get; set; }
+
+    public string ClaimNumber { get; set; } =
+        string.Empty;
+
+    public Guid PolicyId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public ClaimType ClaimType { get; set; }
+
+    public DateTime IncidentAtUtc { get; set; }
+
+    public decimal EstimatedLossAmount { get; set; }
+
+    public ClaimStatus Status { get; set; }
+
+    public DateTime SubmittedAtUtc { get; set; }
+
+    public string? AssignedClaimsOfficerIdentityUserId { get; set; }
+
+    public DateTime? AssignedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: ClaimsService.Application\Dtos\Admin\AssignClaimsOfficerRequest.cs
+================================================================================
+namespace ClaimsService.Application.Dtos.Admin;
+
+public class AssignClaimsOfficerRequest
+{
+    public string ClaimsOfficerIdentityUserId { get; set; } =
+        string.Empty;
+}
+
+================================================================================
+FILE: ClaimsService.Application\Dtos\Admin\EligibleClaimsOfficerDto.cs
+================================================================================
+namespace ClaimsService.Application.Dtos.Admin;
+
+public class EligibleClaimsOfficerDto
+{
+    public string IdentityUserId { get; set; } =
+        string.Empty;
+
+    public string FirstName { get; set; } =
+        string.Empty;
+
+    public string LastName { get; set; } =
+        string.Empty;
+
+    public string Email { get; set; } =
+        string.Empty;
+
+    public int ActionableClaimCount { get; set; }
+}
+
+================================================================================
+FILE: ClaimsService.Application\Dtos\Agent\AgentClaimDetailDto.cs
+================================================================================
+using ClaimsService.Domain.Enums;
+
+namespace ClaimsService.Application.Dtos.Agent;
+
+public class AgentClaimDetailDto
+{
+    public Guid ClaimId { get; set; }
+
+    public string ClaimNumber { get; set; } = string.Empty;
+
+    public Guid PolicyId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public ClaimType ClaimType { get; set; }
+
+    public DateTime IncidentAtUtc { get; set; }
+
+    public string IncidentLocation { get; set; } = string.Empty;
+
+    public string IncidentDescription { get; set; } = string.Empty;
+
+    public decimal EstimatedLossAmount { get; set; }
+
+    public ClaimStatus Status { get; set; }
+
+    public DateTime SubmittedAtUtc { get; set; }
+
+    public DateTime? ReviewStartedAtUtc { get; set; }
+
+    public DateTime? DecidedAtUtc { get; set; }
+
+    public string? DecisionReason { get; set; }
+
+    public decimal? ApprovedAmount { get; set; }
+
+    public DateTime? SettledAtUtc { get; set; }
+
+    public DateTime? ClosedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: ClaimsService.Application\Dtos\Agent\AgentClaimListItemDto.cs
+================================================================================
+using ClaimsService.Domain.Enums;
+
+namespace ClaimsService.Application.Dtos.Agent;
+
+public class AgentClaimListItemDto
+{
+    public Guid ClaimId { get; set; }
+
+    public string ClaimNumber { get; set; } = string.Empty;
+
+    public Guid PolicyId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public ClaimType ClaimType { get; set; }
+
+    public DateTime IncidentAtUtc { get; set; }
+
+    public decimal EstimatedLossAmount { get; set; }
+
+    public ClaimStatus Status { get; set; }
+
+    public DateTime SubmittedAtUtc { get; set; }
+
+    public decimal? ApprovedAmount { get; set; }
+
+    public DateTime? ClosedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: ClaimsService.Application\Dtos\Agent\SubmitClaimRequest.cs
+================================================================================
+using ClaimsService.Domain.Enums;
+
+namespace ClaimsService.Application.Dtos.Agent;
+
+public class SubmitClaimRequest
+{
+    public Guid PolicyId { get; set; }
+
+    public ClaimType ClaimType { get; set; }
+
+    public DateTime IncidentAtUtc { get; set; }
+
+    public string IncidentLocation { get; set; } = string.Empty;
+
+    public string IncidentDescription { get; set; } = string.Empty;
+
+    public decimal EstimatedLossAmount { get; set; }
+}
+
+================================================================================
+FILE: ClaimsService.Application\Dtos\ClaimsOfficer\ApproveClaimRequest.cs
+================================================================================
+namespace ClaimsService.Application.Dtos.ClaimsOfficer;
+
+public class ApproveClaimRequest
+{
+    public string DecisionReason { get; set; } = string.Empty;
+}
+
+================================================================================
+FILE: ClaimsService.Application\Dtos\ClaimsOfficer\ClaimsOfficerClaimDetailDto.cs
+================================================================================
+using ClaimsService.Domain.Enums;
+
+namespace ClaimsService.Application.Dtos.ClaimsOfficer;
+
+public class ClaimsOfficerClaimDetailDto
+{
+    public Guid ClaimId { get; set; }
+
+    public string ClaimNumber { get; set; } =
+        string.Empty;
+
+    public Guid PolicyId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public ClaimType ClaimType { get; set; }
+
+    public DateTime IncidentAtUtc { get; set; }
+
+    public string IncidentLocation { get; set; } =
+        string.Empty;
+
+    public string IncidentDescription { get; set; } =
+        string.Empty;
+
+    public decimal EstimatedLossAmount { get; set; }
+
+    public ClaimStatus Status { get; set; }
+
+    public DateTime SubmittedAtUtc { get; set; }
+
+    public DateTime? AssignedAtUtc { get; set; }
+
+    public DateTime? ReviewStartedAtUtc { get; set; }
+
+    public DateTime? DecidedAtUtc { get; set; }
+
+    public string? DecisionReason { get; set; }
+
+    public decimal? ApprovedAmount { get; set; }
+
+    public DateTime? SettledAtUtc { get; set; }
+
+    public DateTime? ClosedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: ClaimsService.Application\Dtos\ClaimsOfficer\ClaimsOfficerClaimListItemDto.cs
+================================================================================
+using ClaimsService.Domain.Enums;
+
+namespace ClaimsService.Application.Dtos.ClaimsOfficer;
+
+public class ClaimsOfficerClaimListItemDto
+{
+    public Guid ClaimId { get; set; }
+
+    public string ClaimNumber { get; set; } =
+        string.Empty;
+
+    public Guid PolicyId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public ClaimType ClaimType { get; set; }
+
+    public DateTime IncidentAtUtc { get; set; }
+
+    public decimal EstimatedLossAmount { get; set; }
+
+    public ClaimStatus Status { get; set; }
+
+    public DateTime SubmittedAtUtc { get; set; }
+
+    public DateTime? AssignedAtUtc { get; set; }
+
+    public DateTime? ReviewStartedAtUtc { get; set; }
+}
+
+
+================================================================================
+FILE: ClaimsService.Application\Dtos\ClaimsOfficer\RejectClaimRequest.cs
+================================================================================
+namespace ClaimsService.Application.Dtos.ClaimsOfficer;
+
+public class RejectClaimRequest
+{
+    public string RejectionReason { get; set; } = string.Empty;
+}
+
+================================================================================
+FILE: ClaimsService.Application\Dtos\ClaimsOfficer\SettleClaimRequest.cs
+================================================================================
+namespace ClaimsService.Application.Dtos.ClaimsOfficer;
+
+public class SettleClaimRequest
+{
+    public decimal ApprovedAmount { get; set; }
+}
+
+================================================================================
+FILE: ClaimsService.Application\Dtos\Customer\ClaimListItemDto.cs
+================================================================================
+using ClaimsService.Domain.Enums;
+
+namespace ClaimsService.Application.Dtos.Customer;
+
+public class ClaimListItemDto
+{
+    public Guid ClaimId { get; set; }
+
+    public string ClaimNumber { get; set; } = string.Empty;
+
+    public Guid PolicyId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public ClaimType ClaimType { get; set; }
+
+    public DateTime IncidentAtUtc { get; set; }
+
+    public decimal EstimatedLossAmount { get; set; }
+
+    public ClaimStatus Status { get; set; }
+
+    public DateTime SubmittedAtUtc { get; set; }
+
+    public decimal? ApprovedAmount { get; set; }
+
+    public DateTime? ClosedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: ClaimsService.Application\Dtos\Customer\CustomerClaimDetailDto.cs
+================================================================================
+using ClaimsService.Domain.Enums;
+
+namespace ClaimsService.Application.Dtos.Customer;
+
+public class CustomerClaimDetailDto
+{
+    public Guid ClaimId { get; set; }
+
+    public string ClaimNumber { get; set; } = string.Empty;
+
+    public Guid PolicyId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public ClaimType ClaimType { get; set; }
+
+    public DateTime IncidentAtUtc { get; set; }
+
+    public string IncidentLocation { get; set; } = string.Empty;
+
+    public string IncidentDescription { get; set; } = string.Empty;
+
+    public decimal EstimatedLossAmount { get; set; }
+
+    public ClaimStatus Status { get; set; }
+
+    public DateTime SubmittedAtUtc { get; set; }
+
+    public DateTime? ReviewStartedAtUtc { get; set; }
+
+    public DateTime? DecidedAtUtc { get; set; }
+
+    public string? DecisionReason { get; set; }
+
+    public decimal? ApprovedAmount { get; set; }
+
+    public DateTime? SettledAtUtc { get; set; }
+
+    public DateTime? ClosedAtUtc { get; set; }
+}
+
+================================================================================
+FILE: ClaimsService.Application\Dtos\External\ClaimsOfficerIdentityDto.cs
+================================================================================
+namespace ClaimsService.Application.Dtos.External;
+
+public class ClaimsOfficerIdentityDto
+{
+    public string Id { get; set; } =
+        string.Empty;
+
+    public string FirstName { get; set; } =
+        string.Empty;
+
+    public string LastName { get; set; } =
+        string.Empty;
+
+    public string Email { get; set; } =
+        string.Empty;
+}
+
+================================================================================
+FILE: ClaimsService.Application\Dtos\External\CustomerReferenceDto.cs
+================================================================================
+using System.Text.Json.Serialization;
+
+namespace ClaimsService.Application.Dtos.External;
+
+public class CustomerReferenceDto
+{
+    [JsonPropertyName("id")]
+    public Guid CustomerProfileId { get; set; }
+}
+
+================================================================================
+FILE: ClaimsService.Application\Dtos\External\PolicyForClaimDto.cs
+================================================================================
+namespace ClaimsService.Application.Dtos.External;
+
+public class PolicyForClaimDto
+{
+    public Guid PolicyId { get; set; }
+
+    public string PolicyNumber { get; set; } = string.Empty;
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public DateOnly EffectiveDate { get; set; }
+
+    public DateOnly ExpirationDate { get; set; }
+
+    public DateTime? CancellationEffectiveAtUtc { get; set; }
+
+    public string EffectiveStatus { get; set; } = string.Empty;
+}
+
+
+================================================================================
+FILE: ClaimsService.Application\Exceptions\ConflictException.cs
+================================================================================
+namespace ClaimsService.Application.Exceptions;
+
+public class ConflictException : Exception
+{
+    public ConflictException(
+        string message)
+        : base(message)
+    {
+    }
+}
+
+================================================================================
+FILE: ClaimsService.Application\Exceptions\ForbiddenException.cs
+================================================================================
+namespace ClaimsService.Application.Exceptions;
+
+public class ForbiddenException : Exception
+{
+    public ForbiddenException(
+        string message)
+        : base(message)
+    {
+    }
+}
+
+================================================================================
+FILE: ClaimsService.Application\Exceptions\NotFoundException.cs
+================================================================================
+namespace ClaimsService.Application.Exceptions;
+
+public class NotFoundException : Exception
+{
+    public NotFoundException(
+        string message)
+        : base(message)
+    {
+    }
+}
+
+================================================================================
+FILE: ClaimsService.Application\Exceptions\ServiceUnavailableException.cs
+================================================================================
+namespace ClaimsService.Application.Exceptions;
+
+public class ServiceUnavailableException : Exception
+{
+    public ServiceUnavailableException(
+        string message)
+        : base(message)
+    {
+    }
+}
+
+================================================================================
+FILE: ClaimsService.Application\Exceptions\ValidationException.cs
+================================================================================
+namespace ClaimsService.Application.Exceptions;
+
+public class ValidationException : Exception
+{
+    public IReadOnlyDictionary<string, string[]> Errors
+    {
+        get;
+    }
+
+    public ValidationException(
+        IDictionary<string, string[]> errors)
+        : base("One or more validation errors occurred.")
+    {
+        Errors =
+            new Dictionary<string, string[]>(
+                errors);
+    }
+}
+
+================================================================================
+FILE: ClaimsService.Application\Interfaces\Clients\ICustomerVehicleClient.cs
+================================================================================
+using ClaimsService.Application.Dtos.External;
+
+namespace ClaimsService.Application.Interfaces.Clients;
+
+public interface ICustomerVehicleClient
+{
+    Task<CustomerReferenceDto?> GetCustomerAsync(
+        string customerIdentityUserId,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> IsCustomerAssignedToAgentAsync(
+        Guid customerProfileId,
+        string agentIdentityUserId,
+        CancellationToken cancellationToken = default);
+}
+
+================================================================================
+FILE: ClaimsService.Application\Interfaces\Clients\IIdentityClient.cs
+================================================================================
+using ClaimsService.Application.Dtos.External;
+
+namespace ClaimsService.Application.Interfaces.Clients;
+
+public interface IIdentityClient
+{
+    Task<IReadOnlyList<ClaimsOfficerIdentityDto>>
+        GetEligibleClaimsOfficersAsync(
+            CancellationToken cancellationToken = default);
+
+    Task<ClaimsOfficerIdentityDto?>
+        GetEligibleClaimsOfficerAsync(
+            string identityUserId,
+            CancellationToken cancellationToken = default);
+}
+
+================================================================================
+FILE: ClaimsService.Application\Interfaces\Clients\IPolicyBillingClient.cs
+================================================================================
+using ClaimsService.Application.Dtos.External;
+
+namespace ClaimsService.Application.Interfaces.Clients;
+
+public interface IPolicyBillingClient
+{
+    Task<PolicyForClaimDto?> GetAgentPolicyAsync(
+        Guid policyId,
+        string agentIdentityUserId,
+        CancellationToken cancellationToken = default);
+}
+
+================================================================================
+FILE: ClaimsService.Application\Interfaces\IClaimService.cs
+================================================================================
+using ClaimsService.Application.Dtos.Admin;
+using ClaimsService.Application.Dtos.Agent;
+using ClaimsService.Application.Dtos.ClaimsOfficer;
+using ClaimsService.Application.Dtos.Customer;
+
+namespace ClaimsService.Application.Interfaces;
+
+public interface IClaimService
+{
+    Task<AgentClaimDetailDto> SubmitClaimAsync(
+        Guid customerProfileId,
+        string agentIdentityUserId,
+        SubmitClaimRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<AgentClaimListItemDto>>
+        GetAgentCustomerClaimsAsync(
+            Guid customerProfileId,
+            string agentIdentityUserId,
+            CancellationToken cancellationToken = default);
+
+    Task<AgentClaimDetailDto> GetAgentClaimAsync(
+        Guid claimId,
+        string agentIdentityUserId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ClaimListItemDto>>
+        GetCustomerClaimsAsync(
+            string customerIdentityUserId,
+            CancellationToken cancellationToken = default);
+
+    Task<CustomerClaimDetailDto>
+        GetCustomerClaimAsync(
+            Guid claimId,
+            string customerIdentityUserId,
+            CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<AdminClaimListItemDto>>
+        GetUnassignedClaimsAsync(
+            CancellationToken cancellationToken = default);
+
+    Task<AdminClaimDetailDto>
+        GetAdminClaimAsync(
+            Guid claimId,
+            CancellationToken cancellationToken = default);
+
+    Task<AdminClaimDetailDto>
+        AssignClaimsOfficerAsync(
+            Guid claimId,
+            string adminIdentityUserId,
+            AssignClaimsOfficerRequest request,
+            CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ClaimsOfficerClaimListItemDto>>
+        GetClaimsOfficerQueueAsync(
+            string claimsOfficerIdentityUserId,
+            CancellationToken cancellationToken = default);
+
+    Task<ClaimsOfficerClaimDetailDto>
+        GetClaimsOfficerClaimAsync(
+            Guid claimId,
+            string claimsOfficerIdentityUserId,
+            CancellationToken cancellationToken = default);
+
+    Task<ClaimsOfficerClaimDetailDto>
+        StartReviewAsync(
+            Guid claimId,
+            string claimsOfficerIdentityUserId,
+            CancellationToken cancellationToken = default);
+
+    Task<ClaimsOfficerClaimDetailDto>
+        ApproveAsync(
+            Guid claimId,
+            string claimsOfficerIdentityUserId,
+            ApproveClaimRequest request,
+            CancellationToken cancellationToken = default);
+
+    Task<ClaimsOfficerClaimDetailDto>
+        RejectAsync(
+            Guid claimId,
+            string claimsOfficerIdentityUserId,
+            RejectClaimRequest request,
+            CancellationToken cancellationToken = default);
+
+    Task<ClaimsOfficerClaimDetailDto>
+        SettleAsync(
+            Guid claimId,
+            string claimsOfficerIdentityUserId,
+            SettleClaimRequest request,
+            CancellationToken cancellationToken = default);
+
+    Task<ClaimsOfficerClaimDetailDto>
+        CloseAsync(
+            Guid claimId,
+            string claimsOfficerIdentityUserId,
+            CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<EligibleClaimsOfficerDto>>
+    GetEligibleClaimsOfficersAsync(
+        CancellationToken cancellationToken = default);
+}
+
+================================================================================
+FILE: ClaimsService.Application\Interfaces\Repositories\IClaimRepository.cs
+================================================================================
+using ClaimsService.Domain.Entities;
+using ClaimsService.Domain.Enums;
+
+namespace ClaimsService.Application.Interfaces.Repositories;
+
+public interface IClaimRepository
+{
+    Task AddAsync(
+        Claim claim);
+
+    Task<Claim?> GetByIdAsync(
+        Guid claimId);
+
+    Task<IReadOnlyList<Claim>>
+        GetByCustomerProfileIdAsync(
+            Guid customerProfileId);
+
+    Task<IReadOnlyList<Claim>>
+        GetAllAsync();
+
+    Task<IReadOnlyList<Claim>>
+        GetByStatusesAsync(
+            IReadOnlyCollection<ClaimStatus> statuses);
+
+    Task<IReadOnlyList<Claim>>
+        GetUnassignedAsync();
+
+    Task<IReadOnlyList<Claim>>
+        GetByAssignedClaimsOfficerAsync(
+            string claimsOfficerIdentityUserId);
+
+    Task<int> GetActionableCountByClaimsOfficerAsync(
+        string claimsOfficerIdentityUserId);
+
+    Task<bool> ClaimNumberExistsAsync(
+        string claimNumber);
+
+    Task SaveChangesAsync();
+}
+
+================================================================================
+FILE: ClaimsService.Application\Services\ClaimService.cs
+================================================================================
+using ClaimsService.Application.Dtos.Agent;
+using ClaimsService.Application.Dtos.ClaimsOfficer;
+using ClaimsService.Application.Dtos.Customer;
+using ClaimsService.Application.Exceptions;
+using ClaimsService.Application.Interfaces;
+using ClaimsService.Application.Interfaces.Clients;
+using ClaimsService.Application.Interfaces.Repositories;
+using ClaimsService.Application.Dtos.Admin;
+using ClaimsService.Domain.Entities;
+using ClaimsService.Domain.Enums;
+using ApplicationValidationException =
+    ClaimsService.Application.Exceptions.ValidationException;
+
+namespace ClaimsService.Application.Services;
+
+public class ClaimService : IClaimService
+{
+    private readonly IClaimRepository
+        _claimRepository;
+    private readonly IIdentityClient
+    _identityClient;
+    private readonly IPolicyBillingClient
+        _policyBillingClient;
+
+    private readonly ICustomerVehicleClient
+        _customerVehicleClient;
+
+    public ClaimService(
+    IClaimRepository claimRepository,
+    IPolicyBillingClient policyBillingClient,
+    ICustomerVehicleClient customerVehicleClient,
+    IIdentityClient identityClient)
+    {
+        _claimRepository =
+            claimRepository;
+
+        _policyBillingClient =
+            policyBillingClient;
+
+        _customerVehicleClient =
+            customerVehicleClient;
+
+        _identityClient =
+            identityClient;
+    }
+
+    public async Task<AgentClaimDetailDto>
+        SubmitClaimAsync(
+            Guid customerProfileId,
+            string agentIdentityUserId,
+            SubmitClaimRequest request,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            request);
+
+        if (customerProfileId == Guid.Empty)
+        {
+            throw new NotFoundException(
+                "Customer profile was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            throw new ForbiddenException(
+                "Agent identity is required.");
+        }
+
+        ValidateSubmitRequest(
+            request);
+
+        var assigned =
+            await _customerVehicleClient
+                .IsCustomerAssignedToAgentAsync(
+                    customerProfileId,
+                    agentIdentityUserId,
+                    cancellationToken);
+
+        if (!assigned)
+        {
+            throw new ForbiddenException(
+                "Customer is not assigned to the current Agent.");
+        }
+
+        var policy =
+            await _policyBillingClient
+                .GetAgentPolicyAsync(
+                    request.PolicyId,
+                    agentIdentityUserId,
+                    cancellationToken);
+
+        if (policy is null)
+        {
+            throw new NotFoundException(
+                "Policy was not found.");
+        }
+
+        if (policy.CustomerProfileId !=
+            customerProfileId)
+        {
+            throw new ForbiddenException(
+                "The selected Policy does not belong to this Customer.");
+        }
+
+        ValidateIncidentAgainstPolicy(
+            request.IncidentAtUtc,
+            policy.EffectiveDate,
+            policy.ExpirationDate,
+            policy.CancellationEffectiveAtUtc);
+
+        var claim =
+            new Claim
+            {
+                Id =
+                    Guid.NewGuid(),
+
+                ClaimNumber =
+                    await GenerateClaimNumberAsync(),
+
+                PolicyId =
+                    policy.PolicyId,
+
+                CustomerProfileId =
+                    policy.CustomerProfileId,
+
+                VehicleId =
+                    policy.VehicleId,
+
+                ClaimType =
+                    request.ClaimType,
+
+                IncidentAtUtc =
+                    request.IncidentAtUtc,
+
+                IncidentLocation =
+                    request
+                        .IncidentLocation
+                        .Trim(),
+
+                IncidentDescription =
+                    request
+                        .IncidentDescription
+                        .Trim(),
+
+                EstimatedLossAmount =
+                    request.EstimatedLossAmount,
+
+                Status =
+                    ClaimStatus.Submitted,
+
+                SubmittedAtUtc =
+                    DateTime.UtcNow
+            };
+
+        await _claimRepository.AddAsync(
+            claim);
+
+        await _claimRepository
+            .SaveChangesAsync();
+
+        return MapAgentDetail(
+            claim);
+    }
+
+    public async Task<IReadOnlyList<AgentClaimListItemDto>>
+        GetAgentCustomerClaimsAsync(
+            Guid customerProfileId,
+            string agentIdentityUserId,
+            CancellationToken cancellationToken = default)
+    {
+        if (customerProfileId == Guid.Empty)
+        {
+            throw new NotFoundException(
+                "Customer profile was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            throw new ForbiddenException(
+                "Agent identity is required.");
+        }
+
+        var assigned =
+            await _customerVehicleClient
+                .IsCustomerAssignedToAgentAsync(
+                    customerProfileId,
+                    agentIdentityUserId,
+                    cancellationToken);
+
+        if (!assigned)
+        {
+            throw new ForbiddenException(
+                "Customer is not assigned to the current Agent.");
+        }
+
+        var claims =
+            await _claimRepository
+                .GetByCustomerProfileIdAsync(
+                    customerProfileId);
+
+        return claims
+            .OrderByDescending(
+                claim =>
+                    claim.SubmittedAtUtc)
+            .Select(
+                MapAgentListItem)
+            .ToList();
+    }
+
+    public async Task<AgentClaimDetailDto>
+        GetAgentClaimAsync(
+            Guid claimId,
+            string agentIdentityUserId,
+            CancellationToken cancellationToken = default)
+    {
+        var claim =
+            await GetRequiredClaimAsync(
+                claimId);
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            throw new ForbiddenException(
+                "Agent identity is required.");
+        }
+
+        var assigned =
+            await _customerVehicleClient
+                .IsCustomerAssignedToAgentAsync(
+                    claim.CustomerProfileId,
+                    agentIdentityUserId,
+                    cancellationToken);
+
+        if (!assigned)
+        {
+            throw new ForbiddenException(
+                "Customer is not assigned to the current Agent.");
+        }
+
+        return MapAgentDetail(
+            claim);
+    }
+
+    public async Task<IReadOnlyList<ClaimListItemDto>>
+        GetCustomerClaimsAsync(
+            string customerIdentityUserId,
+            CancellationToken cancellationToken = default)
+    {
+        var customer =
+            await GetRequiredCustomerAsync(
+                customerIdentityUserId,
+                cancellationToken);
+
+        var claims =
+            await _claimRepository
+                .GetByCustomerProfileIdAsync(
+                    customer.CustomerProfileId);
+
+        return claims
+            .OrderByDescending(
+                claim =>
+                    claim.SubmittedAtUtc)
+            .Select(
+                MapCustomerListItem)
+            .ToList();
+    }
+
+    public async Task<CustomerClaimDetailDto>
+        GetCustomerClaimAsync(
+            Guid claimId,
+            string customerIdentityUserId,
+            CancellationToken cancellationToken = default)
+    {
+        var customer =
+            await GetRequiredCustomerAsync(
+                customerIdentityUserId,
+                cancellationToken);
+
+        var claim =
+            await GetRequiredClaimAsync(
+                claimId);
+
+        if (claim.CustomerProfileId !=
+            customer.CustomerProfileId)
+        {
+            throw new ForbiddenException(
+                "This Claim does not belong to the current Customer.");
+        }
+
+        return MapCustomerDetail(
+            claim);
+    }
+
+    public async Task<IReadOnlyList<ClaimsOfficerClaimListItemDto>>
+    GetClaimsOfficerQueueAsync(
+        string claimsOfficerIdentityUserId,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateClaimsOfficerIdentity(
+            claimsOfficerIdentityUserId);
+
+        var claims =
+            await _claimRepository
+                .GetByAssignedClaimsOfficerAsync(
+                    claimsOfficerIdentityUserId);
+
+        return claims
+            .Select(
+                MapClaimsOfficerListItem)
+            .ToList();
+    }
+
+    public async Task<ClaimsOfficerClaimDetailDto>
+    GetClaimsOfficerClaimAsync(
+        Guid claimId,
+        string claimsOfficerIdentityUserId,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateClaimsOfficerIdentity(
+            claimsOfficerIdentityUserId);
+
+        var claim =
+            await GetRequiredClaimAsync(
+                claimId);
+
+        EnsureAssignedClaimsOfficer(
+            claim,
+            claimsOfficerIdentityUserId);
+
+        return MapClaimsOfficerDetail(
+            claim);
+    }
+
+    public async Task<ClaimsOfficerClaimDetailDto>
+        StartReviewAsync(
+            Guid claimId,
+            string claimsOfficerIdentityUserId,
+            CancellationToken cancellationToken = default)
+    {
+        ValidateClaimsOfficerIdentity(
+            claimsOfficerIdentityUserId);
+
+        var claim =
+    await GetRequiredClaimAsync(
+        claimId);
+
+        EnsureAssignedClaimsOfficer(
+            claim,
+            claimsOfficerIdentityUserId);
+
+        if (claim.Status !=
+            ClaimStatus.Submitted)
+        {
+            throw new ConflictException(
+                "Only a submitted Claim can enter review.");
+        }
+
+        claim.Status =
+            ClaimStatus.InReview;
+
+        claim.ReviewStartedAtUtc =
+            DateTime.UtcNow;
+
+        claim.ReviewedByIdentityUserId =
+            claimsOfficerIdentityUserId;
+
+        await _claimRepository
+            .SaveChangesAsync();
+
+        return MapClaimsOfficerDetail(
+            claim);
+    }
+    public async Task<IReadOnlyList<EligibleClaimsOfficerDto>>
+    GetEligibleClaimsOfficersAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var claimsOfficers =
+            await _identityClient
+                .GetEligibleClaimsOfficersAsync(
+                    cancellationToken);
+
+        var result =
+            new List<EligibleClaimsOfficerDto>();
+
+        foreach (var claimsOfficer in claimsOfficers)
+        {
+            var actionableClaimCount =
+                await _claimRepository
+                    .GetActionableCountByClaimsOfficerAsync(
+                        claimsOfficer.Id);
+
+            result.Add(
+                new EligibleClaimsOfficerDto
+                {
+                    IdentityUserId =
+                        claimsOfficer.Id,
+
+                    FirstName =
+                        claimsOfficer.FirstName,
+
+                    LastName =
+                        claimsOfficer.LastName,
+
+                    Email =
+                        claimsOfficer.Email,
+
+                    ActionableClaimCount =
+                        actionableClaimCount
+                });
+        }
+
+        return result
+            .OrderBy(
+                claimsOfficer =>
+                    claimsOfficer.ActionableClaimCount)
+            .ThenBy(
+                claimsOfficer =>
+                    claimsOfficer.FirstName)
+            .ThenBy(
+                claimsOfficer =>
+                    claimsOfficer.LastName)
+            .ToList();
+    }
+    public async Task<ClaimsOfficerClaimDetailDto>
+        ApproveAsync(
+            Guid claimId,
+            string claimsOfficerIdentityUserId,
+            ApproveClaimRequest request,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            request);
+
+        ValidateClaimsOfficerIdentity(
+            claimsOfficerIdentityUserId);
+
+        var reason =
+            request.DecisionReason
+                ?.Trim();
+
+        if (string.IsNullOrWhiteSpace(
+                reason))
+        {
+            throw CreateValidationException(
+                "decisionReason",
+                "Decision Reason is required.");
+        }
+
+        var claim =
+            await GetRequiredClaimAsync(
+                claimId);
+
+        EnsureReviewOwner(
+            claim,
+            claimsOfficerIdentityUserId);
+
+        if (claim.Status !=
+            ClaimStatus.InReview)
+        {
+            throw new ConflictException(
+                "Only a Claim currently in review can be approved.");
+        }
+
+        claim.Status =
+            ClaimStatus.Approved;
+
+        claim.DecisionReason =
+            reason;
+
+        claim.DecidedAtUtc =
+            DateTime.UtcNow;
+
+        await _claimRepository
+            .SaveChangesAsync();
+
+        return MapClaimsOfficerDetail(
+            claim);
+    }
+
+
+    private static void EnsureAssignedClaimsOfficer(
+    Claim claim,
+    string claimsOfficerIdentityUserId)
+    {
+        if (string.IsNullOrWhiteSpace(
+                claim.AssignedClaimsOfficerIdentityUserId))
+        {
+            throw new ForbiddenException(
+                "This Claim has not been assigned to a Claims Officer.");
+        }
+
+        if (!string.Equals(
+                claim.AssignedClaimsOfficerIdentityUserId,
+                claimsOfficerIdentityUserId,
+                StringComparison.Ordinal))
+        {
+            throw new ForbiddenException(
+                "This Claim is assigned to another Claims Officer.");
+        }
+    }
+    public async Task<ClaimsOfficerClaimDetailDto>
+        RejectAsync(
+            Guid claimId,
+            string claimsOfficerIdentityUserId,
+            RejectClaimRequest request,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            request);
+
+        ValidateClaimsOfficerIdentity(
+            claimsOfficerIdentityUserId);
+
+        var rejectionReason =
+            request.RejectionReason
+                ?.Trim();
+
+        if (string.IsNullOrWhiteSpace(
+                rejectionReason))
+        {
+            throw CreateValidationException(
+                "rejectionReason",
+                "Rejection Reason is required.");
+        }
+
+        var claim =
+            await GetRequiredClaimAsync(
+                claimId);
+
+        EnsureReviewOwner(
+            claim,
+            claimsOfficerIdentityUserId);
+
+        if (claim.Status !=
+            ClaimStatus.InReview)
+        {
+            throw new ConflictException(
+                "Only a Claim currently in review can be rejected.");
+        }
+
+        claim.Status =
+            ClaimStatus.Rejected;
+
+        claim.DecisionReason =
+            rejectionReason;
+
+        claim.DecidedAtUtc =
+            DateTime.UtcNow;
+
+        await _claimRepository
+            .SaveChangesAsync();
+
+        return MapClaimsOfficerDetail(
+            claim);
+    }
+
+    private static AdminClaimListItemDto
+    MapAdminListItem(
+        Claim claim)
+    {
+        return new AdminClaimListItemDto
+        {
+            ClaimId =
+                claim.Id,
+
+            ClaimNumber =
+                claim.ClaimNumber,
+
+            PolicyId =
+                claim.PolicyId,
+
+            CustomerProfileId =
+                claim.CustomerProfileId,
+
+            VehicleId =
+                claim.VehicleId,
+
+            ClaimType =
+                claim.ClaimType,
+
+            IncidentAtUtc =
+                claim.IncidentAtUtc,
+
+            EstimatedLossAmount =
+                claim.EstimatedLossAmount,
+
+            Status =
+                claim.Status,
+
+            SubmittedAtUtc =
+                claim.SubmittedAtUtc,
+
+            AssignedClaimsOfficerIdentityUserId =
+                claim.AssignedClaimsOfficerIdentityUserId,
+
+            AssignedAtUtc =
+                claim.AssignedAtUtc
+        };
+    }
+
+    private static AdminClaimDetailDto
+        MapAdminDetail(
+            Claim claim)
+    {
+        return new AdminClaimDetailDto
+        {
+            ClaimId =
+                claim.Id,
+
+            ClaimNumber =
+                claim.ClaimNumber,
+
+            PolicyId =
+                claim.PolicyId,
+
+            CustomerProfileId =
+                claim.CustomerProfileId,
+
+            VehicleId =
+                claim.VehicleId,
+
+            ClaimType =
+                claim.ClaimType,
+
+            IncidentAtUtc =
+                claim.IncidentAtUtc,
+
+            IncidentLocation =
+                claim.IncidentLocation,
+
+            IncidentDescription =
+                claim.IncidentDescription,
+
+            EstimatedLossAmount =
+                claim.EstimatedLossAmount,
+
+            Status =
+                claim.Status,
+
+            SubmittedAtUtc =
+                claim.SubmittedAtUtc,
+
+            AssignedClaimsOfficerIdentityUserId =
+                claim.AssignedClaimsOfficerIdentityUserId,
+
+            AssignedByAdminIdentityUserId =
+                claim.AssignedByAdminIdentityUserId,
+
+            AssignedAtUtc =
+                claim.AssignedAtUtc,
+
+            ReviewStartedAtUtc =
+                claim.ReviewStartedAtUtc,
+
+            ReviewedByIdentityUserId =
+                claim.ReviewedByIdentityUserId,
+
+            DecidedAtUtc =
+                claim.DecidedAtUtc,
+
+            DecisionReason =
+                claim.DecisionReason,
+
+            ApprovedAmount =
+                claim.ApprovedAmount,
+
+            SettledAtUtc =
+                claim.SettledAtUtc,
+
+            ClosedAtUtc =
+                claim.ClosedAtUtc
+        };
+    }
+    public async Task<ClaimsOfficerClaimDetailDto>
+        SettleAsync(
+            Guid claimId,
+            string claimsOfficerIdentityUserId,
+            SettleClaimRequest request,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            request);
+
+        ValidateClaimsOfficerIdentity(
+            claimsOfficerIdentityUserId);
+
+        if (request.ApprovedAmount <= 0)
+        {
+            throw CreateValidationException(
+                "approvedAmount",
+                "Approved Amount must be greater than zero.");
+        }
+
+        var claim =
+            await GetRequiredClaimAsync(
+                claimId);
+
+        EnsureReviewOwner(
+            claim,
+            claimsOfficerIdentityUserId);
+
+        if (claim.Status !=
+            ClaimStatus.Approved)
+        {
+            throw new ConflictException(
+                "Only an approved Claim can be settled.");
+        }
+
+        claim.ApprovedAmount =
+            request.ApprovedAmount;
+
+        claim.SettledAtUtc =
+            DateTime.UtcNow;
+
+        claim.Status =
+            ClaimStatus.Settled;
+
+        await _claimRepository
+            .SaveChangesAsync();
+
+        return MapClaimsOfficerDetail(
+            claim);
+    }
+
+    public async Task<ClaimsOfficerClaimDetailDto>
+        CloseAsync(
+            Guid claimId,
+            string claimsOfficerIdentityUserId,
+            CancellationToken cancellationToken = default)
+    {
+        ValidateClaimsOfficerIdentity(
+            claimsOfficerIdentityUserId);
+
+        var claim =
+            await GetRequiredClaimAsync(
+                claimId);
+
+        EnsureReviewOwner(
+            claim,
+            claimsOfficerIdentityUserId);
+
+        if (
+            claim.Status !=
+                ClaimStatus.Settled &&
+            claim.Status !=
+                ClaimStatus.Rejected)
+        {
+            throw new ConflictException(
+                "Only a settled or rejected Claim can be closed.");
+        }
+
+        claim.Status =
+            ClaimStatus.Closed;
+
+        claim.ClosedAtUtc =
+            DateTime.UtcNow;
+
+        await _claimRepository
+            .SaveChangesAsync();
+
+        return MapClaimsOfficerDetail(
+            claim);
+    }
+
+    /*
+     * =====================================================
+     * VALIDATION
+     * =====================================================
+     */
+
+    private static void ValidateSubmitRequest(
+        SubmitClaimRequest request)
+    {
+        var errors =
+            new Dictionary<string, string[]>();
+
+        if (request.PolicyId ==
+            Guid.Empty)
+        {
+            errors["policyId"] =
+            [
+                "Policy ID is required."
+            ];
+        }
+
+        if (!Enum.IsDefined(
+                typeof(ClaimType),
+                request.ClaimType))
+        {
+            errors["claimType"] =
+            [
+                "Claim Type is invalid."
+            ];
+        }
+
+        if (request.IncidentAtUtc ==
+            default)
+        {
+            errors["incidentAtUtc"] =
+            [
+                "Incident date and time are required."
+            ];
+        }
+        else if (
+            request.IncidentAtUtc >
+            DateTime.UtcNow)
+        {
+            errors["incidentAtUtc"] =
+            [
+                "Incident date and time cannot be in the future."
+            ];
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                request.IncidentLocation))
+        {
+            errors["incidentLocation"] =
+            [
+                "Incident Location is required."
+            ];
+        }
+        else if (
+            request.IncidentLocation
+                .Trim()
+                .Length > 250)
+        {
+            errors["incidentLocation"] =
+            [
+                "Incident Location cannot exceed 250 characters."
+            ];
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                request.IncidentDescription))
+        {
+            errors["incidentDescription"] =
+            [
+                "Incident Description is required."
+            ];
+        }
+        else if (
+            request.IncidentDescription
+                .Trim()
+                .Length > 2000)
+        {
+            errors["incidentDescription"] =
+            [
+                "Incident Description cannot exceed 2000 characters."
+            ];
+        }
+
+        if (request.EstimatedLossAmount <=
+            0)
+        {
+            errors["estimatedLossAmount"] =
+            [
+                "Estimated Loss Amount must be greater than zero."
+            ];
+        }
+
+        if (errors.Count > 0)
+        {
+            throw new ApplicationValidationException(
+                errors);
+        }
+    }
+
+    private static void
+        ValidateIncidentAgainstPolicy(
+            DateTime incidentAtUtc,
+            DateOnly effectiveDate,
+            DateOnly expirationDate,
+            DateTime? cancellationEffectiveAtUtc)
+    {
+        var incidentDate =
+            DateOnly.FromDateTime(
+                incidentAtUtc);
+
+        if (incidentDate <
+            effectiveDate)
+        {
+            throw new ConflictException(
+                "The incident occurred before the Policy became effective.");
+        }
+
+        if (incidentDate >=
+            expirationDate)
+        {
+            throw new ConflictException(
+                "The incident occurred after the Policy coverage period ended.");
+        }
+
+        if (
+            cancellationEffectiveAtUtc.HasValue &&
+            incidentAtUtc >=
+                cancellationEffectiveAtUtc.Value)
+        {
+            throw new ConflictException(
+                "The incident occurred after the Policy cancellation became effective.");
+        }
+    }
+
+    private static void
+        ValidateClaimsOfficerIdentity(
+            string claimsOfficerIdentityUserId)
+    {
+        if (string.IsNullOrWhiteSpace(
+                claimsOfficerIdentityUserId))
+        {
+            throw new ForbiddenException(
+                "Claims Officer identity is required.");
+        }
+    }
+
+    private static void EnsureReviewOwner(
+        Claim claim,
+        string claimsOfficerIdentityUserId)
+    {
+        if (string.IsNullOrWhiteSpace(
+                claim.ReviewedByIdentityUserId))
+        {
+            throw new ConflictException(
+                "The Claim review has not been started.");
+        }
+
+        if (!string.Equals(
+                claim.ReviewedByIdentityUserId,
+                claimsOfficerIdentityUserId,
+                StringComparison.Ordinal))
+        {
+            throw new ForbiddenException(
+                "This Claim is being reviewed by another Claims Officer.");
+        }
+    }
+
+    /*
+     * =====================================================
+     * LOOKUPS
+     * =====================================================
+     */
+
+    private async Task<Claim>
+        GetRequiredClaimAsync(
+            Guid claimId)
+    {
+        if (claimId == Guid.Empty)
+        {
+            throw new NotFoundException(
+                "Claim was not found.");
+        }
+
+        var claim =
+            await _claimRepository
+                .GetByIdAsync(
+                    claimId);
+
+        if (claim is null)
+        {
+            throw new NotFoundException(
+                "Claim was not found.");
+        }
+
+        return claim;
+    }
+
+    private async Task<
+        ClaimsService.Application.Dtos.External.CustomerReferenceDto>
+        GetRequiredCustomerAsync(
+            string customerIdentityUserId,
+            CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            throw new ForbiddenException(
+                "Customer identity is required.");
+        }
+
+        var customer =
+            await _customerVehicleClient
+                .GetCustomerAsync(
+                    customerIdentityUserId,
+                    cancellationToken);
+
+        if (customer is null)
+        {
+            throw new NotFoundException(
+                "Customer profile was not found.");
+        }
+
+        return customer;
+    }
+
+    /*
+     * =====================================================
+     * CLAIM NUMBER
+     * =====================================================
+     */
+
+    private async Task<string>
+        GenerateClaimNumberAsync()
+    {
+        for (
+            var attempt = 0;
+            attempt < 5;
+            attempt++)
+        {
+            var candidate =
+                $"CLM-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid():N}"
+                    .ToUpperInvariant();
+
+            candidate =
+                candidate[..21];
+
+            if (!await _claimRepository
+                    .ClaimNumberExistsAsync(
+                        candidate))
+            {
+                return candidate;
+            }
+        }
+
+        throw new InvalidOperationException(
+            "A unique Claim Number could not be generated.");
+    }
+
+    /*
+     * =====================================================
+     * MAPPING
+     * =====================================================
+     */
+
+    private static AgentClaimListItemDto
+        MapAgentListItem(
+            Claim claim)
+    {
+        return new AgentClaimListItemDto
+        {
+            ClaimId =
+                claim.Id,
+
+            ClaimNumber =
+                claim.ClaimNumber,
+
+            PolicyId =
+                claim.PolicyId,
+
+            CustomerProfileId =
+                claim.CustomerProfileId,
+
+            VehicleId =
+                claim.VehicleId,
+
+            ClaimType =
+                claim.ClaimType,
+
+            IncidentAtUtc =
+                claim.IncidentAtUtc,
+
+            EstimatedLossAmount =
+                claim.EstimatedLossAmount,
+
+            Status =
+                claim.Status,
+
+            SubmittedAtUtc =
+                claim.SubmittedAtUtc,
+
+            ApprovedAmount =
+                claim.ApprovedAmount,
+
+            ClosedAtUtc =
+                claim.ClosedAtUtc
+        };
+    }
+
+    private static AgentClaimDetailDto
+        MapAgentDetail(
+            Claim claim)
+    {
+        return new AgentClaimDetailDto
+        {
+            ClaimId =
+                claim.Id,
+
+            ClaimNumber =
+                claim.ClaimNumber,
+
+            PolicyId =
+                claim.PolicyId,
+
+            CustomerProfileId =
+                claim.CustomerProfileId,
+
+            VehicleId =
+                claim.VehicleId,
+
+            ClaimType =
+                claim.ClaimType,
+
+            IncidentAtUtc =
+                claim.IncidentAtUtc,
+
+            IncidentLocation =
+                claim.IncidentLocation,
+
+            IncidentDescription =
+                claim.IncidentDescription,
+
+            EstimatedLossAmount =
+                claim.EstimatedLossAmount,
+
+            Status =
+                claim.Status,
+
+            SubmittedAtUtc =
+                claim.SubmittedAtUtc,
+
+            ReviewStartedAtUtc =
+                claim.ReviewStartedAtUtc,
+
+            DecidedAtUtc =
+                claim.DecidedAtUtc,
+
+            DecisionReason =
+                claim.DecisionReason,
+
+            ApprovedAmount =
+                claim.ApprovedAmount,
+
+            SettledAtUtc =
+                claim.SettledAtUtc,
+
+            ClosedAtUtc =
+                claim.ClosedAtUtc
+        };
+    }
+
+    private static ClaimListItemDto
+        MapCustomerListItem(
+            Claim claim)
+    {
+        return new ClaimListItemDto
+        {
+            ClaimId =
+                claim.Id,
+
+            ClaimNumber =
+                claim.ClaimNumber,
+
+            PolicyId =
+                claim.PolicyId,
+
+            VehicleId =
+                claim.VehicleId,
+
+            ClaimType =
+                claim.ClaimType,
+
+            IncidentAtUtc =
+                claim.IncidentAtUtc,
+
+            EstimatedLossAmount =
+                claim.EstimatedLossAmount,
+
+            Status =
+                claim.Status,
+
+            SubmittedAtUtc =
+                claim.SubmittedAtUtc,
+
+            ApprovedAmount =
+                claim.ApprovedAmount,
+
+            ClosedAtUtc =
+                claim.ClosedAtUtc
+        };
+    }
+
+    private static CustomerClaimDetailDto
+        MapCustomerDetail(
+            Claim claim)
+    {
+        return new CustomerClaimDetailDto
+        {
+            ClaimId =
+                claim.Id,
+
+            ClaimNumber =
+                claim.ClaimNumber,
+
+            PolicyId =
+                claim.PolicyId,
+
+            VehicleId =
+                claim.VehicleId,
+
+            ClaimType =
+                claim.ClaimType,
+
+            IncidentAtUtc =
+                claim.IncidentAtUtc,
+
+            IncidentLocation =
+                claim.IncidentLocation,
+
+            IncidentDescription =
+                claim.IncidentDescription,
+
+            EstimatedLossAmount =
+                claim.EstimatedLossAmount,
+
+            Status =
+                claim.Status,
+
+            SubmittedAtUtc =
+                claim.SubmittedAtUtc,
+
+            ReviewStartedAtUtc =
+                claim.ReviewStartedAtUtc,
+
+            DecidedAtUtc =
+                claim.DecidedAtUtc,
+
+            DecisionReason =
+                claim.DecisionReason,
+
+            ApprovedAmount =
+                claim.ApprovedAmount,
+
+            SettledAtUtc =
+                claim.SettledAtUtc,
+
+            ClosedAtUtc =
+                claim.ClosedAtUtc
+        };
+    }
+
+    private static ClaimsOfficerClaimListItemDto
+    MapClaimsOfficerListItem(
+        Claim claim)
+    {
+        return new ClaimsOfficerClaimListItemDto
+        {
+            ClaimId =
+                claim.Id,
+
+            ClaimNumber =
+                claim.ClaimNumber,
+
+            PolicyId =
+                claim.PolicyId,
+
+            CustomerProfileId =
+                claim.CustomerProfileId,
+
+            VehicleId =
+                claim.VehicleId,
+
+            ClaimType =
+                claim.ClaimType,
+
+            IncidentAtUtc =
+                claim.IncidentAtUtc,
+
+            EstimatedLossAmount =
+                claim.EstimatedLossAmount,
+
+            Status =
+                claim.Status,
+
+            SubmittedAtUtc =
+                claim.SubmittedAtUtc,
+
+            AssignedAtUtc =
+                claim.AssignedAtUtc,
+
+            ReviewStartedAtUtc =
+                claim.ReviewStartedAtUtc
+        };
+    }
+
+    
+    public async Task<IReadOnlyList<AdminClaimListItemDto>>
+    GetUnassignedClaimsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var claims =
+            await _claimRepository
+                .GetUnassignedAsync();
+
+        return claims
+            .Select(
+                MapAdminListItem)
+            .ToList();
+    }
+
+    public async Task<AdminClaimDetailDto>
+        GetAdminClaimAsync(
+            Guid claimId,
+            CancellationToken cancellationToken = default)
+    {
+        var claim =
+            await GetRequiredClaimAsync(
+                claimId);
+
+        return MapAdminDetail(
+            claim);
+    }
+
+    public async Task<AdminClaimDetailDto>
+        AssignClaimsOfficerAsync(
+            Guid claimId,
+            string adminIdentityUserId,
+            AssignClaimsOfficerRequest request,
+            CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(
+            request);
+
+        if (string.IsNullOrWhiteSpace(
+                adminIdentityUserId))
+        {
+            throw new ForbiddenException(
+                "Admin identity is required.");
+        }
+
+        var claimsOfficerIdentityUserId =
+            request.ClaimsOfficerIdentityUserId
+                ?.Trim();
+
+        if (string.IsNullOrWhiteSpace(
+                claimsOfficerIdentityUserId))
+        {
+            throw CreateValidationException(
+                "claimsOfficerIdentityUserId",
+                "Claims Officer Identity User ID is required.");
+        }
+        var eligibleClaimsOfficer =
+    await _identityClient
+        .GetEligibleClaimsOfficerAsync(
+            claimsOfficerIdentityUserId,
+            cancellationToken);
+
+        if (eligibleClaimsOfficer is null)
+        {
+            throw new ConflictException(
+                "The selected Claims Officer is not eligible for assignment.");
+        }
+        var claim =
+            await GetRequiredClaimAsync(
+                claimId);
+
+        if (claim.Status !=
+            ClaimStatus.Submitted)
+        {
+            throw new ConflictException(
+                "Only a submitted Claim can be assigned.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(
+                claim.AssignedClaimsOfficerIdentityUserId))
+        {
+            throw new ConflictException(
+                "This Claim is already assigned to a Claims Officer.");
+        }
+
+        claim.AssignedClaimsOfficerIdentityUserId =
+            claimsOfficerIdentityUserId;
+
+        claim.AssignedByAdminIdentityUserId =
+            adminIdentityUserId;
+
+        claim.AssignedAtUtc =
+            DateTime.UtcNow;
+
+        await _claimRepository
+            .SaveChangesAsync();
+
+        return MapAdminDetail(
+            claim);
+    }
+    private static ClaimsOfficerClaimDetailDto
+     MapClaimsOfficerDetail(
+         Claim claim)
+    {
+        return new ClaimsOfficerClaimDetailDto
+        {
+            ClaimId =
+                claim.Id,
+
+            ClaimNumber =
+                claim.ClaimNumber,
+
+            PolicyId =
+                claim.PolicyId,
+
+            CustomerProfileId =
+                claim.CustomerProfileId,
+
+            VehicleId =
+                claim.VehicleId,
+
+            ClaimType =
+                claim.ClaimType,
+
+            IncidentAtUtc =
+                claim.IncidentAtUtc,
+
+            IncidentLocation =
+                claim.IncidentLocation,
+
+            IncidentDescription =
+                claim.IncidentDescription,
+
+            EstimatedLossAmount =
+                claim.EstimatedLossAmount,
+
+            Status =
+                claim.Status,
+
+            SubmittedAtUtc =
+                claim.SubmittedAtUtc,
+
+            AssignedAtUtc =
+                claim.AssignedAtUtc,
+
+            ReviewStartedAtUtc =
+                claim.ReviewStartedAtUtc,
+
+            DecidedAtUtc =
+                claim.DecidedAtUtc,
+
+            DecisionReason =
+                claim.DecisionReason,
+
+            ApprovedAmount =
+                claim.ApprovedAmount,
+
+            SettledAtUtc =
+                claim.SettledAtUtc,
+
+            ClosedAtUtc =
+                claim.ClosedAtUtc
+        };
+    }
+
+    private static ApplicationValidationException
+        CreateValidationException(
+            string field,
+            string message)
+    {
+        return new ApplicationValidationException(
+            new Dictionary<string, string[]>
+            {
+                [field] =
+                [
+                    message
+                ]
+            });
+    }
+}

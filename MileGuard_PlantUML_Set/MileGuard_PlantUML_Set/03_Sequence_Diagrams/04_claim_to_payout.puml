@@ -1,0 +1,81 @@
+@startuml
+!theme plain
+skinparam shadowing false
+autonumber
+actor Agent
+actor "Claims Adjuster" as Adjuster
+actor Admin
+actor Customer
+participant "Angular App" as UI
+participant "Ocelot Gateway" as GW
+participant "ClaimsService" as CS
+participant "PolicyBillingService" as PB
+participant "ClaimsDb" as DB
+
+Agent -> UI : Start FNOL
+UI -> GW : POST /claims/api/fnols
+GW -> CS : Create FNOL draft
+CS -> PB : Resolve Date-of-Loss policy coverage
+PB --> CS : Historical policy + coverage contract
+CS --> GW : FNOL draft
+GW --> UI : FNOL draft
+
+Agent -> UI : Complete FNOL + create Draft Claim
+UI -> GW : POST /claims/api/claims/from-fnol/{fnolId}
+GW -> CS : Create formal claim draft
+CS --> GW : Claim draft
+GW --> UI : Claim draft
+Agent -> UI : Upload evidence + submit Claim
+UI -> GW : POST /claims/api/claims/{claimId}/submit
+GW -> CS : Validate evidence + claim cap + freeze submission
+CS -> DB : Atomic submit + consume claim slot
+DB --> CS : Submitted Claim
+CS --> GW : Submitted
+GW --> UI : Submitted
+
+Admin -> UI : Assign Adjuster
+UI -> GW : POST /claims/api/admin/claims/{claimId}/assign
+GW -> CS : Permanent assign-once Adjuster
+CS -> DB : Save assignment
+DB --> CS : Assigned
+CS --> GW : Assigned
+GW --> UI : Assigned
+
+Adjuster -> UI : Open review
+UI -> GW : GET /claims/api/adjuster/claims/{claimId}/review
+GW -> CS : Open review
+CS --> GW : Claim + evidence + coverage context
+GW --> UI : Review workspace
+Adjuster -> UI : Record notes + assessment + decision
+UI -> GW : POST /claims/api/adjuster/claims/{claimId}/decision
+GW -> CS : Persist decision
+CS -> PB : Coverage/limit/deductible contract
+PB --> CS : Historical terms
+CS -> DB : Save decision + settlement
+DB --> CS : Settlement result
+
+alt Settlement <= Adjuster authority
+  CS --> GW : Settlement pending customer acceptance
+  GW --> UI : Settlement
+else Settlement > Adjuster authority
+  CS --> GW : Pending admin authority
+  GW --> UI : Escalation status
+  Admin -> UI : Approve/reject exact settlement amount
+  UI -> GW : POST /claims/api/admin/claims/{claimId}/settlement/{action}
+  GW -> CS : Apply authority decision
+  CS -> DB : Save authority decision
+end
+
+Customer -> UI : Accept settlement
+UI -> GW : POST /claims/api/customer/claims/{claimId}/settlement/accept
+GW -> CS : Accept settlement
+CS --> GW : Accepted
+GW --> UI : Payout selection
+Customer -> UI : Select Bank Transfer / UPI
+UI -> GW : POST /claims/api/customer/claims/{claimId}/payout
+GW -> CS : Simulate payout
+CS -> DB : Persist payout status
+DB --> CS : Paid / Failed
+CS --> GW : Payout result
+GW --> UI : Result
+@enduml

@@ -1,0 +1,30 @@
+@startuml
+!theme plain
+left to right direction
+skinparam shadowing false
+actor "Claims Adjuster" as CA
+rectangle "MileGuard — Claims Adjuster Capabilities" {
+  usecase "View Assigned Claims" as C1
+  usecase "Open Claim Review" as C2
+  usecase "Review FNOL / Claim" as C3
+  usecase "Review Evidence" as C4
+  usecase "Resolve Historical Coverage" as C5
+  usecase "Record Investigation Notes" as C6
+  usecase "Record Assessment" as C7
+  usecase "Decide Full / Partial / Reject" as C8
+  usecase "Provide Required Decision Reason" as C9
+}
+CA --> C1
+CA --> C2
+CA --> C8
+C2 .> C3 : <<include>>
+C2 .> C4 : <<include>>
+C2 .> C5 : <<include>>
+C2 .> C6 : <<include>>
+C2 .> C7 : <<include>>
+C8 .> C9 : <<extend>>
+note right of C8
+Settlement uses policy coverage limit and deductible.
+Amount above personal authority is escalated to Admin.
+end note
+@enduml

@@ -1,0 +1,40 @@
+@startuml
+!theme plain
+skinparam shadowing false
+autonumber
+actor Customer
+participant "Angular App" as UI
+participant "Ocelot Gateway" as GW
+participant "IdentityService" as ID
+participant "IdentityDb" as DB
+
+Customer -> UI : Enter email + password
+UI -> GW : POST /identity/api/auth/login
+GW -> ID : Forward login request
+ID -> DB : Validate identity / role / account state
+DB --> ID : Credentials + account state
+ID --> GW : LoginResponse
+GW --> UI : Auth result
+
+alt Authenticated Customer
+  UI -> GW : POST /identity/api/auth/refresh (cookie)
+  GW -> ID : Refresh request
+  ID -> DB : Validate + rotate refresh session
+  DB --> ID : Rotated session
+  ID --> GW : Access token
+  GW --> UI : Access token
+  UI -> GW : GET /identity/api/auth/me
+  GW -> ID : /auth/me
+  ID --> GW : Current user
+  GW --> UI : Current user
+  UI --> Customer : Customer dashboard
+else Internal user
+  ID --> UI : 2FA challenge / setup state
+  UI -> GW : POST /identity/api/auth/2fa/verify
+  GW -> ID : Verify 2FA
+  ID -> DB : Validate 2FA state
+  DB --> ID : Valid
+  ID --> GW : Operational access token
+  GW --> UI : Token + user context
+end
+@enduml

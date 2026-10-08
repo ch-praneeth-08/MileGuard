@@ -1,0 +1,970 @@
+
+================================================================================
+FILE: routing\admin.routes.ts
+================================================================================
+// import { Routes } from '@angular/router';
+
+// import { authGuard } from '../guards/auth-guard';
+// import { roleGuard } from '../guards/role-guard';
+
+// import { AdminShell } from '../../layout/admin-shell/admin-shell';
+
+
+// export const ADMIN_ROUTES: Routes = [
+//   {
+//     path: 'admin',
+
+//     canActivate: [
+//       authGuard,
+//       roleGuard
+//     ],
+
+//     data: {
+//       roles: [
+//         'Admin'
+//       ]
+//     },
+
+//     component: AdminShell,
+
+//     children: [
+
+//       {
+//         path: '',
+//         pathMatch: 'full',
+//         redirectTo: 'users'
+//       },
+
+
+//       /* ====================================================== */
+//       /* INTERNAL USERS */
+//       /* ====================================================== */
+
+//       {
+//         path: 'users',
+
+//         loadComponent: () =>
+//           import(
+//             '../../features/identity/pages/admin-internal-users/admin-internal-users'
+//           ).then(
+//             component =>
+//               component.AdminInternalUsers
+//           )
+//       },
+
+
+//       {
+//         path:
+//           'users/registrations/:id',
+
+//         loadComponent: () =>
+//           import(
+//             '../../features/identity/pages/admin-registration-review/admin-registration-review'
+//           ).then(
+//             component =>
+//               component.AdminRegistrationReview
+//           )
+//       },
+
+
+//       {
+//         path:
+//           'users/users/:id',
+
+//         loadComponent: () =>
+//           import(
+//             '../../features/identity/pages/admin-user-detail/admin-user-detail'
+//           ).then(
+//             component =>
+//               component.AdminUserDetail
+//           )
+//       },
+
+
+//       /* ====================================================== */
+//       /* CUSTOMER ASSIGNMENT */
+//       /* ====================================================== */
+
+//       {
+//         path: 'customers',
+
+//         loadComponent: () =>
+//           import(
+//             '../../features/customer-vehicle/pages/admin-unassigned-customers/admin-unassigned-customers'
+//           ).then(
+//             component =>
+//               component.AdminUnassignedCustomers
+//           )
+//       },
+
+
+//       {
+//         path:
+//           'customers/:id',
+
+//         loadComponent: () =>
+//           import(
+//             '../../features/customer-vehicle/pages/admin-assignment-review/admin-assignment-review'
+//           ).then(
+//             component =>
+//               component.AdminAssignmentReview
+//           )
+//       },
+
+
+//       /* ====================================================== */
+//       /* UNDERWRITING */
+//       /* ====================================================== */
+
+//       {
+//         path: 'underwriting',
+
+//         loadComponent: () =>
+//           import(
+//             '../../features/underwriting/pages/admin-unassigned-applications/admin-unassigned-applications'
+//           ).then(
+//             component =>
+//               component.AdminUnassignedApplications
+//           )
+//       },
+
+
+//       {
+//         path:
+//           'underwriting/:applicationId',
+
+//         loadComponent: () =>
+//           import(
+//             '../../features/underwriting/pages/admin-underwriting-review/admin-underwriting-review'
+//           ).then(
+//             component =>
+//               component.AdminUnderwritingReview
+//           )
+//       },
+
+
+//       /* ====================================================== */
+//       /* CLAIMS */
+//       /* ====================================================== */
+
+//       {
+//         path: 'claims',
+
+//         loadComponent: () =>
+//           import(
+//             '../../features/claims/pages/admin-unassigned-claims/admin-unassigned-claims'
+//           ).then(
+//             component =>
+//               component.AdminUnassignedClaims
+//           )
+//       },
+
+
+//       {
+//         path:
+//           'claims/:claimId',
+
+//         loadComponent: () =>
+//           import(
+//             '../../features/claims/pages/admin-claim-detail/admin-claim-detail'
+//           ).then(
+//             component =>
+//               component.AdminClaimDetailPage
+//           )
+//       },
+
+
+//       /* ====================================================== */
+//       /* PRICING */
+//       /* ====================================================== */
+
+//       {
+//         path: 'pricing',
+
+//         loadComponent: () =>
+//           import(
+//             '../../features/quote-rating/pages/admin-pricing/admin-pricing'
+//           ).then(
+//             component =>
+//               component.AdminPricing
+//           )
+//       }
+
+//     ]
+//   }
+// ];
+
+
+
+================================================================================
+FILE: routing\agent.routes.ts
+================================================================================
+import { Routes } from '@angular/router';
+
+import { authGuard } from '../guards/auth-guard';
+import { roleGuard } from '../guards/role-guard';
+
+import { AgentShell } from '../../layout/agent-shell/agent-shell';
+import { AgentDashboard } from '../../features/agent/agent-dashboard/agent-dashboard';
+
+export const AGENT_ROUTES: Routes = [
+  {
+    path: 'agent',
+    canActivate: [authGuard, roleGuard],
+    data: {
+      roles: ['Agent']
+    },
+    component: AgentShell,
+
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        component: AgentDashboard
+      },
+
+      {
+        path: 'customers',
+        loadComponent: () =>
+          import(
+            '../../features/customer-vehicle/pages/agent-my-customers/agent-my-customers'
+          ).then(component => component.AgentMyCustomers)
+      },
+
+      {
+        path: 'customers/:customerId',
+        loadComponent: () =>
+          import(
+            '../../features/customer-vehicle/pages/agent-customer-workspace/agent-customer-workspace'
+          ).then(component => component.AgentCustomerWorkspace)
+      },
+
+      {
+        path: 'customers/:customerId/vehicles/new',
+        loadComponent: () =>
+          import(
+            '../../features/customer-vehicle/pages/agent-add-vehicle/agent-add-vehicle'
+          ).then(component => component.AgentAddVehicle)
+      },
+
+      {
+        path: 'customers/:customerId/vehicles/:vehicleId',
+        loadComponent: () =>
+          import(
+            '../../features/customer-vehicle/pages/agent-vehicle-detail/agent-vehicle-detail'
+          ).then(component => component.AgentVehicleDetail)
+      },
+
+      {
+        path: 'customers/:customerId/quotes',
+        loadComponent: () =>
+          import(
+            '../../features/quote-rating/pages/agent-quotes/agent-quotes'
+          ).then(component => component.AgentQuotes)
+      },
+
+      {
+        path: 'customers/:customerId/quotes/start',
+        loadComponent: () =>
+          import(
+            '../../features/quote-rating/pages/quote-vehicle-selection/quote-vehicle-selection'
+          ).then(component => component.QuoteVehicleSelection)
+      },
+
+      {
+        path: 'customers/:customerId/quotes/:quoteId',
+        loadComponent: () =>
+          import(
+            '../../features/quote-rating/pages/quote-workspace/quote-workspace'
+          ).then(component => component.QuoteWorkspace)
+      },
+
+      {
+        path: 'customers/:customerId/policies',
+        loadComponent: () =>
+          import(
+            '../../features/policy-billing/pages/agent-customer-policies/agent-customer-policies'
+          ).then(component => component.AgentCustomerPolicies)
+      },
+
+      {
+        path: 'customers/:customerId/policies/:policyId',
+        loadComponent: () =>
+          import(
+            '../../features/policy-billing/pages/agent-policy-detail/agent-policy-detail'
+          ).then(component => component.AgentPolicyDetail)
+      },
+
+      {
+        path: 'customers/:customerId/claims',
+        loadComponent: () =>
+          import(
+            '../../features/claims/pages/agent-customer-claims/agent-customer-claims'
+          ).then(component => component.AgentCustomerClaims)
+      },
+
+      {
+        path: 'customers/:customerId/claims/new',
+        loadComponent: () =>
+          import(
+            '../../features/claims/pages/agent-new-claim/agent-new-claim'
+          ).then(component => component.AgentNewClaim)
+      },
+
+      {
+        path: 'customers/:customerId/claims/:claimId',
+        loadComponent: () =>
+          import(
+            '../../features/claims/pages/agent-claim-detail/agent-claim-detail'
+          ).then(component => component.AgentClaimDetailPage)
+      },
+      {
+        path: 'underwriting',
+        loadComponent: () =>
+          import(
+            '../../features/underwriting/pages/agent-underwriting/agent-underwriting'
+          ).then(
+            component =>
+              component.AgentUnderwriting
+          )
+      },
+      {
+        path: 'underwriting/:applicationId',
+        loadComponent: () =>
+          import(
+            '../../features/underwriting/pages/agent-underwriting-detail/agent-underwriting-detail'
+          ).then(
+            component =>
+              component.AgentUnderwritingDetailPage
+          )
+      },
+
+
+    ]
+  }
+];
+
+
+
+================================================================================
+FILE: routing\agent-navigation.ts
+================================================================================
+import {
+  MgIconName
+} from '../../shared/ui/mg-icon/mg-icon';
+
+
+export interface AgentNavigationItem {
+  label: string;
+  icon: MgIconName;
+  route: string;
+}
+
+    
+export const AGENT_NAVIGATION: AgentNavigationItem[] = [
+  {
+    label: 'Home',
+    icon: 'home',
+    route: '/agent'
+  },
+  {
+    label: 'My Customers',
+    icon: 'user',
+    route: '/agent/customers'
+  },
+  {
+    label: 'Underwriting',
+    icon: 'shield',
+    route: '/agent/underwriting'
+  }
+
+
+
+];
+
+
+
+================================================================================
+FILE: routing\auth.routes.ts
+================================================================================
+import { Routes } from '@angular/router';
+
+
+export const AUTH_ROUTES: Routes = [
+  {
+    path: 'signin',
+
+    loadComponent: () =>
+      import(
+        '../../features/identity/pages/sign-in/sign-in'
+      ).then(
+        component =>
+          component.SignIn
+      )
+  },
+
+
+  {
+    path: 'internal/register',
+
+    loadComponent: () =>
+      import(
+        '../../features/identity/pages/internal-registration/internal-registration'
+      ).then(
+        component =>
+          component.InternalRegistration
+      )
+  },
+
+
+  {
+    path: 'internal/register/submitted',
+
+    loadComponent: () =>
+      import(
+        '../../features/identity/pages/internal-registration-submitted/internal-registration-submitted'
+      ).then(
+        component =>
+          component.InternalRegistrationSubmitted
+      )
+  },
+
+
+  {
+    path: 'internal/pending',
+
+    loadComponent: () =>
+      import(
+        '../../features/identity/pages/pending/pending'
+      ).then(
+        component =>
+          component.Pending
+      )
+  },
+
+
+  {
+    path: 'internal/rejected',
+
+    loadComponent: () =>
+      import(
+        '../../features/identity/pages/rejected/rejected'
+      ).then(
+        component =>
+          component.Rejected
+      )
+  },
+
+
+  {
+    path: 'internal/inactive',
+
+    loadComponent: () =>
+      import(
+        '../../features/identity/pages/inactive/inactive'
+      ).then(
+        component =>
+          component.Inactive
+      )
+  },
+
+
+  /* ======================================================== */
+  /* INTERNAL TWO-FACTOR */
+  /* ======================================================== */
+
+  {
+    path: 'two-factor/setup',
+
+    loadComponent: () =>
+      import(
+        '../../features/identity/pages/two-factor-setup/two-factor-setup'
+      ).then(
+        component =>
+          component.TwoFactorSetup
+      )
+  },
+
+
+  {
+    path: 'two-factor/enabled',
+
+    loadComponent: () =>
+      import(
+        '../../features/identity/pages/two-factor-enabled/two-factor-enabled'
+      ).then(
+        component =>
+          component.TwoFactorEnabled
+      )
+  },
+
+
+  {
+    path: 'two-factor',
+
+    loadComponent: () =>
+      import(
+        '../../features/identity/pages/two-factor-challenge/two-factor-challenge'
+      ).then(
+        component =>
+          component.TwoFactorChallenge
+      )
+  },
+
+
+  {
+    path: 'session-expired',
+
+    loadComponent: () =>
+      import(
+        '../../features/identity/pages/session-expired/session-expired'
+      ).then(
+        component =>
+          component.SessionExpired
+      )
+  }
+];
+
+
+
+================================================================================
+FILE: routing\claims-officer.routes.ts
+================================================================================
+// import { Routes } from '@angular/router';
+
+// import { authGuard } from '../guards/auth-guard';
+// import { roleGuard } from '../guards/role-guard';
+
+// import {
+//   ClaimsOfficerShell
+// } from '../../layout/claims-officer-shell/claims-officer-shell';
+
+
+// export const CLAIMS_OFFICER_ROUTES: Routes = [
+//   {
+//     path: 'claims-officer',
+
+//     canActivate: [
+//       authGuard,
+//       roleGuard
+//     ],
+
+//     data: {
+//       roles: [
+//         'Claims Officer'
+//       ]
+//     },
+
+//     component: ClaimsOfficerShell,
+
+//     children: [
+
+//       {
+//         path: '',
+//         pathMatch: 'full',
+//         redirectTo: 'claims'
+//       },
+
+
+//       {
+//         path: 'claims',
+
+//         loadComponent: () =>
+//           import(
+//             '../../features/claims/pages/adjuster-claims/adjuster-claims'
+//           ).then(
+//             component =>
+//               component.AdjusterClaims
+//           )
+//       },
+
+
+//       {
+//         path: 'claims/:claimId',
+
+//         loadComponent: () =>
+//           import(
+//             '../../features/claims/pages/adjuster-claim-detail/adjuster-claim-detail'
+//           ).then(
+//             component =>
+//               component.AdjusterClaimDetail
+//           )
+//       }
+
+//     ]
+//   }
+// ];
+
+
+
+================================================================================
+FILE: routing\customer.routes.ts
+================================================================================
+import { Routes } from '@angular/router';
+
+import { authGuard } from '../guards/auth-guard';
+import { roleGuard } from '../guards/role-guard';
+
+import { AuthenticatedShell } from '../../layout/authenticated-shell/authenticated-shell';
+
+
+export const CUSTOMER_ROUTES: Routes = [
+  {
+    path: 'customer',
+
+    canActivate: [
+      authGuard,
+      roleGuard
+    ],
+
+    data: {
+      roles: [
+        'Customer'
+      ]
+    },
+
+    component: AuthenticatedShell,
+
+    children: [
+
+      {
+        path: '',
+
+        loadComponent: () =>
+          import(
+            '../../features/customer/pages/customer-dashboard/customer-dashboard'
+          ).then(
+            component =>
+              component.CustomerDashboard
+          )
+      },
+
+
+      {
+        path: 'profile/setup',
+
+        loadComponent: () =>
+          import(
+            '../../features/customer-vehicle/pages/profile-setup/profile-setup'
+          ).then(
+            component =>
+              component.ProfileSetup
+          )
+      },
+
+
+      {
+        path: 'profile',
+
+        loadComponent: () =>
+          import(
+            '../../features/customer-vehicle/pages/customer-profile/customer-profile'
+          ).then(
+            component =>
+              component.CustomerProfile
+          )
+      },
+
+
+      {
+        path: 'profile/edit',
+
+        loadComponent: () =>
+          import(
+            '../../features/customer-vehicle/pages/edit-customer-profile/edit-customer-profile'
+          ).then(
+            component =>
+              component.EditCustomerProfile
+          )
+      },
+
+
+      {
+        path: 'driver',
+
+        loadComponent: () =>
+          import(
+            '../../features/customer-vehicle/pages/customer-driver/customer-driver'
+          ).then(
+            component =>
+              component.CustomerDriver
+          )
+      },
+
+
+      {
+        path: 'vehicles',
+
+        loadComponent: () =>
+          import(
+            '../../features/customer-vehicle/pages/customer-garage/customer-garage'
+          ).then(
+            component =>
+              component.CustomerGarage
+          )
+      },
+
+
+      {
+        path: 'vehicles/:vehicleId',
+
+        loadComponent: () =>
+          import(
+            '../../features/customer-vehicle/pages/customer-vehicle-detail/customer-vehicle-detail'
+          ).then(
+            component =>
+              component.CustomerVehicleDetail
+          )
+      },
+
+
+      {
+        path: 'underwriting',
+
+        loadComponent: () =>
+          import(
+            '../../features/underwriting/pages/customer-underwriting/customer-underwriting'
+          ).then(
+            component =>
+              component.CustomerUnderwriting
+          )
+      },
+
+
+      {
+        path: 'underwriting/:applicationId',
+
+        loadComponent: () =>
+          import(
+            '../../features/underwriting/pages/customer-underwriting-detail/customer-underwriting-detail'
+          ).then(
+            component =>
+              component.CustomerUnderwritingDetailPage
+          )
+      },
+
+
+      {
+        path: 'policies',
+
+        loadComponent: () =>
+          import(
+            '../../features/policy-billing/pages/customer-policies/customer-policies'
+          ).then(
+            component =>
+              component.CustomerPolicies
+          )
+      },
+
+
+      {
+        path: 'policies/:policyId',
+
+        loadComponent: () =>
+          import(
+            '../../features/policy-billing/pages/customer-policy-detail/customer-policy-detail'
+          ).then(
+            component =>
+              component.CustomerPolicyDetail
+          )
+      },
+
+
+      {
+        path: 'purchase/:applicationId',
+
+        loadComponent: () =>
+          import(
+            '../../features/policy-billing/pages/customer-purchase/customer-purchase'
+          ).then(
+            component =>
+              component.CustomerPurchase
+          )
+      }
+
+    ]
+  }
+];
+
+
+
+================================================================================
+FILE: routing\public.routes.ts
+================================================================================
+import { Routes } from '@angular/router';
+
+
+export const PUBLIC_ROUTES: Routes = [
+  {
+    path: '',
+
+    loadComponent: () =>
+      import(
+        '../../features/identity/pages/landing/landing'
+      ).then(
+        component =>
+          component.Landing
+      )
+  },
+
+
+  {
+    path: 'register',
+
+    loadComponent: () =>
+      import(
+        '../../features/identity/pages/customer-registration/customer-registration'
+      ).then(
+        component =>
+          component.CustomerRegistration
+      )
+  },
+
+
+  {
+    path: 'register/success',
+
+    loadComponent: () =>
+      import(
+        '../../features/identity/pages/customer-registration-success/customer-registration-success'
+      ).then(
+        component =>
+          component.CustomerRegistrationSuccess
+      )
+  }
+];
+
+
+
+================================================================================
+FILE: routing\role-navigation.ts
+================================================================================
+import {
+  MgIconName
+} from '../../shared/ui/mg-icon/mg-icon';
+
+export interface RoleNavigationItem {
+  readonly label: string;
+  readonly route: readonly string[];
+  readonly icon: MgIconName;
+  readonly exact?: boolean;
+}
+
+export interface RoleNavigationSection {
+  readonly label?: string;
+  readonly items: readonly RoleNavigationItem[];
+}
+
+export const CUSTOMER_NAVIGATION:
+  readonly RoleNavigationSection[] = [
+    {
+      items: [
+        {
+          label: 'Home',
+          route: ['/customer'],
+          icon: 'home',
+          exact: true
+        },
+        {
+          label: 'My Profile',
+          route: ['/customer/profile'],
+          icon: 'user'
+        },
+        {
+          label: 'My Vehicles',
+          route: ['/customer/vehicles'],
+          icon: 'car'
+        }
+      ]
+    },
+
+    {
+      label: 'Insurance',
+      items: [
+        {
+          label: 'Underwriting',
+          route: ['/customer/underwriting'],
+          icon: 'shield'
+        },
+        {
+          label: 'Policies',
+          route: ['/customer/policies'],
+          icon: 'document'
+        },
+        {
+          label: 'Claims',
+          route: ['/customer/claims'],
+          icon: 'claim'
+        }
+      ]
+    }
+  ];
+
+
+
+================================================================================
+FILE: routing\underwriter.routes.ts
+================================================================================
+// import { Routes } from '@angular/router';
+
+// import { authGuard } from '../guards/auth-guard';
+// import { roleGuard } from '../guards/role-guard';
+
+// // import { UnderwriterShell } from '../../layout/underwriter-shell/underwriter-shell';
+
+
+// export const UNDERWRITER_ROUTES: Routes = [
+//   {
+//     path: 'underwriter',
+
+//     canActivate: [
+//       authGuard,
+//       roleGuard
+//     ],
+
+//     data: {
+//       roles: [
+//         'Underwriter'
+//       ]
+//     },
+
+//     component: UnderwriterShell,
+
+//     children: [
+//       {
+//         path: '',
+//         pathMatch: 'full',
+//         redirectTo: 'applications'
+//       },
+
+
+//       {
+//         path: 'applications',
+
+//         loadComponent: () =>
+//           import(
+//             '../../features/underwriting/pages/underwriter-applications/underwriter-applications'
+//           ).then(
+//             component =>
+//               component.UnderwriterApplications
+//           )
+//       },
+
+
+//       {
+//         path:
+//           'applications/:applicationId/review',
+
+//         loadComponent: () =>
+//           import(
+//             '../../features/underwriting/pages/underwriter-review/underwriter-review'
+//           ).then(
+//             component =>
+//               component.UnderwriterReview
+//           )
+//       }
+//     ]
+//   }
+// ];
+
+

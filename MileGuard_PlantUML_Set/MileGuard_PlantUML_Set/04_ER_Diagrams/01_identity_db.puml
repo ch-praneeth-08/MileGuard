@@ -1,0 +1,55 @@
+@startuml
+!theme plain
+hide methods
+hide stereotypes
+skinparam linetype ortho
+skinparam shadowing false
+entity "AspNetUsers\n(ASP.NET Identity User)" as Users {
+  * Id : GUID
+  --
+  Email
+  NormalizedEmail
+  PasswordHash
+  TwoFactorEnabled
+  FirstName
+  LastName
+  Status
+}
+entity "AspNetRoles" as Roles {
+  * Id : GUID
+  --
+  Name
+  NormalizedName
+}
+entity "AspNetUserRoles" as UR {
+  * UserId : FK
+  * RoleId : FK
+}
+entity "RefreshTokens" as RT {
+  * Id : GUID
+  --
+  IdentityUserId : FK
+  TokenHash
+  ExpiresAt
+  CreatedAt
+  RevokedAt
+  ReplacedByTokenId
+}
+entity "Security / Admin Metadata" as SM {
+  * Id : GUID
+  --
+  UserId
+  Action
+  PerformedAt
+  Metadata
+}
+Users ||--o{ UR
+Roles ||--o{ UR
+Users ||--o{ RT
+Users ||--o{ SM
+note right of Users
+Roles include Customer, Agent, Underwriter,
+Claims Adjuster, Admin.
+Internal users require 2FA.
+end note
+@enduml

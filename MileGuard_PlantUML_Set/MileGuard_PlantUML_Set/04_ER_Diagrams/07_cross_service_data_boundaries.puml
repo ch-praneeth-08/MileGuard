@@ -1,0 +1,29 @@
+@startuml
+!theme plain
+left to right direction
+skinparam shadowing false
+rectangle "IdentityDb\nIdentityService" as ID
+rectangle "CustomerVehicleDb\nCustomerVehicleService" as CV
+rectangle "QuoteRatingDb\nQuoteRatingService" as QR
+database "UnderwritingDb\nUnderwritingService" as UW
+database "PolicyBillingDb\nPolicyBillingService" as PB
+database "ClaimsDb\nClaimsService" as CL
+
+CV --> ID : IdentityUserId / AgentIdentityUserId
+QR --> CV : CustomerId / VehicleId / risk contract
+QR --> ID : AgentIdentityUserId
+QR --> CL : claim-history contract
+UW --> QR : QuoteId / finalized quote context
+UW --> CV : CustomerId / VehicleId / context as needed
+UW --> ID : UnderwriterIdentityUserId
+PB --> UW : UnderwritingApplicationId / approved-offer contract
+PB --> CV : CustomerId / VehicleId
+CL --> PB : PolicyId / CustomerId / VehicleId / DateOfLoss
+CL --> CV : CustomerId / VehicleId / Agent/Adjuster identifiers
+CL --> ID : identity identifiers as required
+
+note bottom of ID
+Dashed/arrowed links represent API-level identifiers/contracts,
+not database relationships or SQL foreign keys.
+end note
+@enduml

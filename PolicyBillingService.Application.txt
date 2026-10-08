@@ -1,0 +1,6900 @@
+
+================================================================================
+FILE: PolicyBillingService.Application\Class1.cs
+================================================================================
+namespace PolicyBillingService.Application
+{
+    public class Class1
+    {
+
+    }
+}
+
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\CustomerVehicle\AgentCustomerAssignmentDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.CustomerVehicle;
+
+public class AgentCustomerAssignmentDto
+{
+    public Guid CustomerProfileId { get; set; }
+
+    public string AgentIdentityUserId { get; set; } =
+        string.Empty;
+
+    public bool IsAssigned { get; set; }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\CustomerVehicle\AgentCustomerAssignmentResult.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.CustomerVehicle;
+
+public class AgentCustomerAssignmentResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool NotFound { get; private set; }
+
+    public bool DependencyUnavailable { get; private set; }
+
+    public bool IsAssigned { get; private set; }
+
+    public string? Message { get; private set; }
+
+    private AgentCustomerAssignmentResult()
+    {
+    }
+
+    public static AgentCustomerAssignmentResult Success(
+        bool isAssigned)
+    {
+        return new AgentCustomerAssignmentResult
+        {
+            Succeeded = true,
+            IsAssigned = isAssigned
+        };
+    }
+
+    public static AgentCustomerAssignmentResult Missing(
+        string message)
+    {
+        return new AgentCustomerAssignmentResult
+        {
+            NotFound = true,
+            Message = message
+        };
+    }
+
+    public static AgentCustomerAssignmentResult Unavailable(
+        string message)
+    {
+        return new AgentCustomerAssignmentResult
+        {
+            DependencyUnavailable = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\CustomerVehicle\CustomerProfileReferenceDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.CustomerVehicle;
+
+public class CustomerProfileReferenceDto
+{
+    public Guid CustomerProfileId { get; set; }
+
+    public string IdentityUserId { get; set; } =
+        string.Empty;
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\CustomerVehicle\CustomerProfileReferenceResult.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.CustomerVehicle;
+
+public class CustomerProfileReferenceResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool NotFound { get; private set; }
+
+    public bool DependencyUnavailable { get; private set; }
+
+    public CustomerProfileReferenceDto? Customer
+    {
+        get;
+        private set;
+    }
+
+    public string? Message { get; private set; }
+
+    private CustomerProfileReferenceResult()
+    {
+    }
+
+    public static CustomerProfileReferenceResult Success(
+        CustomerProfileReferenceDto customer)
+    {
+        return new CustomerProfileReferenceResult
+        {
+            Succeeded = true,
+            Customer = customer
+        };
+    }
+
+    public static CustomerProfileReferenceResult Missing(
+        string message)
+    {
+        return new CustomerProfileReferenceResult
+        {
+            NotFound = true,
+            Message = message
+        };
+    }
+
+    public static CustomerProfileReferenceResult Unavailable(
+        string message)
+    {
+        return new CustomerProfileReferenceResult
+        {
+            DependencyUnavailable = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Payments\FirstPaymentDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Payments;
+
+public class FirstPaymentDto
+{
+    public Guid PurchaseId { get; set; }
+
+    public string PaymentReference { get; set; } =
+        string.Empty;
+
+    public string PaymentResult { get; set; } =
+        string.Empty;
+
+    public decimal Amount { get; set; }
+
+    public string PaymentMethod { get; set; } =
+        string.Empty;
+
+    public DateTime AttemptedAtUtc { get; set; }
+
+    public string? FailureCode { get; set; }
+
+    public string? FailureMessage { get; set; }
+
+    public Guid? PolicyId { get; set; }
+
+    public string? PolicyNumber { get; set; }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Payments\FirstPaymentResult.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Payments;
+
+public class FirstPaymentResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool PaymentFailed { get; private set; }
+
+    public bool NotFound { get; private set; }
+
+    public bool Forbidden { get; private set; }
+
+    public bool InvalidState { get; private set; }
+
+    public bool DependencyUnavailable { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public FirstPaymentDto? Payment
+    {
+        get;
+        private set;
+    }
+
+    private FirstPaymentResult()
+    {
+    }
+
+    public static FirstPaymentResult Success(
+        FirstPaymentDto payment)
+    {
+        return new FirstPaymentResult
+        {
+            Succeeded = true,
+            Payment = payment
+        };
+    }
+
+    public static FirstPaymentResult Failed(
+        FirstPaymentDto payment)
+    {
+        return new FirstPaymentResult
+        {
+            PaymentFailed = true,
+            Payment = payment,
+            Message = payment.FailureMessage
+        };
+    }
+
+    public static FirstPaymentResult Missing(
+        string message)
+    {
+        return new FirstPaymentResult
+        {
+            NotFound = true,
+            Message = message
+        };
+    }
+
+    public static FirstPaymentResult AccessDenied(
+        string message)
+    {
+        return new FirstPaymentResult
+        {
+            Forbidden = true,
+            Message = message
+        };
+    }
+
+    public static FirstPaymentResult Invalid(
+        string message)
+    {
+        return new FirstPaymentResult
+        {
+            InvalidState = true,
+            Message = message
+        };
+    }
+
+    public static FirstPaymentResult Unavailable(
+        string message)
+    {
+        return new FirstPaymentResult
+        {
+            DependencyUnavailable = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Payments\InstallmentPaymentDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Payments;
+
+public class InstallmentPaymentDto
+{
+    public Guid InstallmentId { get; set; }
+
+    public int InstallmentNumber { get; set; }
+
+    public string PaymentReference { get; set; } =
+        string.Empty;
+
+    public string PaymentResult { get; set; } =
+        string.Empty;
+
+    public decimal Amount { get; set; }
+
+    public string PaymentMethod { get; set; } =
+        string.Empty;
+
+    public DateTime AttemptedAtUtc { get; set; }
+
+    public DateTime? PaidAtUtc { get; set; }
+
+    public string? FailureCode { get; set; }
+
+    public string? FailureMessage { get; set; }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Payments\InstallmentPaymentResult.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Payments;
+
+public class InstallmentPaymentResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool PaymentFailed { get; private set; }
+
+    public bool NotFound { get; private set; }
+
+    public bool Forbidden { get; private set; }
+
+    public bool InvalidState { get; private set; }
+
+    public bool DependencyUnavailable { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public InstallmentPaymentDto? Payment
+    {
+        get;
+        private set;
+    }
+
+    private InstallmentPaymentResult()
+    {
+    }
+
+    public static InstallmentPaymentResult Success(
+        InstallmentPaymentDto payment)
+    {
+        return new InstallmentPaymentResult
+        {
+            Succeeded = true,
+            Payment = payment
+        };
+    }
+
+    public static InstallmentPaymentResult Failed(
+        InstallmentPaymentDto payment)
+    {
+        return new InstallmentPaymentResult
+        {
+            PaymentFailed = true,
+            Payment = payment,
+            Message = payment.FailureMessage
+        };
+    }
+
+    public static InstallmentPaymentResult Missing(
+        string message)
+    {
+        return new InstallmentPaymentResult
+        {
+            NotFound = true,
+            Message = message
+        };
+    }
+
+    public static InstallmentPaymentResult AccessDenied(
+        string message)
+    {
+        return new InstallmentPaymentResult
+        {
+            Forbidden = true,
+            Message = message
+        };
+    }
+
+    public static InstallmentPaymentResult Invalid(
+        string message)
+    {
+        return new InstallmentPaymentResult
+        {
+            InvalidState = true,
+            Message = message
+        };
+    }
+
+    public static InstallmentPaymentResult Unavailable(
+        string message)
+    {
+        return new InstallmentPaymentResult
+        {
+            DependencyUnavailable = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Payments\MakePaymentRequest.cs
+================================================================================
+using PolicyBillingService.Domain.Enums;
+
+namespace PolicyBillingService.Application.Dtos.Payments;
+
+public class MakePaymentRequest
+{
+    public PaymentMethod Method { get; set; }
+
+    public string TestScenario { get; set; } =
+        string.Empty;
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Payments\PaymentSimulationResult.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Payments;
+
+public class PaymentSimulationResult
+{
+    public bool Succeeded { get; private set; }
+
+    public string? FailureCode { get; private set; }
+
+    public string? FailureMessage { get; private set; }
+
+    private PaymentSimulationResult()
+    {
+    }
+
+    public static PaymentSimulationResult Success()
+    {
+        return new PaymentSimulationResult
+        {
+            Succeeded = true
+        };
+    }
+
+    public static PaymentSimulationResult Failure(
+        string failureCode,
+        string failureMessage)
+    {
+        return new PaymentSimulationResult
+        {
+            Succeeded = false,
+            FailureCode = failureCode,
+            FailureMessage = failureMessage
+        };
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Policies\CancelPolicyDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Policies;
+
+public class CancelPolicyDto
+{
+    public Guid PolicyId { get; set; }
+
+    public string PolicyNumber { get; set; } =
+        string.Empty;
+
+    public string EffectiveStatus { get; set; } =
+        string.Empty;
+
+    public DateTime CancellationEffectiveAtUtc
+    {
+        get;
+        set;
+    }
+
+    public int NoLongerDueInstallmentCount
+    {
+        get;
+        set;
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Policies\CancelPolicyResult.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Policies;
+
+public class CancelPolicyResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool NotFound { get; private set; }
+
+    public bool Forbidden { get; private set; }
+
+    public bool InvalidState { get; private set; }
+
+    public bool DependencyUnavailable { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public CancelPolicyDto? Policy { get; private set; }
+
+    private CancelPolicyResult()
+    {
+    }
+
+    public static CancelPolicyResult Success(
+        CancelPolicyDto policy)
+    {
+        return new CancelPolicyResult
+        {
+            Succeeded = true,
+            Policy = policy
+        };
+    }
+
+    public static CancelPolicyResult Missing(
+        string message)
+    {
+        return new CancelPolicyResult
+        {
+            NotFound = true,
+            Message = message
+        };
+    }
+
+    public static CancelPolicyResult AccessDenied(
+        string message)
+    {
+        return new CancelPolicyResult
+        {
+            Forbidden = true,
+            Message = message
+        };
+    }
+
+    public static CancelPolicyResult Invalid(
+        string message)
+    {
+        return new CancelPolicyResult
+        {
+            InvalidState = true,
+            Message = message
+        };
+    }
+
+    public static CancelPolicyResult Unavailable(
+        string message)
+    {
+        return new CancelPolicyResult
+        {
+            DependencyUnavailable = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Policies\GeneratePolicyDocumentResult.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Policies;
+
+public class GeneratePolicyDocumentResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool NotFound { get; private set; }
+
+    public bool AlreadyExists { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public Guid? DocumentId { get; private set; }
+
+    private GeneratePolicyDocumentResult()
+    {
+    }
+
+    public static GeneratePolicyDocumentResult Success(
+        Guid documentId)
+    {
+        return new GeneratePolicyDocumentResult
+        {
+            Succeeded = true,
+            DocumentId = documentId
+        };
+    }
+
+    public static GeneratePolicyDocumentResult Missing(
+        string message)
+    {
+        return new GeneratePolicyDocumentResult
+        {
+            NotFound = true,
+            Message = message
+        };
+    }
+
+    public static GeneratePolicyDocumentResult Duplicate(
+        string message)
+    {
+        return new GeneratePolicyDocumentResult
+        {
+            AlreadyExists = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Policies\PolicyAddOnDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Policies;
+
+public class PolicyAddOnDto
+{
+    public string AddOnName { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPrice { get; set; }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Policies\PolicyCoverageDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Policies;
+
+public class PolicyCoverageDto
+{
+    public string CoverageName { get; set; } =
+        string.Empty;
+
+    public decimal ResolvedLimitAmount { get; set; }
+
+    public decimal? DeductibleAmount { get; set; }
+}
+
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Policies\PolicyDetailDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Policies;
+
+public class PolicyDetailDto
+{
+    public Guid PolicyId { get; set; }
+
+    public string PolicyNumber { get; set; } =
+        string.Empty;
+
+    public Guid UnderwritingApplicationId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public string EffectiveStatus { get; set; } =
+        string.Empty;
+
+    public DateTime IssuedAtUtc { get; set; }
+
+    public DateOnly EffectiveDate { get; set; }
+
+    public DateOnly ExpirationDate { get; set; }
+
+    public DateTime? CancellationEffectiveAtUtc
+    {
+        get;
+        set;
+    }
+    public Guid? PredecessorPolicyId { get; set; }
+
+    public Guid? SuccessorPolicyId { get; set; }
+    public string PlanName { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPremium { get; set; }
+
+    public string PaymentFrequency { get; set; } =
+        string.Empty;
+
+    public string VehicleVin { get; set; } =
+        string.Empty;
+
+    public string VehicleMake { get; set; } =
+        string.Empty;
+
+    public string VehicleModel { get; set; } =
+        string.Empty;
+
+    public int VehicleManufacturingYear { get; set; }
+
+    public string VehicleType { get; set; } =
+        string.Empty;
+
+    public string FuelType { get; set; } =
+        string.Empty;
+
+    public decimal VehicleValue { get; set; }
+
+    public Guid DriverId { get; set; }
+
+    public int DriverAge { get; set; }
+
+    public int DrivingExperienceYears { get; set; }
+
+    public bool LicenceValid { get; set; }
+
+    public bool HasDocument { get; set; }
+
+    public IReadOnlyList<PolicyCoverageDto>
+        Coverages
+    { get; set; } =
+            Array.Empty<PolicyCoverageDto>();
+
+    public IReadOnlyList<PolicyAddOnDto>
+        AddOns
+    { get; set; } =
+            Array.Empty<PolicyAddOnDto>();
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Policies\PolicyDocumentResult.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Policies;
+
+public class PolicyDocumentResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool NotFound { get; private set; }
+
+    public bool Forbidden { get; private set; }
+
+    public bool DocumentNotFound { get; private set; }
+
+    public bool DependencyUnavailable { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public string? FileName { get; private set; }
+
+    public string? ContentType { get; private set; }
+
+    public byte[]? Content { get; private set; }
+
+    private PolicyDocumentResult()
+    {
+    }
+
+    public static PolicyDocumentResult Success(
+        string fileName,
+        string contentType,
+        byte[] content)
+    {
+        return new PolicyDocumentResult
+        {
+            Succeeded = true,
+            FileName = fileName,
+            ContentType = contentType,
+            Content = content
+        };
+    }
+
+    public static PolicyDocumentResult Missing(
+        string message)
+    {
+        return new PolicyDocumentResult
+        {
+            NotFound = true,
+            Message = message
+        };
+    }
+
+    public static PolicyDocumentResult AccessDenied(
+        string message)
+    {
+        return new PolicyDocumentResult
+        {
+            Forbidden = true,
+            Message = message
+        };
+    }
+
+    public static PolicyDocumentResult MissingDocument(
+        string message)
+    {
+        return new PolicyDocumentResult
+        {
+            DocumentNotFound = true,
+            Message = message
+        };
+    }
+
+    public static PolicyDocumentResult Unavailable(
+        string message)
+    {
+        return new PolicyDocumentResult
+        {
+            DependencyUnavailable = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Policies\PolicyInstallmentDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Policies;
+
+public class PolicyInstallmentDto
+{
+    public Guid InstallmentId { get; set; }
+
+    public int InstallmentNumber { get; set; }
+
+    public decimal Amount { get; set; }
+
+    public DateOnly DueDate { get; set; }
+
+    public string Status { get; set; } =
+        string.Empty;
+
+    public DateTime? PaidAtUtc { get; set; }
+
+    public bool CanPayNow { get; set; }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Policies\PolicyListItemDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Policies;
+
+public class PolicyListItemDto
+{
+    public Guid PolicyId { get; set; }
+
+    public string PolicyNumber { get; set; } =
+        string.Empty;
+
+    public Guid VehicleId { get; set; }
+
+    public string VehicleDescription { get; set; } =
+        string.Empty;
+
+    public string PlanName { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPremium { get; set; }
+
+    public DateOnly EffectiveDate { get; set; }
+
+    public DateOnly ExpirationDate { get; set; }
+
+    public string EffectiveStatus { get; set; } =
+        string.Empty;
+
+    public DateTime IssuedAtUtc { get; set; }
+
+    public DateTime? CancellationEffectiveAtUtc
+    {
+        get;
+        set;
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Policies\PolicyListResult.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Policies;
+
+public class PolicyListResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool CustomerNotFound { get; private set; }
+
+    public bool DependencyUnavailable { get; private set; }
+
+    public string? Message { get; private set; }
+    public bool Forbidden { get; private set; }
+
+    public IReadOnlyList<PolicyListItemDto> Policies
+    {
+        get;
+        private set;
+    } = Array.Empty<PolicyListItemDto>();
+
+    private PolicyListResult()
+    {
+    }
+
+    public static PolicyListResult Success(
+        IReadOnlyList<PolicyListItemDto> policies)
+    {
+        return new PolicyListResult
+        {
+            Succeeded = true,
+            Policies = policies
+        };
+    }
+    public static PolicyListResult ForbiddenResult(
+    string message)
+    {
+        return new PolicyListResult
+        {
+            Forbidden = true,
+            Message = message
+        };
+    }
+    public static PolicyListResult MissingCustomer(
+        string message)
+    {
+        return new PolicyListResult
+        {
+            CustomerNotFound = true,
+            Message = message
+        };
+    }
+
+    public static PolicyListResult Unavailable(
+        string message)
+    {
+        return new PolicyListResult
+        {
+            DependencyUnavailable = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Policies\PolicyOperationResult.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Policies;
+
+public class PolicyOperationResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool NotFound { get; private set; }
+
+    public bool Forbidden { get; private set; }
+
+    public bool DependencyUnavailable { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public PolicyDetailDto? Policy
+    {
+        get;
+        private set;
+    }
+
+    private PolicyOperationResult()
+    {
+    }
+
+    public static PolicyOperationResult Success(
+        PolicyDetailDto policy)
+    {
+        return new PolicyOperationResult
+        {
+            Succeeded = true,
+            Policy = policy
+        };
+    }
+
+    public static PolicyOperationResult Missing(
+        string message)
+    {
+        return new PolicyOperationResult
+        {
+            NotFound = true,
+            Message = message
+        };
+    }
+
+    public static PolicyOperationResult AccessDenied(
+        string message)
+    {
+        return new PolicyOperationResult
+        {
+            Forbidden = true,
+            Message = message
+        };
+    }
+
+    public static PolicyOperationResult Unavailable(
+        string message)
+    {
+        return new PolicyOperationResult
+        {
+            DependencyUnavailable = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Policies\PolicyPaymentsDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Policies;
+
+public class PolicyPaymentsDto
+{
+    public Guid PolicyId { get; set; }
+
+    public string PolicyNumber { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPremium { get; set; }
+
+    public string PaymentFrequency { get; set; } =
+        string.Empty;
+
+    public decimal TotalPaid { get; set; }
+
+    public decimal RemainingAmount { get; set; }
+
+    public IReadOnlyList<PolicyInstallmentDto>
+        Installments
+    { get; set; } =
+            Array.Empty<PolicyInstallmentDto>();
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Policies\PolicyPaymentsResult.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Policies;
+
+public class PolicyPaymentsResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool NotFound { get; private set; }
+
+    public bool Forbidden { get; private set; }
+
+    public bool DependencyUnavailable { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public PolicyPaymentsDto? Payments
+    {
+        get;
+        private set;
+    }
+
+    private PolicyPaymentsResult()
+    {
+    }
+
+    public static PolicyPaymentsResult Success(
+        PolicyPaymentsDto payments)
+    {
+        return new PolicyPaymentsResult
+        {
+            Succeeded = true,
+            Payments = payments
+        };
+    }
+
+    public static PolicyPaymentsResult Missing(
+        string message)
+    {
+        return new PolicyPaymentsResult
+        {
+            NotFound = true,
+            Message = message
+        };
+    }
+
+    public static PolicyPaymentsResult AccessDenied(
+        string message)
+    {
+        return new PolicyPaymentsResult
+        {
+            Forbidden = true,
+            Message = message
+        };
+    }
+
+    public static PolicyPaymentsResult Unavailable(
+        string message)
+    {
+        return new PolicyPaymentsResult
+        {
+            DependencyUnavailable = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Purchases\AcceptPurchaseDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Purchases;
+
+public class AcceptPurchaseDto
+{
+    public Guid PurchaseId { get; set; }
+
+    public Guid UnderwritingApplicationId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public string PlanName { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPremium { get; set; }
+
+    public DateOnly EffectiveDate { get; set; }
+
+    public DateOnly ExpirationDate { get; set; }
+
+    public string PaymentFrequency { get; set; } =
+        string.Empty;
+
+    public DateTime AcceptedAtUtc { get; set; }
+
+    public decimal AmountDueNow { get; set; }
+
+    public int InstallmentCount { get; set; }
+
+    public Guid? IssuedPolicyId { get; set; }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Purchases\AcceptPurchaseRequest.cs
+================================================================================
+using PolicyBillingService.Domain.Enums;
+
+namespace PolicyBillingService.Application.Dtos.Purchases;
+
+public class AcceptPurchaseRequest
+{
+    public DateOnly EffectiveDate { get; set; }
+
+    public PaymentFrequency PaymentFrequency { get; set; }
+}
+
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Purchases\AcceptPurchaseResult.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Purchases;
+
+public class AcceptPurchaseResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool NotFound { get; private set; }
+
+    public bool Forbidden { get; private set; }
+
+    public bool InvalidConfiguration { get; private set; }
+
+    public bool Conflict { get; private set; }
+
+    public bool DependencyUnavailable { get; private set; }
+
+    public AcceptPurchaseDto? Purchase
+    {
+        get;
+        private set;
+    }
+
+    public string? Message { get; private set; }
+
+    private AcceptPurchaseResult()
+    {
+    }
+
+    public static AcceptPurchaseResult Success(
+        AcceptPurchaseDto purchase)
+    {
+        return new AcceptPurchaseResult
+        {
+            Succeeded = true,
+            Purchase = purchase
+        };
+    }
+
+    public static AcceptPurchaseResult Missing(
+        string message)
+    {
+        return new AcceptPurchaseResult
+        {
+            NotFound = true,
+            Message = message
+        };
+    }
+
+    public static AcceptPurchaseResult AccessDenied(
+        string message)
+    {
+        return new AcceptPurchaseResult
+        {
+            Forbidden = true,
+            Message = message
+        };
+    }
+
+    public static AcceptPurchaseResult Invalid(
+        string message)
+    {
+        return new AcceptPurchaseResult
+        {
+            InvalidConfiguration = true,
+            Message = message
+        };
+    }
+
+    public static AcceptPurchaseResult Duplicate(
+        string message)
+    {
+        return new AcceptPurchaseResult
+        {
+            Conflict = true,
+            Message = message
+        };
+    }
+
+    public static AcceptPurchaseResult Unavailable(
+        string message)
+    {
+        return new AcceptPurchaseResult
+        {
+            DependencyUnavailable = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Purchases\ConfigurePurchaseDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Purchases;
+
+public class ConfigurePurchaseDto
+{
+    public Guid UnderwritingApplicationId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public string PlanName { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPremium { get; set; }
+
+    public DateOnly EffectiveDate { get; set; }
+
+    public DateOnly ExpirationDate { get; set; }
+
+    public DateTime OfferValidUntilUtc { get; set; }
+
+    public PaymentSchedulePreviewDto PaymentSchedule
+    {
+        get;
+        set;
+    } = new();
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Purchases\ConfigurePurchaseRequest.cs
+================================================================================
+using PolicyBillingService.Domain.Enums;
+
+namespace PolicyBillingService.Application.Dtos.Purchases;
+
+public class ConfigurePurchaseRequest
+{
+    public DateOnly EffectiveDate { get; set; }
+
+    public PaymentFrequency PaymentFrequency { get; set; }
+}
+
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Purchases\ConfigurePurchaseResult.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Purchases;
+
+public class ConfigurePurchaseResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool NotFound { get; private set; }
+
+    public bool Forbidden { get; private set; }
+
+    public bool InvalidConfiguration { get; private set; }
+
+    public bool Conflict { get; private set; }
+
+    public bool DependencyUnavailable { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public ConfigurePurchaseDto? Configuration
+    {
+        get;
+        private set;
+    }
+
+    private ConfigurePurchaseResult()
+    {
+    }
+
+    public static ConfigurePurchaseResult Success(
+        ConfigurePurchaseDto configuration)
+    {
+        return new ConfigurePurchaseResult
+        {
+            Succeeded = true,
+            Configuration = configuration
+        };
+    }
+
+    public static ConfigurePurchaseResult Missing(
+        string message)
+    {
+        return new ConfigurePurchaseResult
+        {
+            NotFound = true,
+            Message = message
+        };
+    }
+
+    public static ConfigurePurchaseResult AccessDenied(
+        string message)
+    {
+        return new ConfigurePurchaseResult
+        {
+            Forbidden = true,
+            Message = message
+        };
+    }
+
+    public static ConfigurePurchaseResult Invalid(
+        string message)
+    {
+        return new ConfigurePurchaseResult
+        {
+            InvalidConfiguration = true,
+            Message = message
+        };
+    }
+
+    public static ConfigurePurchaseResult Overlap(
+        string message)
+    {
+        return new ConfigurePurchaseResult
+        {
+            Conflict = true,
+            Message = message
+        };
+    }
+
+    public static ConfigurePurchaseResult Unavailable(
+        string message)
+    {
+        return new ConfigurePurchaseResult
+        {
+            DependencyUnavailable = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Purchases\PaymentSchedulePreviewDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Purchases;
+
+public class PaymentSchedulePreviewDto
+{
+    public decimal AnnualPremium { get; set; }
+
+    public string PaymentFrequency { get; set; } =
+        string.Empty;
+
+    public int InstallmentCount { get; set; }
+
+    public decimal AmountDueNow { get; set; }
+
+    public IReadOnlyList<ScheduleInstallmentDto>
+        Installments
+    { get; set; } =
+            Array.Empty<ScheduleInstallmentDto>();
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Purchases\ScheduleInstallmentDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Purchases;
+
+public class ScheduleInstallmentDto
+{
+    public int InstallmentNumber { get; set; }
+
+    public decimal Amount { get; set; }
+
+    public DateOnly DueDate { get; set; }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\QuoteRating\StartRenewalQuoteDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.QuoteRating;
+
+public class StartRenewalQuoteDto
+{
+    public Guid QuoteId { get; set; }
+
+    public Guid RenewalId { get; set; }
+
+    public Guid SourcePolicyId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public DateOnly RenewalEffectiveDate { get; set; }
+
+    public string Status { get; set; } =
+        string.Empty;
+
+    public bool ResumedExistingRenewalQuote { get; set; }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\QuoteRating\StartRenewalQuoteRequest.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.QuoteRating;
+
+public class StartRenewalQuoteRequest
+{
+    public Guid RenewalId { get; set; }
+
+    public Guid SourcePolicyId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public string AgentIdentityUserId { get; set; } =
+        string.Empty;
+
+    public DateOnly RenewalEffectiveDate { get; set; }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\QuoteRating\StartRenewalQuoteResult.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.QuoteRating;
+
+public class StartRenewalQuoteResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool DependencyUnavailable { get; private set; }
+
+    public bool Conflict { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public StartRenewalQuoteDto? Quote { get; private set; }
+
+    private StartRenewalQuoteResult()
+    {
+    }
+
+    public static StartRenewalQuoteResult Success(
+        StartRenewalQuoteDto quote)
+    {
+        return new StartRenewalQuoteResult
+        {
+            Succeeded = true,
+            Quote = quote
+        };
+    }
+
+    public static StartRenewalQuoteResult ConflictResult(
+        string message)
+    {
+        return new StartRenewalQuoteResult
+        {
+            Conflict = true,
+            Message = message
+        };
+    }
+
+    public static StartRenewalQuoteResult Unavailable(
+        string message)
+    {
+        return new StartRenewalQuoteResult
+        {
+            DependencyUnavailable = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Renewals\AgentPolicyRenewalDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Renewals;
+
+public class AgentPolicyRenewalDto
+{
+    public Guid PolicyId { get; set; }
+
+    public string PolicyNumber { get; set; } =
+        string.Empty;
+
+    public bool RenewalEligible { get; set; }
+
+    public DateOnly RenewalWindowStarts { get; set; }
+
+    public DateOnly RenewalEffectiveDate { get; set; }
+
+    public string RenewalStatus { get; set; } =
+        string.Empty;
+
+    public Guid? RenewalId { get; set; }
+
+    public Guid? RenewalQuoteId { get; set; }
+
+    public Guid? RenewedPolicyId { get; set; }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Renewals\AgentPolicyRenewalResult.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Renewals;
+
+public class AgentPolicyRenewalResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool NotFound { get; private set; }
+
+    public bool Forbidden { get; private set; }
+
+    public bool DependencyUnavailable { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public AgentPolicyRenewalDto? Renewal
+    {
+        get;
+        private set;
+    }
+
+    private AgentPolicyRenewalResult()
+    {
+    }
+
+    public static AgentPolicyRenewalResult Success(
+        AgentPolicyRenewalDto renewal)
+    {
+        return new AgentPolicyRenewalResult
+        {
+            Succeeded = true,
+            Renewal = renewal
+        };
+    }
+
+    public static AgentPolicyRenewalResult Missing(
+        string message)
+    {
+        return new AgentPolicyRenewalResult
+        {
+            NotFound = true,
+            Message = message
+        };
+    }
+
+    public static AgentPolicyRenewalResult AccessDenied(
+        string message)
+    {
+        return new AgentPolicyRenewalResult
+        {
+            Forbidden = true,
+            Message = message
+        };
+    }
+
+    public static AgentPolicyRenewalResult Unavailable(
+        string message)
+    {
+        return new AgentPolicyRenewalResult
+        {
+            DependencyUnavailable = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Renewals\StartRenewalDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Renewals;
+
+public class StartRenewalDto
+{
+    public Guid RenewalId { get; set; }
+
+    public Guid SourcePolicyId { get; set; }
+
+    public string SourcePolicyNumber { get; set; } =
+        string.Empty;
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public DateTime StartedAtUtc { get; set; }
+
+    public DateOnly CurrentPolicyExpirationDate
+    {
+        get;
+        set;
+    }
+
+    public DateOnly RenewalEffectiveDate
+    {
+        get;
+        set;
+    }
+
+    public Guid? RenewalQuoteId { get; set; }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Renewals\StartRenewalResult.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Renewals;
+
+public class StartRenewalResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool NotFound { get; private set; }
+
+    public bool Forbidden { get; private set; }
+
+    public bool InvalidState { get; private set; }
+
+    public bool Conflict { get; private set; }
+
+    public bool DependencyUnavailable { get; private set; }
+
+    public string? Message { get; private set; }
+
+    public StartRenewalDto? Renewal
+    {
+        get;
+        private set;
+    }
+
+    private StartRenewalResult()
+    {
+    }
+
+    public static StartRenewalResult Success(
+        StartRenewalDto renewal)
+    {
+        return new StartRenewalResult
+        {
+            Succeeded = true,
+            Renewal = renewal
+        };
+    }
+
+    public static StartRenewalResult Missing(
+        string message)
+    {
+        return new StartRenewalResult
+        {
+            NotFound = true,
+            Message = message
+        };
+    }
+
+    public static StartRenewalResult AccessDenied(
+        string message)
+    {
+        return new StartRenewalResult
+        {
+            Forbidden = true,
+            Message = message
+        };
+    }
+
+    public static StartRenewalResult Invalid(
+        string message)
+    {
+        return new StartRenewalResult
+        {
+            InvalidState = true,
+            Message = message
+        };
+    }
+
+    public static StartRenewalResult Duplicate(
+        string message)
+    {
+        return new StartRenewalResult
+        {
+            Conflict = true,
+            Message = message
+        };
+    }
+
+    public static StartRenewalResult Unavailable(
+        string message)
+    {
+        return new StartRenewalResult
+        {
+            DependencyUnavailable = true,
+            Message = message
+        };
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Underwriting\ApprovedOfferAddOnDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Underwriting;
+
+public class ApprovedOfferAddOnDto
+{
+    public string AddOnName { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPrice { get; set; }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Underwriting\ApprovedOfferCoverageDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Underwriting;
+
+public class ApprovedOfferCoverageDto
+{
+    public string CoverageName { get; set; } =
+        string.Empty;
+
+    public decimal ResolvedLimitAmount { get; set; }
+
+    public decimal? DeductibleAmount { get; set; }
+}
+
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Underwriting\ApprovedOfferDto.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Underwriting;
+
+public class ApprovedOfferDto
+{
+    public Guid UnderwritingApplicationId { get; set; }
+
+    public Guid OriginatingQuoteId { get; set; }
+
+    public Guid? RenewalId { get; set; }
+
+    public Guid? SourcePolicyId { get; set; }
+
+    public DateOnly? RenewalEffectiveDate { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public string AgentIdentityUserId { get; set; } =
+        string.Empty;
+
+    public DateTime ApprovedAtUtc { get; set; }
+
+    public DateTime OfferValidUntilUtc { get; set; }
+
+    public DateOnly CustomerDateOfBirth { get; set; }
+
+    public string Geography { get; set; } =
+        string.Empty;
+
+    public Guid DriverId { get; set; }
+
+    public int DriverAge { get; set; }
+
+    public int DrivingExperienceYears { get; set; }
+
+    public DateOnly LicenceIssueDate { get; set; }
+
+    public DateOnly LicenceExpiryDate { get; set; }
+
+    public bool LicenceValid { get; set; }
+
+    public string VehicleVin { get; set; } =
+        string.Empty;
+
+    public string VehicleMake { get; set; } =
+        string.Empty;
+
+    public string VehicleModel { get; set; } =
+        string.Empty;
+
+    public int VehicleManufacturingYear { get; set; }
+
+    public int VehicleAge { get; set; }
+
+    public string VehicleType { get; set; } =
+        string.Empty;
+
+    public string FuelType { get; set; } =
+        string.Empty;
+
+    public decimal VehicleValue { get; set; }
+
+    public int CurrentOdometer { get; set; }
+
+    public int AnnualMileage { get; set; }
+
+    public string OwnershipType { get; set; } =
+        string.Empty;
+
+    public DateOnly VehiclePurchaseDate { get; set; }
+
+    public Guid PlanId { get; set; }
+
+    public string PlanName { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPremium { get; set; }
+
+    public List<ApprovedOfferCoverageDto>
+        Coverages
+    { get; set; } = new();
+
+    public List<ApprovedOfferAddOnDto>
+        AddOns
+    { get; set; } = new();
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Dtos\Underwriting\ApprovedOfferResult.cs
+================================================================================
+namespace PolicyBillingService.Application.Dtos.Underwriting;
+
+public class ApprovedOfferResult
+{
+    public bool Succeeded { get; private set; }
+
+    public bool NotFound { get; private set; }
+
+    public bool NotUsable { get; private set; }
+
+    public bool DependencyUnavailable { get; private set; }
+
+    public ApprovedOfferDto? Offer { get; private set; }
+
+    public string? Message { get; private set; }
+
+    private ApprovedOfferResult()
+    {
+    }
+
+    public static ApprovedOfferResult Success(
+        ApprovedOfferDto offer)
+    {
+        return new ApprovedOfferResult
+        {
+            Succeeded = true,
+            Offer = offer
+        };
+    }
+
+    public static ApprovedOfferResult Missing(
+        string message)
+    {
+        return new ApprovedOfferResult
+        {
+            NotFound = true,
+            Message = message
+        };
+    }
+
+    public static ApprovedOfferResult Unusable(
+        string message)
+    {
+        return new ApprovedOfferResult
+        {
+            NotUsable = true,
+            Message = message
+        };
+    }
+
+    public static ApprovedOfferResult Unavailable(
+        string message)
+    {
+        return new ApprovedOfferResult
+        {
+            DependencyUnavailable = true,
+            Message = message
+        };
+    }
+}
+
+
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\Clients\ICustomerVehicleClient.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.CustomerVehicle;
+
+namespace PolicyBillingService.Application.Interfaces.Clients;
+
+public interface ICustomerVehicleClient
+{
+    Task<CustomerProfileReferenceResult>
+        GetCustomerProfileAsync(
+            string identityUserId);
+    Task<AgentCustomerAssignmentResult>
+    CheckAgentAssignmentAsync(
+        Guid customerProfileId,
+        string agentIdentityUserId);
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\Clients\IQuoteRatingClient.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.QuoteRating;
+
+namespace PolicyBillingService.Application.Interfaces.Clients;
+
+public interface IQuoteRatingClient
+{
+    Task<StartRenewalQuoteResult>
+        StartRenewalQuoteAsync(
+            StartRenewalQuoteRequest request);
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\Clients\IUnderwritingClient.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Underwriting;
+
+namespace PolicyBillingService.Application.Interfaces.Clients;
+
+public interface IUnderwritingClient
+{
+    Task<ApprovedOfferResult>
+        GetApprovedOfferAsync(
+            Guid underwritingApplicationId);
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\Documents\IPolicyDocumentStorage.cs
+================================================================================
+namespace PolicyBillingService.Application.Interfaces.Documents;
+
+public interface IPolicyDocumentStorage
+{
+    Task<string> SaveAsync(
+        string fileName,
+        byte[] content);
+
+    Task<byte[]?> ReadAsync(
+        string storedFileName);
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\Documents\IPolicyPdfGenerator.cs
+================================================================================
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Application.Interfaces.Documents;
+
+public interface IPolicyPdfGenerator
+{
+    byte[] Generate(
+        Policy policy);
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\Documents\LocalPolicyDocumentStorage.cs
+================================================================================
+using PolicyBillingService.Application.Interfaces.Documents;
+
+namespace PolicyBillingService.Infrastructure.Documents;
+
+public class LocalPolicyDocumentStorage
+    : IPolicyDocumentStorage
+{
+    private readonly string _storagePath;
+
+    public LocalPolicyDocumentStorage(
+        string storagePath)
+    {
+        _storagePath =
+            storagePath;
+
+        Directory.CreateDirectory(
+            _storagePath);
+    }
+
+    public async Task<string> SaveAsync(
+        string fileName,
+        byte[] content)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(
+            fileName);
+
+        ArgumentNullException.ThrowIfNull(
+            content);
+
+        var storedFileName =
+            $"{Guid.NewGuid():N}.pdf";
+
+        var fullPath =
+            Path.Combine(
+                _storagePath,
+                storedFileName);
+
+        await File.WriteAllBytesAsync(
+            fullPath,
+            content);
+
+        return storedFileName;
+    }
+
+    public async Task<byte[]?> ReadAsync(
+        string storedFileName)
+    {
+        if (string.IsNullOrWhiteSpace(
+                storedFileName))
+        {
+            return null;
+        }
+
+        var safeFileName =
+            Path.GetFileName(
+                storedFileName);
+
+        var fullPath =
+            Path.Combine(
+                _storagePath,
+                safeFileName);
+
+        if (!File.Exists(fullPath))
+        {
+            return null;
+        }
+
+        return await File.ReadAllBytesAsync(
+            fullPath);
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\IAgentPolicyService.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Policies;
+using PolicyBillingService.Application.Dtos.Renewals;
+
+namespace PolicyBillingService.Application.Interfaces;
+
+public interface IAgentPolicyService
+{
+    Task<PolicyListResult> GetCustomerPoliciesAsync(
+        Guid customerProfileId,
+        string agentIdentityUserId);
+
+    Task<PolicyOperationResult> GetPolicyAsync(
+        Guid policyId,
+        string agentIdentityUserId);
+    Task<AgentPolicyRenewalResult> GetRenewalAsync(
+    Guid policyId,
+    string agentIdentityUserId);
+
+    Task<PolicyPaymentsResult> GetPaymentsAsync(
+        Guid policyId,
+        string agentIdentityUserId);
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\IFirstPaymentService.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Payments;
+
+namespace PolicyBillingService.Application.Interfaces;
+
+public interface IFirstPaymentService
+{
+    Task<FirstPaymentResult> PayAsync(
+        Guid purchaseId,
+        string customerIdentityUserId,
+        MakePaymentRequest request);
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\IInstallmentPaymentService.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Payments;
+
+namespace PolicyBillingService.Application.Interfaces;
+
+public interface IInstallmentPaymentService
+{
+    Task<InstallmentPaymentResult> PayAsync(
+        Guid installmentId,
+        string customerIdentityUserId,
+        MakePaymentRequest request);
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\IPaymentProcessor.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Payments;
+using PolicyBillingService.Domain.Enums;
+
+namespace PolicyBillingService.Application.Interfaces;
+
+public interface IPaymentProcessor
+{
+    PaymentSimulationResult Process(
+        PaymentMethod method,
+        string testScenario);
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\IPaymentScheduleGenerator.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Purchases;
+using PolicyBillingService.Domain.Enums;
+
+namespace PolicyBillingService.Application.Interfaces;
+
+public interface IPaymentScheduleGenerator
+{
+    PaymentSchedulePreviewDto Generate(
+        decimal annualPremium,
+        DateOnly effectiveDate,
+        PaymentFrequency frequency);
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\IPolicyDocumentService.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Policies;
+
+namespace PolicyBillingService.Application.Interfaces;
+
+public interface IPolicyDocumentService
+{
+    Task<GeneratePolicyDocumentResult>
+        GenerateMissingAsync(
+            Guid policyId);
+
+    Task<PolicyDocumentResult>
+        GetAsync(
+            Guid policyId,
+            string customerIdentityUserId);
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\IPolicyService.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Policies;
+
+namespace PolicyBillingService.Application.Interfaces;
+
+public interface IPolicyService
+{
+    Task<PolicyListResult> GetMyPoliciesAsync(
+        string customerIdentityUserId);
+
+    Task<PolicyOperationResult> GetPolicyAsync(
+        Guid policyId,
+        string customerIdentityUserId);
+
+    Task<PolicyPaymentsResult> GetPaymentsAsync(
+        Guid policyId,
+        string customerIdentityUserId);
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\IPolicyServicingService.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Policies;
+
+namespace PolicyBillingService.Application.Interfaces;
+
+public interface IPolicyServicingService
+{
+    Task<CancelPolicyResult> CancelAsync(
+        Guid policyId,
+        string customerIdentityUserId);
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\IPurchaseService.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Purchases;
+
+namespace PolicyBillingService.Application.Interfaces;
+
+public interface IPurchaseService
+{
+    Task<ConfigurePurchaseResult> ConfigureAsync(
+        Guid underwritingApplicationId,
+        string customerIdentityUserId,
+        ConfigurePurchaseRequest request);
+
+    Task<AcceptPurchaseResult> AcceptAsync(
+        Guid underwritingApplicationId,
+        string customerIdentityUserId,
+        AcceptPurchaseRequest request);
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\IRenewalService.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Renewals;
+
+namespace PolicyBillingService.Application.Interfaces;
+
+public interface IRenewalService
+{
+    Task<StartRenewalResult> StartAsync(
+        Guid policyId,
+        string agentIdentityUserId);
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\Repositories\IPaymentRepository.cs
+================================================================================
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Application.Interfaces.Repositories;
+
+public interface IPaymentRepository
+{
+    Task<Installment?> GetInstallmentForUpdateAsync(
+        Guid installmentId);
+
+    Task<IReadOnlyList<Installment>>
+        GetScheduleInstallmentsAsync(
+            Guid paymentScheduleId);
+
+    Task AddTransactionAsync(
+        PaymentTransaction transaction);
+
+    Task SaveChangesAsync();
+
+    Task ExecuteInTransactionAsync(
+        Func<Task> operation);
+}
+
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\Repositories\IPolicyDocumentRepository.cs
+================================================================================
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Application.Interfaces.Repositories;
+
+public interface IPolicyDocumentRepository
+{
+    Task<PolicyDocument?> GetByPolicyIdAsync(
+        Guid policyId);
+
+    Task AddAsync(
+        PolicyDocument document);
+
+    Task SaveChangesAsync();
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\Repositories\IPolicyIssuanceRepository.cs
+================================================================================
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Application.Interfaces.Repositories;
+
+public interface IPolicyIssuanceRepository
+{
+    Task<Policy?> GetPolicyForUpdateAsync(
+        Guid policyId);
+
+    Task<Renewal?> GetRenewalForUpdateAsync(
+        Guid renewalId);
+
+    Task AddPolicyAsync(
+        Policy policy);
+
+    Task AddPaymentTransactionAsync(
+        PaymentTransaction transaction);
+
+    Task AddStatusHistoryAsync(
+        PolicyStatusHistory history);
+
+    Task SaveChangesAsync();
+
+    Task ExecuteInTransactionAsync(
+        Func<Task> operation);
+}
+
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\Repositories\IPolicyRepository.cs
+================================================================================
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Application.Interfaces.Repositories;
+
+public interface IPolicyRepository
+{
+    Task<bool> HasOverlappingPolicyAsync(
+        Guid vehicleId,
+        DateOnly effectiveDate,
+        DateOnly expirationDate);
+
+    Task<Policy?> GetByUnderwritingApplicationIdAsync(
+        Guid underwritingApplicationId);
+
+    Task<IReadOnlyList<Policy>>
+        GetByCustomerProfileIdAsync(
+            Guid customerProfileId);
+
+    Task<Policy?> GetByIdAsync(
+        Guid policyId);
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\Repositories\IPolicyServicingRepository.cs
+================================================================================
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Application.Interfaces.Repositories;
+
+public interface IPolicyServicingRepository
+{
+    Task<Policy?> GetForUpdateAsync(
+        Guid policyId);
+
+    Task AddStatusHistoryAsync(
+        PolicyStatusHistory history);
+
+    Task SaveChangesAsync();
+
+    Task ExecuteInTransactionAsync(
+        Func<Task> operation);
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\Repositories\IPurchaseRepository.cs
+================================================================================
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Application.Interfaces.Repositories;
+
+public interface IPurchaseRepository
+{
+    Task<Purchase?> GetByUnderwritingApplicationIdAsync(
+        Guid underwritingApplicationId);
+
+    Task AddAsync(
+        Purchase purchase);
+    Task<Purchase?> GetByIdForUpdateAsync(
+    Guid purchaseId);
+    Task SaveChangesAsync();
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Interfaces\Repositories\IRenewalRepository.cs
+================================================================================
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Application.Interfaces.Repositories;
+
+public interface IRenewalRepository
+{
+    Task<Renewal?> GetBySourcePolicyIdAsync(
+        Guid sourcePolicyId);
+
+    Task<Renewal?> GetByIdAsync(
+        Guid renewalId);
+
+    Task<Renewal?> GetByIdForUpdateAsync(
+        Guid renewalId);
+
+    Task AddAsync(
+        Renewal renewal);
+
+    Task SaveChangesAsync();
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\PolicyBillingService.Application.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PolicyBillingService.Domain\PolicyBillingService.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
+
+
+================================================================================
+FILE: PolicyBillingService.Application\Services\AgentPolicyService.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Policies;
+using PolicyBillingService.Application.Dtos.Renewals;
+using PolicyBillingService.Application.Interfaces;
+using PolicyBillingService.Application.Interfaces.Clients;
+using PolicyBillingService.Application.Interfaces.Repositories;
+using PolicyBillingService.Domain.Entities;
+using PolicyBillingService.Domain.Enums;
+
+namespace PolicyBillingService.Application.Services;
+
+public class AgentPolicyService : IAgentPolicyService
+{
+    private readonly IPolicyRepository
+        _policyRepository;
+    private readonly IRenewalRepository
+    _renewalRepository;
+    private readonly ICustomerVehicleClient
+        _customerVehicleClient;
+
+    public AgentPolicyService(
+    IPolicyRepository policyRepository,
+    IRenewalRepository renewalRepository,
+    ICustomerVehicleClient customerVehicleClient)
+    {
+        _policyRepository =
+            policyRepository;
+
+        _renewalRepository =
+            renewalRepository;
+
+        _customerVehicleClient =
+            customerVehicleClient;
+    }
+
+    public async Task<PolicyListResult>
+        GetCustomerPoliciesAsync(
+            Guid customerProfileId,
+            string agentIdentityUserId)
+    {
+        if (customerProfileId == Guid.Empty)
+        {
+            return PolicyListResult.MissingCustomer(
+                "Customer profile was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            throw new ArgumentException(
+                "Agent Identity User ID is required.",
+                nameof(agentIdentityUserId));
+        }
+
+        var assignmentResult =
+            await _customerVehicleClient
+                .CheckAgentAssignmentAsync(
+                    customerProfileId,
+                    agentIdentityUserId);
+
+        if (assignmentResult.DependencyUnavailable)
+        {
+            return PolicyListResult.Unavailable(
+                assignmentResult.Message ??
+                "Customer assignment information is temporarily unavailable.");
+        }
+
+        if (assignmentResult.NotFound)
+        {
+            return PolicyListResult.MissingCustomer(
+                assignmentResult.Message ??
+                "Customer profile was not found.");
+        }
+
+        if (!assignmentResult.Succeeded ||
+            !assignmentResult.IsAssigned)
+        {
+            return PolicyListResult.ForbiddenResult(
+                "Customer is not assigned to the current Agent.");
+        }
+
+        var policies =
+            await _policyRepository
+                .GetByCustomerProfileIdAsync(
+                    customerProfileId);
+
+        var policyDtos =
+            new List<PolicyListItemDto>();
+
+        foreach (var policy in policies)
+        {
+            if (policy.Snapshot is null)
+            {
+                throw new InvalidOperationException(
+                    "Policy does not contain its immutable snapshot.");
+            }
+
+            policyDtos.Add(
+                new PolicyListItemDto
+                {
+                    PolicyId =
+                        policy.Id,
+
+                    PolicyNumber =
+                        policy.PolicyNumber,
+
+                    VehicleId =
+                        policy.VehicleId,
+
+                    VehicleDescription =
+                        $"{policy.Snapshot.VehicleMake} {policy.Snapshot.VehicleModel}",
+
+                    PlanName =
+                        policy.Snapshot.PlanName,
+
+                    AnnualPremium =
+                        policy.Snapshot.AnnualPremium,
+
+                    EffectiveDate =
+                        policy.EffectiveDate,
+
+                    ExpirationDate =
+                        policy.ExpirationDate,
+
+                    EffectiveStatus =
+                        GetPolicyStatus(
+                            policy),
+
+                    IssuedAtUtc =
+                        policy.IssuedAtUtc,
+
+                    CancellationEffectiveAtUtc =
+                        policy.CancellationEffectiveAtUtc
+                });
+        }
+
+        return PolicyListResult.Success(
+            policyDtos);
+    }
+    public async Task<AgentPolicyRenewalResult> GetRenewalAsync(
+    Guid policyId,
+    string agentIdentityUserId)
+    {
+        if (policyId == Guid.Empty)
+        {
+            return AgentPolicyRenewalResult.Missing(
+                "Policy was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            throw new ArgumentException(
+                "Agent Identity User ID is required.",
+                nameof(agentIdentityUserId));
+        }
+
+        var policy =
+            await _policyRepository.GetByIdAsync(
+                policyId);
+
+        if (policy is null)
+        {
+            return AgentPolicyRenewalResult.Missing(
+                "Policy was not found.");
+        }
+
+        var assignmentResult =
+            await _customerVehicleClient
+                .CheckAgentAssignmentAsync(
+                    policy.CustomerProfileId,
+                    agentIdentityUserId);
+
+        if (assignmentResult.DependencyUnavailable)
+        {
+            return AgentPolicyRenewalResult.Unavailable(
+                assignmentResult.Message ??
+                "Customer assignment information is temporarily unavailable.");
+        }
+
+        if (assignmentResult.NotFound)
+        {
+            return AgentPolicyRenewalResult.Missing(
+                assignmentResult.Message ??
+                "Customer profile was not found.");
+        }
+
+        if (!assignmentResult.Succeeded ||
+            !assignmentResult.IsAssigned)
+        {
+            return AgentPolicyRenewalResult.AccessDenied(
+                "Customer is not assigned to the current Agent.");
+        }
+
+        var renewal =
+            await _renewalRepository
+                .GetBySourcePolicyIdAsync(
+                    policy.Id);
+
+        var today =
+            DateOnly.FromDateTime(
+                DateTime.UtcNow);
+
+        var renewalWindowStarts =
+            policy.ExpirationDate.AddDays(-30);
+
+        var renewalEffectiveDate =
+            policy.ExpirationDate;
+
+        var renewalEligible =
+            !policy.CancellationEffectiveAtUtc.HasValue &&
+            !policy.SuccessorPolicyId.HasValue &&
+            today >= policy.EffectiveDate &&
+            today < policy.ExpirationDate &&
+            today >= renewalWindowStarts;
+
+        string renewalStatus;
+
+        if (policy.CancellationEffectiveAtUtc.HasValue)
+        {
+            renewalStatus =
+                "Cancelled";
+        }
+        else if (policy.SuccessorPolicyId.HasValue)
+        {
+            renewalStatus =
+                "PolicyIssued";
+        }
+        else if (renewal?.RenewedPolicyId is not null)
+        {
+            renewalStatus =
+                "PolicyIssued";
+        }
+        else if (renewal?.RenewalQuoteId is not null)
+        {
+            renewalStatus =
+                "QuoteInProgress";
+        }
+        else if (renewal is not null)
+        {
+            renewalStatus =
+                "Started";
+        }
+        else if (today < policy.EffectiveDate)
+        {
+            renewalStatus =
+                "NotRenewable";
+        }
+        else if (today >= policy.ExpirationDate)
+        {
+            renewalStatus =
+                "NotRenewable";
+        }
+        else if (today < renewalWindowStarts)
+        {
+            renewalStatus =
+                "TooEarly";
+        }
+        else
+        {
+            renewalStatus =
+                "Eligible";
+        }
+
+        return AgentPolicyRenewalResult.Success(
+            new AgentPolicyRenewalDto
+            {
+                PolicyId =
+                    policy.Id,
+
+                PolicyNumber =
+                    policy.PolicyNumber,
+
+                RenewalEligible =
+                    renewalEligible,
+
+                RenewalWindowStarts =
+                    renewalWindowStarts,
+
+                RenewalEffectiveDate =
+                    renewalEffectiveDate,
+
+                RenewalStatus =
+                    renewalStatus,
+
+                RenewalId =
+                    renewal?.Id,
+
+                RenewalQuoteId =
+                    renewal?.RenewalQuoteId,
+
+                RenewedPolicyId =
+                    renewal?.RenewedPolicyId
+            });
+    }
+    public async Task<PolicyOperationResult>
+        GetPolicyAsync(
+            Guid policyId,
+            string agentIdentityUserId)
+    {
+        if (policyId == Guid.Empty)
+        {
+            return PolicyOperationResult.Missing(
+                "Policy was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            throw new ArgumentException(
+                "Agent Identity User ID is required.",
+                nameof(agentIdentityUserId));
+        }
+
+        var policy =
+            await _policyRepository
+                .GetByIdAsync(
+                    policyId);
+
+        if (policy is null)
+        {
+            return PolicyOperationResult.Missing(
+                "Policy was not found.");
+        }
+
+        var assignmentResult =
+            await _customerVehicleClient
+                .CheckAgentAssignmentAsync(
+                    policy.CustomerProfileId,
+                    agentIdentityUserId);
+
+        if (assignmentResult.DependencyUnavailable)
+        {
+            return PolicyOperationResult.Unavailable(
+                assignmentResult.Message ??
+                "Customer assignment information is temporarily unavailable.");
+        }
+
+        if (assignmentResult.NotFound)
+        {
+            return PolicyOperationResult.Missing(
+                assignmentResult.Message ??
+                "Customer profile was not found.");
+        }
+
+        if (!assignmentResult.Succeeded ||
+            !assignmentResult.IsAssigned)
+        {
+            return PolicyOperationResult.AccessDenied(
+                "Customer is not assigned to the current Agent.");
+        }
+
+        if (policy.Snapshot is null)
+        {
+            throw new InvalidOperationException(
+                "Policy does not contain its immutable snapshot.");
+        }
+
+        var snapshot =
+            policy.Snapshot;
+
+        var policyDto =
+            new PolicyDetailDto
+            {
+                PolicyId =
+                    policy.Id,
+
+                PolicyNumber =
+                    policy.PolicyNumber,
+
+                UnderwritingApplicationId =
+                    policy.OriginatingUnderwritingApplicationId,
+
+                CustomerProfileId =
+                    policy.CustomerProfileId,
+                PredecessorPolicyId =
+            policy.PredecessorPolicyId,
+
+                SuccessorPolicyId =
+            policy.SuccessorPolicyId,
+                VehicleId =
+                    policy.VehicleId,
+
+                EffectiveStatus =
+                    GetPolicyStatus(
+                        policy),
+
+                IssuedAtUtc =
+                    policy.IssuedAtUtc,
+
+                EffectiveDate =
+                    policy.EffectiveDate,
+
+                ExpirationDate =
+                    policy.ExpirationDate,
+
+                CancellationEffectiveAtUtc =
+                    policy.CancellationEffectiveAtUtc,
+
+                PlanName =
+                    snapshot.PlanName,
+
+                AnnualPremium =
+                    snapshot.AnnualPremium,
+
+                PaymentFrequency =
+                    snapshot.PaymentFrequency
+                        .ToString(),
+
+                VehicleVin =
+                    snapshot.VehicleVin,
+
+                VehicleMake =
+                    snapshot.VehicleMake,
+
+                VehicleModel =
+                    snapshot.VehicleModel,
+
+                VehicleManufacturingYear =
+                    snapshot.VehicleManufacturingYear,
+
+                VehicleType =
+                    snapshot.VehicleType,
+
+                FuelType =
+                    snapshot.FuelType,
+
+                VehicleValue =
+                    snapshot.VehicleValue,
+
+                DriverId =
+                    snapshot.DriverId,
+
+                DriverAge =
+                    snapshot.DriverAge,
+
+                DrivingExperienceYears =
+                    snapshot.DrivingExperienceYears,
+
+                LicenceValid =
+                    snapshot.LicenceValid,
+
+                HasDocument =
+                    policy.Document is not null,
+
+                Coverages =
+                    snapshot.Coverages
+                        .Select(
+                            coverage =>
+                                new PolicyCoverageDto
+                                {
+                                    CoverageName =
+                                        coverage.CoverageName,
+
+                                    ResolvedLimitAmount =
+                                        coverage.ResolvedLimitAmount,
+
+                                    DeductibleAmount =
+                                        coverage.DeductibleAmount
+                                })
+                        .ToList(),
+
+                AddOns =
+                    snapshot.AddOns
+                        .Select(
+                            addOn =>
+                                new PolicyAddOnDto
+                                {
+                                    AddOnName =
+                                        addOn.AddOnName,
+
+                                    AnnualPrice =
+                                        addOn.AnnualPrice
+                                })
+                        .ToList()
+            };
+
+        return PolicyOperationResult.Success(
+            policyDto);
+    }
+
+    public async Task<PolicyPaymentsResult>
+        GetPaymentsAsync(
+            Guid policyId,
+            string agentIdentityUserId)
+    {
+        if (policyId == Guid.Empty)
+        {
+            return PolicyPaymentsResult.Missing(
+                "Policy was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            throw new ArgumentException(
+                "Agent Identity User ID is required.",
+                nameof(agentIdentityUserId));
+        }
+
+        var policy =
+            await _policyRepository
+                .GetByIdAsync(
+                    policyId);
+
+        if (policy is null)
+        {
+            return PolicyPaymentsResult.Missing(
+                "Policy was not found.");
+        }
+
+        var assignmentResult =
+            await _customerVehicleClient
+                .CheckAgentAssignmentAsync(
+                    policy.CustomerProfileId,
+                    agentIdentityUserId);
+
+        if (assignmentResult.DependencyUnavailable)
+        {
+            return PolicyPaymentsResult.Unavailable(
+                assignmentResult.Message ??
+                "Customer assignment information is temporarily unavailable.");
+        }
+
+        if (assignmentResult.NotFound)
+        {
+            return PolicyPaymentsResult.Missing(
+                assignmentResult.Message ??
+                "Customer profile was not found.");
+        }
+
+        if (!assignmentResult.Succeeded ||
+            !assignmentResult.IsAssigned)
+        {
+            return PolicyPaymentsResult.AccessDenied(
+                "Customer is not assigned to the current Agent.");
+        }
+
+        if (policy.PaymentSchedule is null)
+        {
+            throw new InvalidOperationException(
+                "Policy does not contain a payment schedule.");
+        }
+
+        var installments =
+            policy.PaymentSchedule
+                .Installments
+                .OrderBy(
+                    installment =>
+                        installment.InstallmentNumber)
+                .ToList();
+
+        var installmentDtos =
+            new List<PolicyInstallmentDto>();
+
+        foreach (var installment in installments)
+        {
+            installmentDtos.Add(
+                new PolicyInstallmentDto
+                {
+                    InstallmentId =
+                        installment.Id,
+
+                    InstallmentNumber =
+                        installment.InstallmentNumber,
+
+                    Amount =
+                        installment.Amount,
+
+                    DueDate =
+                        installment.DueDate,
+
+                    Status =
+                        GetInstallmentStatus(
+                            installment),
+
+                    PaidAtUtc =
+                        installment.PaidAtUtc,
+
+                    CanPayNow =
+                        false
+                });
+        }
+
+        var totalPaid =
+            installments
+                .Where(
+                    installment =>
+                        installment.PaidAtUtc.HasValue)
+                .Sum(
+                    installment =>
+                        installment.Amount);
+
+        var remainingAmount =
+            installments
+                .Where(
+                    installment =>
+                        installment.PaidAtUtc is null &&
+                    installment.ContractStatus ==
+                        InstallmentContractStatus.Payable)
+                .Sum(
+                    installment =>
+                        installment.Amount);
+
+        var paymentsDto =
+            new PolicyPaymentsDto
+            {
+                PolicyId =
+                    policy.Id,
+
+                PolicyNumber =
+                    policy.PolicyNumber,
+
+                AnnualPremium =
+                    policy.PaymentSchedule
+                        .AnnualPremium,
+
+                PaymentFrequency =
+                    policy.PaymentSchedule
+                        .Frequency
+                        .ToString(),
+
+                TotalPaid =
+                    totalPaid,
+
+                RemainingAmount =
+                    remainingAmount,
+
+                Installments =
+                    installmentDtos
+            };
+
+        return PolicyPaymentsResult.Success(
+            paymentsDto);
+    }
+
+    private static string GetPolicyStatus(
+        Policy policy)
+    {
+        var nowUtc =
+            DateTime.UtcNow;
+
+        if (policy.CancellationEffectiveAtUtc.HasValue &&
+            nowUtc >=
+                policy.CancellationEffectiveAtUtc.Value)
+        {
+            return "Cancelled";
+        }
+
+        var today =
+            DateOnly.FromDateTime(
+                nowUtc);
+
+        if (today < policy.EffectiveDate)
+        {
+            return "Issued";
+        }
+
+        if (today >= policy.ExpirationDate)
+        {
+            return "Expired";
+        }
+
+        return "Active";
+    }
+
+    private static string GetInstallmentStatus(
+        Installment installment)
+    {
+        if (installment.PaidAtUtc.HasValue)
+        {
+            return "Paid";
+        }
+
+        if (installment.ContractStatus ==
+            InstallmentContractStatus.NoLongerDue)
+        {
+            return "NoLongerDue";
+        }
+
+        var today =
+            DateOnly.FromDateTime(
+                DateTime.UtcNow);
+
+        if (today > installment.DueDate)
+        {
+            return "Overdue";
+        }
+
+        if (today == installment.DueDate)
+        {
+            return "Due";
+        }
+
+        return "Upcoming";
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Services\FirstPaymentService.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Payments;
+using PolicyBillingService.Application.Interfaces;
+using PolicyBillingService.Application.Interfaces.Clients;
+using PolicyBillingService.Application.Interfaces.Documents;
+using PolicyBillingService.Application.Interfaces.Repositories;
+using PolicyBillingService.Domain.Entities;
+using PolicyBillingService.Domain.Enums;
+
+namespace PolicyBillingService.Application.Services;
+
+public class FirstPaymentService : IFirstPaymentService
+{
+    private readonly IPurchaseRepository _purchaseRepository;
+    private readonly IPolicyIssuanceRepository _issuanceRepository;
+    private readonly IPolicyRepository _policyRepository;
+    private readonly IPaymentRepository _paymentRepository;
+    private readonly IUnderwritingClient _underwritingClient;
+    private readonly ICustomerVehicleClient _customerVehicleClient;
+    private readonly IPaymentScheduleGenerator _scheduleGenerator;
+    private readonly IPaymentProcessor _paymentProcessor;
+    private readonly IPolicyPdfGenerator _policyPdfGenerator;
+    private readonly IPolicyDocumentStorage _policyDocumentStorage;
+
+    public FirstPaymentService(
+        IPurchaseRepository purchaseRepository,
+        IPolicyRepository policyRepository,
+        IPaymentRepository paymentRepository,
+        IPolicyIssuanceRepository issuanceRepository,
+        IUnderwritingClient underwritingClient,
+        ICustomerVehicleClient customerVehicleClient,
+        IPaymentScheduleGenerator scheduleGenerator,
+        IPaymentProcessor paymentProcessor,
+        IPolicyPdfGenerator policyPdfGenerator,
+        IPolicyDocumentStorage policyDocumentStorage)
+    {
+        _purchaseRepository = purchaseRepository;
+        _policyRepository = policyRepository;
+        _paymentRepository = paymentRepository;
+        _issuanceRepository = issuanceRepository;
+        _underwritingClient = underwritingClient;
+        _customerVehicleClient = customerVehicleClient;
+        _scheduleGenerator = scheduleGenerator;
+        _paymentProcessor = paymentProcessor;
+        _policyPdfGenerator = policyPdfGenerator;
+        _policyDocumentStorage = policyDocumentStorage;
+    }
+
+    public async Task<FirstPaymentResult> PayAsync(
+        Guid purchaseId,
+        string customerIdentityUserId,
+        MakePaymentRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (purchaseId == Guid.Empty)
+        {
+            return FirstPaymentResult.Missing(
+                "Purchase was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(customerIdentityUserId))
+        {
+            throw new ArgumentException(
+                "Customer Identity User ID is required.",
+                nameof(customerIdentityUserId));
+        }
+
+        if (!Enum.IsDefined(
+                typeof(PaymentMethod),
+                request.Method))
+        {
+            return FirstPaymentResult.Invalid(
+                "Payment method is invalid.");
+        }
+
+        var purchase =
+            await _purchaseRepository.GetByIdForUpdateAsync(
+                purchaseId);
+
+        if (purchase is null)
+        {
+            return FirstPaymentResult.Missing(
+                "Purchase was not found.");
+        }
+
+        if (purchase.IssuedPolicyId.HasValue)
+        {
+            return FirstPaymentResult.Invalid(
+                "A Policy has already been issued for this Purchase.");
+        }
+
+        var existingPolicy =
+            await _policyRepository
+                .GetByUnderwritingApplicationIdAsync(
+                    purchase.UnderwritingApplicationId);
+
+        if (existingPolicy is not null)
+        {
+            return FirstPaymentResult.Invalid(
+                "A Policy has already been issued for this Underwriting application.");
+        }
+
+        var customerResult =
+            await _customerVehicleClient.GetCustomerProfileAsync(
+                customerIdentityUserId);
+
+        if (customerResult.DependencyUnavailable)
+        {
+            return FirstPaymentResult.Unavailable(
+                customerResult.Message ??
+                "Customer information is temporarily unavailable.");
+        }
+
+        if (!customerResult.Succeeded ||
+            customerResult.Customer is null)
+        {
+            return FirstPaymentResult.Missing(
+                "Customer profile was not found.");
+        }
+
+        if (purchase.CustomerProfileId !=
+            customerResult.Customer.CustomerProfileId)
+        {
+            return FirstPaymentResult.AccessDenied(
+                "Purchase does not belong to the current Customer.");
+        }
+
+        var offerResult =
+            await _underwritingClient.GetApprovedOfferAsync(
+                purchase.UnderwritingApplicationId);
+
+        if (offerResult.DependencyUnavailable)
+        {
+            return FirstPaymentResult.Unavailable(
+                offerResult.Message ??
+                "Underwriting information is temporarily unavailable.");
+        }
+
+        if (offerResult.NotFound)
+        {
+            return FirstPaymentResult.Missing(
+                offerResult.Message ??
+                "Underwriting application was not found.");
+        }
+
+        if (!offerResult.Succeeded ||
+            offerResult.Offer is null)
+        {
+            return FirstPaymentResult.Invalid(
+                offerResult.Message ??
+                "Underwriting offer is no longer available for purchase.");
+        }
+
+        var offer = offerResult.Offer;
+
+        if (offer.CustomerProfileId !=
+                purchase.CustomerProfileId ||
+            offer.VehicleId !=
+                purchase.VehicleId)
+        {
+            return FirstPaymentResult.Invalid(
+                "Purchase no longer matches the approved Underwriting offer.");
+        }
+
+        if (offer.AnnualPremium !=
+            purchase.AnnualPremium)
+        {
+            return FirstPaymentResult.Invalid(
+                "Purchase premium no longer matches the approved Underwriting offer.");
+        }
+
+        /*
+         * =====================================================
+         * RENEWAL CONTEXT
+         * =====================================================
+         */
+
+        var purchaseHasAnyRenewalContext =
+            purchase.RenewalId.HasValue ||
+            purchase.SourcePolicyId.HasValue;
+
+        var purchaseHasCompleteRenewalContext =
+            purchase.RenewalId.HasValue &&
+            purchase.SourcePolicyId.HasValue;
+
+        if (purchaseHasAnyRenewalContext &&
+            !purchaseHasCompleteRenewalContext)
+        {
+            return FirstPaymentResult.Invalid(
+                "Purchase contains incomplete Renewal information.");
+        }
+
+        var offerHasAnyRenewalContext =
+            offer.RenewalId.HasValue ||
+            offer.SourcePolicyId.HasValue ||
+            offer.RenewalEffectiveDate.HasValue;
+
+        var offerHasCompleteRenewalContext =
+            offer.RenewalId.HasValue &&
+            offer.SourcePolicyId.HasValue &&
+            offer.RenewalEffectiveDate.HasValue;
+
+        if (offerHasAnyRenewalContext &&
+            !offerHasCompleteRenewalContext)
+        {
+            return FirstPaymentResult.Invalid(
+                "Approved Underwriting offer contains incomplete Renewal information.");
+        }
+
+        var isRenewal =
+            purchaseHasCompleteRenewalContext;
+
+        if (isRenewal != offerHasCompleteRenewalContext)
+        {
+            return FirstPaymentResult.Invalid(
+                "Purchase Renewal information does not match the approved Underwriting offer.");
+        }
+
+        Policy? sourcePolicy = null;
+        Renewal? renewal = null;
+
+        if (isRenewal)
+        {
+            var renewalId =
+                purchase.RenewalId!.Value;
+
+            var sourcePolicyId =
+                purchase.SourcePolicyId!.Value;
+
+            if (renewalId == Guid.Empty)
+            {
+                return FirstPaymentResult.Invalid(
+                    "Purchase contains an invalid Renewal ID.");
+            }
+
+            if (sourcePolicyId == Guid.Empty)
+            {
+                return FirstPaymentResult.Invalid(
+                    "Purchase contains an invalid Source Policy ID.");
+            }
+
+            if (offer.RenewalId != purchase.RenewalId)
+            {
+                return FirstPaymentResult.Invalid(
+                    "Purchase Renewal ID does not match the approved Underwriting offer.");
+            }
+
+            if (offer.SourcePolicyId !=
+                purchase.SourcePolicyId)
+            {
+                return FirstPaymentResult.Invalid(
+                    "Purchase Source Policy does not match the approved Underwriting offer.");
+            }
+
+            if (offer.RenewalEffectiveDate!.Value !=
+                purchase.EffectiveDate)
+            {
+                return FirstPaymentResult.Invalid(
+                    "Purchase Effective Date does not match the approved Renewal Effective Date.");
+            }
+
+            sourcePolicy =
+                await _issuanceRepository.GetPolicyForUpdateAsync(
+                    sourcePolicyId);
+
+            if (sourcePolicy is null)
+            {
+                return FirstPaymentResult.Missing(
+                    "Source Policy for this Renewal was not found.");
+            }
+
+            if (sourcePolicy.CustomerProfileId !=
+                purchase.CustomerProfileId)
+            {
+                return FirstPaymentResult.Invalid(
+                    "Renewal Customer does not match the Source Policy.");
+            }
+
+            if (sourcePolicy.VehicleId !=
+                purchase.VehicleId)
+            {
+                return FirstPaymentResult.Invalid(
+                    "Renewal Vehicle does not match the Source Policy.");
+            }
+
+            if (sourcePolicy.CancellationEffectiveAtUtc.HasValue)
+            {
+                return FirstPaymentResult.Invalid(
+                    "A cancelled Source Policy cannot be renewed.");
+            }
+
+            if (sourcePolicy.SuccessorPolicyId.HasValue)
+            {
+                return FirstPaymentResult.Invalid(
+                    "The Source Policy already has a successor Policy.");
+            }
+
+            if (sourcePolicy.ExpirationDate !=
+                purchase.EffectiveDate)
+            {
+                return FirstPaymentResult.Invalid(
+                    "Renewal Effective Date must match the Source Policy Expiration Date.");
+            }
+
+            renewal =
+                await _issuanceRepository.GetRenewalForUpdateAsync(
+                    renewalId);
+
+            if (renewal is null)
+            {
+                return FirstPaymentResult.Missing(
+                    "Renewal record was not found.");
+            }
+
+            if (renewal.SourcePolicyId !=
+                sourcePolicy.Id)
+            {
+                return FirstPaymentResult.Invalid(
+                    "Renewal does not match the Source Policy.");
+            }
+
+            if (renewal.CustomerProfileId !=
+                purchase.CustomerProfileId)
+            {
+                return FirstPaymentResult.Invalid(
+                    "Renewal Customer does not match the Purchase.");
+            }
+
+            if (renewal.VehicleId !=
+                purchase.VehicleId)
+            {
+                return FirstPaymentResult.Invalid(
+                    "Renewal Vehicle does not match the Purchase.");
+            }
+
+            if (!renewal.RenewalQuoteId.HasValue)
+            {
+                return FirstPaymentResult.Invalid(
+                    "Renewal does not contain a Renewal Quote.");
+            }
+
+            if (renewal.RenewedPolicyId.HasValue)
+            {
+                return FirstPaymentResult.Invalid(
+                    "A successor Policy has already been issued for this Renewal.");
+            }
+        }
+
+        /*
+         * =====================================================
+         * POLICY TERM
+         * =====================================================
+         */
+
+        var expirationDate =
+            purchase.EffectiveDate.AddYears(1);
+
+        var hasOverlap =
+            await _policyRepository.HasOverlappingPolicyAsync(
+                purchase.VehicleId,
+                purchase.EffectiveDate,
+                expirationDate);
+
+        if (hasOverlap)
+        {
+            return FirstPaymentResult.Invalid(
+                "The Policy term overlaps an existing Policy for this Vehicle.");
+        }
+
+        /*
+         * =====================================================
+         * PAYMENT SCHEDULE
+         * =====================================================
+         */
+
+        var schedule =
+            _scheduleGenerator.Generate(
+                purchase.AnnualPremium,
+                purchase.EffectiveDate,
+                purchase.PaymentFrequency);
+
+        if (schedule.Installments.Count == 0)
+        {
+            throw new InvalidOperationException(
+                "Payment schedule did not generate any installments.");
+        }
+
+        var amountDueNow =
+            schedule.Installments[0].Amount;
+
+        var attemptedAtUtc =
+            DateTime.UtcNow;
+
+        var paymentReference =
+            $"PAY-{Guid.NewGuid():N}"
+                .ToUpperInvariant();
+
+        /*
+         * =====================================================
+         * PAYMENT
+         * =====================================================
+         */
+
+        var simulation =
+            _paymentProcessor.Process(
+                request.Method,
+                request.TestScenario);
+
+        if (!simulation.Succeeded)
+        {
+            var failedTransaction =
+                new PaymentTransaction
+                {
+                    Id = Guid.NewGuid(),
+                    PaymentReference = paymentReference,
+                    PurchaseId = purchase.Id,
+                    InstallmentId = null,
+                    Amount = amountDueNow,
+                    Method = request.Method,
+                    Result = PaymentResult.Failed,
+                    AttemptedAtUtc = attemptedAtUtc,
+                    FailureCode = simulation.FailureCode,
+                    FailureMessage = simulation.FailureMessage
+                };
+
+            await _paymentRepository.AddTransactionAsync(
+                failedTransaction);
+
+            await _paymentRepository.SaveChangesAsync();
+
+            return FirstPaymentResult.Failed(
+                new FirstPaymentDto
+                {
+                    PurchaseId =
+                        purchase.Id,
+
+                    PaymentReference =
+                        failedTransaction.PaymentReference,
+
+                    PaymentResult =
+                        failedTransaction.Result.ToString(),
+
+                    Amount =
+                        failedTransaction.Amount,
+
+                    PaymentMethod =
+                        failedTransaction.Method.ToString(),
+
+                    AttemptedAtUtc =
+                        failedTransaction.AttemptedAtUtc,
+
+                    FailureCode =
+                        failedTransaction.FailureCode,
+
+                    FailureMessage =
+                        failedTransaction.FailureMessage,
+
+                    PolicyId =
+                        null,
+
+                    PolicyNumber =
+                        null
+                });
+        }
+
+        /*
+         * =====================================================
+         * CREATE POLICY
+         * =====================================================
+         */
+
+        var issuedAtUtc =
+            attemptedAtUtc;
+
+        var policyId =
+            Guid.NewGuid();
+
+        var policyNumber =
+            $"POL-{issuedAtUtc:yyyyMMdd}-{Guid.NewGuid():N}"
+                .Substring(0, 21)
+                .ToUpperInvariant();
+
+        var policy =
+            new Policy
+            {
+                Id = policyId,
+
+                PolicyNumber = policyNumber,
+
+                CustomerProfileId =
+                    purchase.CustomerProfileId,
+
+                VehicleId =
+                    purchase.VehicleId,
+
+                OriginatingUnderwritingApplicationId =
+                    purchase.UnderwritingApplicationId,
+
+                IssuedAtUtc =
+                    issuedAtUtc,
+
+                EffectiveDate =
+                    purchase.EffectiveDate,
+
+                ExpirationDate =
+                    expirationDate,
+
+                CancellationEffectiveAtUtc =
+                    null,
+
+                PredecessorPolicyId =
+                    isRenewal
+                        ? purchase.SourcePolicyId
+                        : null,
+
+                SuccessorPolicyId =
+                    null
+            };
+
+        /*
+         * =====================================================
+         * POLICY SNAPSHOT
+         * =====================================================
+         */
+
+        var policySnapshot =
+            new PolicySnapshot
+            {
+                Id =
+                    Guid.NewGuid(),
+
+                PolicyId =
+                    policy.Id,
+
+                UnderwritingApplicationId =
+                    offer.UnderwritingApplicationId,
+
+                CustomerProfileId =
+                    offer.CustomerProfileId,
+
+                VehicleId =
+                    offer.VehicleId,
+
+                AgentIdentityUserId =
+                    offer.AgentIdentityUserId,
+
+                CustomerDateOfBirth =
+                    offer.CustomerDateOfBirth,
+
+                Geography =
+                    offer.Geography,
+
+                DriverId =
+                    offer.DriverId,
+
+                DriverAge =
+                    offer.DriverAge,
+
+                DrivingExperienceYears =
+                    offer.DrivingExperienceYears,
+
+                LicenceIssueDate =
+                    offer.LicenceIssueDate,
+
+                LicenceExpiryDate =
+                    offer.LicenceExpiryDate,
+
+                LicenceValid =
+                    offer.LicenceValid,
+
+                VehicleVin =
+                    offer.VehicleVin,
+
+                VehicleMake =
+                    offer.VehicleMake,
+
+                VehicleModel =
+                    offer.VehicleModel,
+
+                VehicleManufacturingYear =
+                    offer.VehicleManufacturingYear,
+
+                VehicleType =
+                    offer.VehicleType,
+
+                FuelType =
+                    offer.FuelType,
+
+                VehicleValue =
+                    offer.VehicleValue,
+
+                CurrentOdometer =
+                    offer.CurrentOdometer,
+
+                AnnualMileage =
+                    offer.AnnualMileage,
+
+                OwnershipType =
+                    offer.OwnershipType,
+
+                VehiclePurchaseDate =
+                    offer.VehiclePurchaseDate,
+
+                PlanId =
+                    offer.PlanId,
+
+                PlanName =
+                    offer.PlanName,
+
+                AnnualPremium =
+                    offer.AnnualPremium,
+
+                PaymentFrequency =
+                    purchase.PaymentFrequency,
+
+                EffectiveDate =
+                    purchase.EffectiveDate,
+
+                ExpirationDate =
+                    expirationDate
+            };
+
+        foreach (var coverage in offer.Coverages)
+        {
+            policySnapshot.Coverages.Add(
+                new PolicyCoverageSnapshot
+                {
+                    Id =
+                        Guid.NewGuid(),
+
+                    PolicySnapshotId =
+                        policySnapshot.Id,
+
+                    CoverageName =
+                        coverage.CoverageName,
+
+                    ResolvedLimitAmount =
+                        coverage.ResolvedLimitAmount,
+
+                    DeductibleAmount =
+                        coverage.DeductibleAmount
+                });
+        }
+
+        foreach (var addOn in offer.AddOns)
+        {
+            policySnapshot.AddOns.Add(
+                new PolicyAddOnSnapshot
+                {
+                    Id =
+                        Guid.NewGuid(),
+
+                    PolicySnapshotId =
+                        policySnapshot.Id,
+
+                    AddOnName =
+                        addOn.AddOnName,
+
+                    AnnualPrice =
+                        addOn.AnnualPrice
+                });
+        }
+
+        /*
+         * =====================================================
+         * PAYMENT SCHEDULE
+         * =====================================================
+         */
+
+        var paymentSchedule =
+            new PaymentSchedule
+            {
+                Id =
+                    Guid.NewGuid(),
+
+                PolicyId =
+                    policy.Id,
+
+                Frequency =
+                    purchase.PaymentFrequency,
+
+                AnnualPremium =
+                    purchase.AnnualPremium,
+
+                CreatedAtUtc =
+                    issuedAtUtc
+            };
+
+        Installment? firstInstallment =
+            null;
+
+        foreach (var scheduleInstallment
+                 in schedule.Installments)
+        {
+            var installment =
+                new Installment
+                {
+                    Id =
+                        Guid.NewGuid(),
+
+                    PaymentScheduleId =
+                        paymentSchedule.Id,
+
+                    InstallmentNumber =
+                        scheduleInstallment.InstallmentNumber,
+
+                    Amount =
+                        scheduleInstallment.Amount,
+
+                    DueDate =
+                        scheduleInstallment.DueDate,
+
+                    PaidAtUtc =
+                        scheduleInstallment.InstallmentNumber == 1
+                            ? issuedAtUtc
+                            : null,
+
+                    ContractStatus =
+                        InstallmentContractStatus.Payable
+                };
+
+            paymentSchedule.Installments.Add(
+                installment);
+
+            if (installment.InstallmentNumber == 1)
+            {
+                firstInstallment =
+                    installment;
+            }
+        }
+
+        if (firstInstallment is null)
+        {
+            throw new InvalidOperationException(
+                "First Policy installment could not be generated.");
+        }
+
+        policy.Snapshot =
+            policySnapshot;
+
+        policy.PaymentSchedule =
+            paymentSchedule;
+
+        /*
+         * =====================================================
+         * POLICY PDF
+         * =====================================================
+         */
+
+        var pdfContent =
+            _policyPdfGenerator.Generate(
+                policy);
+
+        if (pdfContent.Length == 0)
+        {
+            throw new InvalidOperationException(
+                "Generated Policy PDF was empty.");
+        }
+
+        var documentFileName =
+            $"{policy.PolicyNumber}.pdf";
+
+        var storedFileName =
+            await _policyDocumentStorage.SaveAsync(
+                documentFileName,
+                pdfContent);
+
+        var policyDocument =
+            new PolicyDocument
+            {
+                Id =
+                    Guid.NewGuid(),
+
+                PolicyId =
+                    policy.Id,
+
+                FileName =
+                    documentFileName,
+
+                StoredFileName =
+                    storedFileName,
+
+                ContentType =
+                    "application/pdf",
+
+                SizeBytes =
+                    pdfContent.LongLength,
+
+                GeneratedAtUtc =
+                    issuedAtUtc
+            };
+
+        policy.Document =
+            policyDocument;
+
+        /*
+         * =====================================================
+         * SUCCESSFUL PAYMENT TRANSACTION
+         * =====================================================
+         */
+
+        var successfulTransaction =
+            new PaymentTransaction
+            {
+                Id =
+                    Guid.NewGuid(),
+
+                PaymentReference =
+                    paymentReference,
+
+                PurchaseId =
+                    purchase.Id,
+
+                InstallmentId =
+                    null,
+
+                Amount =
+                    amountDueNow,
+
+                Method =
+                    request.Method,
+
+                Result =
+                    PaymentResult.Succeeded,
+
+                AttemptedAtUtc =
+                    issuedAtUtc,
+
+                FailureCode =
+                    null,
+
+                FailureMessage =
+                    null
+            };
+
+        /*
+         * =====================================================
+         * ISSUANCE HISTORY
+         * =====================================================
+         */
+
+        var issuanceHistory =
+            new PolicyStatusHistory
+            {
+                Id =
+                    Guid.NewGuid(),
+
+                PolicyId =
+                    policy.Id,
+
+                Action =
+                    PolicyHistoryAction.Issued,
+
+                OccurredAtUtc =
+                    issuedAtUtc,
+
+                PerformedByIdentityUserId =
+                    customerIdentityUserId
+            };
+
+        /*
+         * =====================================================
+         * RENEWAL LINEAGE
+         * =====================================================
+         */
+
+        if (isRenewal)
+        {
+            if (sourcePolicy is null)
+            {
+                throw new InvalidOperationException(
+                    "Source Policy is missing from the Renewal issuance context.");
+            }
+
+            if (renewal is null)
+            {
+                throw new InvalidOperationException(
+                    "Renewal record is missing from the Renewal issuance context.");
+            }
+
+            sourcePolicy.SuccessorPolicyId =
+                policy.Id;
+
+            renewal.RenewedPolicyId =
+                policy.Id;
+        }
+
+        purchase.IssuedPolicyId =
+            policy.Id;
+
+        /*
+         * =====================================================
+         * ATOMIC DATABASE ISSUANCE
+         * =====================================================
+         */
+
+        try
+        {
+            await _issuanceRepository.ExecuteInTransactionAsync(
+                async () =>
+                {
+                    await _issuanceRepository.AddPolicyAsync(
+                        policy);
+
+                    await _issuanceRepository
+                        .AddPaymentTransactionAsync(
+                            successfulTransaction);
+
+                    await _issuanceRepository
+                        .AddStatusHistoryAsync(
+                            issuanceHistory);
+
+                    await _issuanceRepository.SaveChangesAsync();
+                });
+        }
+        catch
+        {
+            var existingIssuedPolicy =
+                await _policyRepository
+                    .GetByUnderwritingApplicationIdAsync(
+                        purchase.UnderwritingApplicationId);
+
+            if (existingIssuedPolicy is not null)
+            {
+                return FirstPaymentResult.Invalid(
+                    "A Policy has already been issued for this Underwriting application.");
+            }
+
+            throw;
+        }
+
+        /*
+         * =====================================================
+         * SUCCESS
+         * =====================================================
+         */
+
+        return FirstPaymentResult.Success(
+            new FirstPaymentDto
+            {
+                PurchaseId =
+                    purchase.Id,
+
+                PaymentReference =
+                    successfulTransaction.PaymentReference,
+
+                PaymentResult =
+                    successfulTransaction.Result.ToString(),
+
+                Amount =
+                    successfulTransaction.Amount,
+
+                PaymentMethod =
+                    successfulTransaction.Method.ToString(),
+
+                AttemptedAtUtc =
+                    successfulTransaction.AttemptedAtUtc,
+
+                FailureCode =
+                    null,
+
+                FailureMessage =
+                    null,
+
+                PolicyId =
+                    policy.Id,
+
+                PolicyNumber =
+                    policy.PolicyNumber
+            });
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Services\InstallmentPaymentService.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Payments;
+using PolicyBillingService.Application.Interfaces;
+using PolicyBillingService.Application.Interfaces.Clients;
+using PolicyBillingService.Application.Interfaces.Repositories;
+using PolicyBillingService.Domain.Entities;
+using PolicyBillingService.Domain.Enums;
+
+namespace PolicyBillingService.Application.Services;
+
+public class InstallmentPaymentService
+    : IInstallmentPaymentService
+{
+    private readonly IPaymentRepository
+        _paymentRepository;
+
+    private readonly ICustomerVehicleClient
+        _customerVehicleClient;
+
+    private readonly IPaymentProcessor
+        _paymentProcessor;
+
+    public InstallmentPaymentService(
+        IPaymentRepository paymentRepository,
+        ICustomerVehicleClient customerVehicleClient,
+        IPaymentProcessor paymentProcessor)
+    {
+        _paymentRepository =
+            paymentRepository;
+
+        _customerVehicleClient =
+            customerVehicleClient;
+
+        _paymentProcessor =
+            paymentProcessor;
+    }
+
+    public async Task<InstallmentPaymentResult> PayAsync(
+        Guid installmentId,
+        string customerIdentityUserId,
+        MakePaymentRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(
+            request);
+
+        if (installmentId == Guid.Empty)
+        {
+            return InstallmentPaymentResult.Missing(
+                "Installment was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            throw new ArgumentException(
+                "Customer Identity User ID is required.",
+                nameof(customerIdentityUserId));
+        }
+
+        if (!Enum.IsDefined(
+                typeof(PaymentMethod),
+                request.Method))
+        {
+            return InstallmentPaymentResult.Invalid(
+                "Payment method is invalid.");
+        }
+
+        var customerResult =
+            await _customerVehicleClient
+                .GetCustomerProfileAsync(
+                    customerIdentityUserId);
+
+        if (customerResult.DependencyUnavailable)
+        {
+            return InstallmentPaymentResult.Unavailable(
+                customerResult.Message ??
+                "Customer information is temporarily unavailable.");
+        }
+
+        if (!customerResult.Succeeded ||
+            customerResult.Customer is null)
+        {
+            return InstallmentPaymentResult.Missing(
+                "Customer profile was not found.");
+        }
+
+        var installment =
+            await _paymentRepository
+                .GetInstallmentForUpdateAsync(
+                    installmentId);
+
+        if (installment is null)
+        {
+            return InstallmentPaymentResult.Missing(
+                "Installment was not found.");
+        }
+
+        var schedule =
+            installment.PaymentSchedule;
+
+        var policy =
+            schedule.Policy;
+
+        if (policy.CustomerProfileId !=
+            customerResult.Customer.CustomerProfileId)
+        {
+            return InstallmentPaymentResult.AccessDenied(
+                "Installment does not belong to the current Customer.");
+        }
+
+        if (policy.CancellationEffectiveAtUtc.HasValue &&
+            DateTime.UtcNow >=
+                policy.CancellationEffectiveAtUtc.Value)
+        {
+            return InstallmentPaymentResult.Invalid(
+                "Payments cannot be made for a cancelled Policy.");
+        }
+
+        var today =
+            DateOnly.FromDateTime(
+                DateTime.UtcNow);
+
+        if (today >= policy.ExpirationDate)
+        {
+            return InstallmentPaymentResult.Invalid(
+                "Payments cannot be made for an expired Policy.");
+        }
+
+        if (installment.PaidAtUtc.HasValue)
+        {
+            return InstallmentPaymentResult.Invalid(
+                "Installment has already been paid.");
+        }
+
+        if (installment.ContractStatus !=
+            InstallmentContractStatus.Payable)
+        {
+            return InstallmentPaymentResult.Invalid(
+                "Installment is no longer due.");
+        }
+
+        var installments =
+            await _paymentRepository
+                .GetScheduleInstallmentsAsync(
+                    schedule.Id);
+
+        var earliestOutstanding =
+            installments
+                .FirstOrDefault(
+                    candidate =>
+                        candidate.PaidAtUtc is null &&
+                        candidate.ContractStatus ==
+                            InstallmentContractStatus.Payable);
+
+        if (earliestOutstanding is null)
+        {
+            return InstallmentPaymentResult.Invalid(
+                "There are no outstanding installments.");
+        }
+
+        if (earliestOutstanding.Id !=
+            installment.Id)
+        {
+            return InstallmentPaymentResult.Invalid(
+                "Only the earliest outstanding installment can be paid.");
+        }
+
+        if (today < installment.DueDate)
+        {
+            return InstallmentPaymentResult.Invalid(
+                "Future installments cannot be prepaid.");
+        }
+
+        var attemptedAtUtc =
+            DateTime.UtcNow;
+
+        var paymentReference =
+            $"PAY-{Guid.NewGuid():N}"
+                .ToUpperInvariant();
+
+        var simulation =
+            _paymentProcessor.Process(
+                request.Method,
+                request.TestScenario);
+
+        if (!simulation.Succeeded)
+        {
+            var failedTransaction =
+                new PaymentTransaction
+                {
+                    Id =
+                        Guid.NewGuid(),
+
+                    PaymentReference =
+                        paymentReference,
+
+                    PurchaseId =
+                        null,
+
+                    InstallmentId =
+                        installment.Id,
+
+                    Amount =
+                        installment.Amount,
+
+                    Method =
+                        request.Method,
+
+                    Result =
+                        PaymentResult.Failed,
+
+                    AttemptedAtUtc =
+                        attemptedAtUtc,
+
+                    FailureCode =
+                        simulation.FailureCode,
+
+                    FailureMessage =
+                        simulation.FailureMessage
+                };
+
+            await _paymentRepository
+                .AddTransactionAsync(
+                    failedTransaction);
+
+            await _paymentRepository
+                .SaveChangesAsync();
+
+            return InstallmentPaymentResult.Failed(
+                new InstallmentPaymentDto
+                {
+                    InstallmentId =
+                        installment.Id,
+
+                    InstallmentNumber =
+                        installment.InstallmentNumber,
+
+                    PaymentReference =
+                        failedTransaction.PaymentReference,
+
+                    PaymentResult =
+                        failedTransaction.Result.ToString(),
+
+                    Amount =
+                        failedTransaction.Amount,
+
+                    PaymentMethod =
+                        failedTransaction.Method.ToString(),
+
+                    AttemptedAtUtc =
+                        failedTransaction.AttemptedAtUtc,
+
+                    PaidAtUtc =
+                        null,
+
+                    FailureCode =
+                        failedTransaction.FailureCode,
+
+                    FailureMessage =
+                        failedTransaction.FailureMessage
+                });
+        }
+
+        var successfulTransaction =
+            new PaymentTransaction
+            {
+                Id =
+                    Guid.NewGuid(),
+
+                PaymentReference =
+                    paymentReference,
+
+                PurchaseId =
+                    null,
+
+                InstallmentId =
+                    installment.Id,
+
+                Amount =
+                    installment.Amount,
+
+                Method =
+                    request.Method,
+
+                Result =
+                    PaymentResult.Succeeded,
+
+                AttemptedAtUtc =
+                    attemptedAtUtc,
+
+                FailureCode =
+                    null,
+
+                FailureMessage =
+                    null
+            };
+
+        try
+        {
+            await _paymentRepository.ExecuteInTransactionAsync(
+                async () =>
+                {
+                    installment.PaidAtUtc =
+                        attemptedAtUtc;
+
+                    await _paymentRepository
+                        .AddTransactionAsync(
+                            successfulTransaction);
+
+                    await _paymentRepository
+                        .SaveChangesAsync();
+                });
+        }
+        catch (Exception)
+        {
+            return InstallmentPaymentResult.Invalid(
+                "Installment payment state changed. Reload the Policy and try again.");
+        }
+
+        return InstallmentPaymentResult.Success(
+            new InstallmentPaymentDto
+            {
+                InstallmentId =
+                    installment.Id,
+
+                InstallmentNumber =
+                    installment.InstallmentNumber,
+
+                PaymentReference =
+                    successfulTransaction.PaymentReference,
+
+                PaymentResult =
+                    successfulTransaction.Result.ToString(),
+
+                Amount =
+                    successfulTransaction.Amount,
+
+                PaymentMethod =
+                    successfulTransaction.Method.ToString(),
+
+                AttemptedAtUtc =
+                    successfulTransaction.AttemptedAtUtc,
+
+                PaidAtUtc =
+                    installment.PaidAtUtc,
+
+                FailureCode =
+                    null,
+
+                FailureMessage =
+                    null
+            });
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Services\PaymentScheduleGenerator.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Purchases;
+using PolicyBillingService.Application.Interfaces;
+using PolicyBillingService.Domain.Enums;
+
+namespace PolicyBillingService.Application.Services;
+
+public class PaymentScheduleGenerator
+    : IPaymentScheduleGenerator
+{
+    public PaymentSchedulePreviewDto Generate(
+        decimal annualPremium,
+        DateOnly effectiveDate,
+        PaymentFrequency frequency)
+    {
+        if (annualPremium <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(annualPremium),
+                "Annual Premium must be greater than zero.");
+        }
+
+        if (!Enum.IsDefined(
+                typeof(PaymentFrequency),
+                frequency))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(frequency),
+                "Payment Frequency is invalid.");
+        }
+
+        var installmentCount =
+            GetInstallmentCount(
+                frequency);
+
+        var monthInterval =
+            GetMonthInterval(
+                frequency);
+
+        var normalInstallmentAmount =
+            decimal.Round(
+                annualPremium / installmentCount,
+                2,
+                MidpointRounding.AwayFromZero);
+
+        var installments =
+            new List<ScheduleInstallmentDto>();
+
+        decimal allocatedAmount = 0m;
+
+        for (var index = 0;
+             index < installmentCount;
+             index++)
+        {
+            var installmentNumber =
+                index + 1;
+
+            var isFinalInstallment =
+                installmentNumber ==
+                installmentCount;
+
+            var amount =
+                isFinalInstallment
+                    ? annualPremium -
+                      allocatedAmount
+                    : normalInstallmentAmount;
+
+            var dueDate =
+                installmentNumber == 1
+                    ? effectiveDate
+                    : effectiveDate.AddMonths(
+                        monthInterval * index);
+
+            installments.Add(
+                new ScheduleInstallmentDto
+                {
+                    InstallmentNumber =
+                        installmentNumber,
+
+                    Amount =
+                        amount,
+
+                    DueDate =
+                        dueDate
+                });
+
+            allocatedAmount +=
+                amount;
+        }
+
+        if (installments.Sum(
+                installment =>
+                    installment.Amount) !=
+            annualPremium)
+        {
+            throw new InvalidOperationException(
+                "Generated payment schedule does not equal the Annual Premium.");
+        }
+
+        return new PaymentSchedulePreviewDto
+        {
+            AnnualPremium =
+                annualPremium,
+
+            PaymentFrequency =
+                frequency.ToString(),
+
+            InstallmentCount =
+                installmentCount,
+
+            AmountDueNow =
+                installments[0].Amount,
+
+            Installments =
+                installments
+        };
+    }
+
+    private static int GetInstallmentCount(
+        PaymentFrequency frequency)
+    {
+        return frequency switch
+        {
+            PaymentFrequency.Annual =>
+                1,
+
+            PaymentFrequency.SemiAnnual =>
+                2,
+
+            PaymentFrequency.Quarterly =>
+                4,
+
+            PaymentFrequency.Monthly =>
+                12,
+
+            _ =>
+                throw new ArgumentOutOfRangeException(
+                    nameof(frequency))
+        };
+    }
+
+    private static int GetMonthInterval(
+        PaymentFrequency frequency)
+    {
+        return frequency switch
+        {
+            PaymentFrequency.Annual =>
+                12,
+
+            PaymentFrequency.SemiAnnual =>
+                6,
+
+            PaymentFrequency.Quarterly =>
+                3,
+
+            PaymentFrequency.Monthly =>
+                1,
+
+            _ =>
+                throw new ArgumentOutOfRangeException(
+                    nameof(frequency))
+        };
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Services\PolicyDocumentService.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Policies;
+using PolicyBillingService.Application.Interfaces;
+using PolicyBillingService.Application.Interfaces.Clients;
+using PolicyBillingService.Application.Interfaces.Documents;
+using PolicyBillingService.Application.Interfaces.Repositories;
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Application.Services;
+
+public class PolicyDocumentService
+    : IPolicyDocumentService
+{
+    private readonly IPolicyRepository
+        _policyRepository;
+
+    private readonly IPolicyDocumentRepository
+        _documentRepository;
+
+    private readonly ICustomerVehicleClient
+        _customerVehicleClient;
+
+    private readonly IPolicyPdfGenerator
+        _pdfGenerator;
+
+    private readonly IPolicyDocumentStorage
+        _documentStorage;
+
+    public PolicyDocumentService(
+        IPolicyRepository policyRepository,
+        IPolicyDocumentRepository documentRepository,
+        ICustomerVehicleClient customerVehicleClient,
+        IPolicyPdfGenerator pdfGenerator,
+        IPolicyDocumentStorage documentStorage)
+    {
+        _policyRepository =
+            policyRepository;
+
+        _documentRepository =
+            documentRepository;
+
+        _customerVehicleClient =
+            customerVehicleClient;
+
+        _pdfGenerator =
+            pdfGenerator;
+
+        _documentStorage =
+            documentStorage;
+    }
+
+    public async Task<GeneratePolicyDocumentResult>
+        GenerateMissingAsync(
+            Guid policyId)
+    {
+        if (policyId == Guid.Empty)
+        {
+            return GeneratePolicyDocumentResult.Missing(
+                "Policy was not found.");
+        }
+
+        var existingDocument =
+            await _documentRepository
+                .GetByPolicyIdAsync(
+                    policyId);
+
+        if (existingDocument is not null)
+        {
+            return GeneratePolicyDocumentResult.Duplicate(
+                "Policy document has already been generated.");
+        }
+
+        var policy =
+            await _policyRepository
+                .GetByIdAsync(
+                    policyId);
+
+        if (policy is null)
+        {
+            return GeneratePolicyDocumentResult.Missing(
+                "Policy was not found.");
+        }
+
+        var pdf =
+            _pdfGenerator.Generate(
+                policy);
+
+        var fileName =
+            $"{policy.PolicyNumber}.pdf";
+
+        var storedFileName =
+            await _documentStorage.SaveAsync(
+                fileName,
+                pdf);
+
+        var document =
+            new PolicyDocument
+            {
+                Id =
+                    Guid.NewGuid(),
+
+                PolicyId =
+                    policy.Id,
+
+                FileName =
+                    fileName,
+
+                StoredFileName =
+                    storedFileName,
+
+                ContentType =
+                    "application/pdf",
+
+                SizeBytes =
+                    pdf.LongLength,
+
+                GeneratedAtUtc =
+                    DateTime.UtcNow
+            };
+
+        try
+        {
+            await _documentRepository
+                .AddAsync(
+                    document);
+
+            await _documentRepository
+                .SaveChangesAsync();
+        }
+        catch
+        {
+            throw;
+        }
+
+        return GeneratePolicyDocumentResult.Success(
+            document.Id);
+    }
+
+    public async Task<PolicyDocumentResult> GetAsync(
+        Guid policyId,
+        string customerIdentityUserId)
+    {
+        if (policyId == Guid.Empty)
+        {
+            return PolicyDocumentResult.Missing(
+                "Policy was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            throw new ArgumentException(
+                "Customer Identity User ID is required.",
+                nameof(customerIdentityUserId));
+        }
+
+        var customerResult =
+            await _customerVehicleClient
+                .GetCustomerProfileAsync(
+                    customerIdentityUserId);
+
+        if (customerResult.DependencyUnavailable)
+        {
+            return PolicyDocumentResult.Unavailable(
+                customerResult.Message ??
+                "Customer information is temporarily unavailable.");
+        }
+
+        if (!customerResult.Succeeded ||
+            customerResult.Customer is null)
+        {
+            return PolicyDocumentResult.Missing(
+                "Customer profile was not found.");
+        }
+
+        var policy =
+            await _policyRepository
+                .GetByIdAsync(
+                    policyId);
+
+        if (policy is null)
+        {
+            return PolicyDocumentResult.Missing(
+                "Policy was not found.");
+        }
+
+        if (policy.CustomerProfileId !=
+            customerResult.Customer.CustomerProfileId)
+        {
+            return PolicyDocumentResult.AccessDenied(
+                "Policy does not belong to the current Customer.");
+        }
+
+        var document =
+            await _documentRepository
+                .GetByPolicyIdAsync(
+                    policy.Id);
+
+        if (document is null)
+        {
+            return PolicyDocumentResult.MissingDocument(
+                "Policy document has not been generated.");
+        }
+
+        var content =
+            await _documentStorage.ReadAsync(
+                document.StoredFileName);
+
+        if (content is null)
+        {
+            return PolicyDocumentResult.MissingDocument(
+                "Policy document file is unavailable.");
+        }
+
+        return PolicyDocumentResult.Success(
+            document.FileName,
+            document.ContentType,
+            content);
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Services\PolicyService.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Policies;
+using PolicyBillingService.Application.Interfaces;
+using PolicyBillingService.Application.Interfaces.Clients;
+using PolicyBillingService.Application.Interfaces.Repositories;
+using PolicyBillingService.Domain.Entities;
+using PolicyBillingService.Domain.Enums;
+
+namespace PolicyBillingService.Application.Services;
+
+public class PolicyService : IPolicyService
+{
+    private readonly IPolicyRepository
+        _policyRepository;
+
+    private readonly ICustomerVehicleClient
+        _customerVehicleClient;
+
+    public PolicyService(
+        IPolicyRepository policyRepository,
+        ICustomerVehicleClient customerVehicleClient)
+    {
+        _policyRepository =
+            policyRepository;
+
+        _customerVehicleClient =
+            customerVehicleClient;
+    }
+
+    public async Task<PolicyListResult>
+        GetMyPoliciesAsync(
+            string customerIdentityUserId)
+    {
+        var customerResult =
+            await _customerVehicleClient
+                .GetCustomerProfileAsync(
+                    customerIdentityUserId);
+
+        if (customerResult.DependencyUnavailable)
+        {
+            return PolicyListResult.Unavailable(
+                customerResult.Message ??
+                "Customer information is temporarily unavailable.");
+        }
+
+        if (!customerResult.Succeeded ||
+            customerResult.Customer is null)
+        {
+            return PolicyListResult.MissingCustomer(
+                "Customer profile was not found.");
+        }
+
+        var policies =
+            await _policyRepository
+                .GetByCustomerProfileIdAsync(
+                    customerResult.Customer
+                        .CustomerProfileId);
+
+        var result =
+            policies
+                .Select(
+                    policy =>
+                        new PolicyListItemDto
+                        {
+                            PolicyId =
+                                policy.Id,
+
+                            PolicyNumber =
+                                policy.PolicyNumber,
+
+                            VehicleId =
+                                policy.VehicleId,
+
+                            VehicleDescription =
+                                $"{policy.Snapshot.VehicleMake} {policy.Snapshot.VehicleModel}",
+
+                            PlanName =
+                                policy.Snapshot.PlanName,
+
+                            AnnualPremium =
+                                policy.Snapshot.AnnualPremium,
+
+                            EffectiveDate =
+                                policy.EffectiveDate,
+
+                            ExpirationDate =
+                                policy.ExpirationDate,
+
+                            EffectiveStatus =
+                                GetEffectivePolicyStatus(
+                                    policy),
+
+                            IssuedAtUtc =
+                                policy.IssuedAtUtc,
+
+                            CancellationEffectiveAtUtc =
+                                policy.CancellationEffectiveAtUtc
+                        })
+                .ToList();
+
+        return PolicyListResult.Success(
+            result);
+    }
+
+    public async Task<PolicyOperationResult> GetPolicyAsync(
+    Guid policyId,
+    string customerIdentityUserId)
+    {
+        if (policyId == Guid.Empty)
+        {
+            return PolicyOperationResult.Missing(
+                "Policy was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            throw new ArgumentException(
+                "Customer Identity User ID is required.",
+                nameof(customerIdentityUserId));
+        }
+
+        var customerResult =
+            await _customerVehicleClient
+                .GetCustomerProfileAsync(
+                    customerIdentityUserId);
+
+        if (customerResult.DependencyUnavailable)
+        {
+            return PolicyOperationResult.Unavailable(
+                customerResult.Message ??
+                "Customer information is temporarily unavailable.");
+        }
+
+        if (customerResult.NotFound ||
+            !customerResult.Succeeded ||
+            customerResult.Customer is null)
+        {
+            return PolicyOperationResult.Missing(
+                "Customer profile was not found.");
+        }
+
+        var policy =
+            await _policyRepository
+                .GetByIdAsync(
+                    policyId);
+
+        if (policy is null)
+        {
+            return PolicyOperationResult.Missing(
+                "Policy was not found.");
+        }
+
+        if (policy.CustomerProfileId !=
+            customerResult.Customer.CustomerProfileId)
+        {
+            return PolicyOperationResult.AccessDenied(
+                "Policy does not belong to the current Customer.");
+        }
+
+        if (policy.Snapshot is null)
+        {
+            throw new InvalidOperationException(
+                "Policy does not contain its immutable snapshot.");
+        }
+
+        var snapshot =
+            policy.Snapshot;
+
+        var policyDto =
+            new PolicyDetailDto
+            {
+                PolicyId =
+                    policy.Id,
+
+                PolicyNumber =
+                    policy.PolicyNumber,
+
+                UnderwritingApplicationId =
+                    policy.OriginatingUnderwritingApplicationId,
+
+                CustomerProfileId =
+                    policy.CustomerProfileId,
+
+                VehicleId =
+                    policy.VehicleId,
+                PredecessorPolicyId =
+    policy.PredecessorPolicyId,
+
+                SuccessorPolicyId =
+    policy.SuccessorPolicyId,
+
+                EffectiveStatus =
+                    GetEffectivePolicyStatus(
+                        policy),
+
+                IssuedAtUtc =
+                    policy.IssuedAtUtc,
+
+                EffectiveDate =
+                    policy.EffectiveDate,
+
+                ExpirationDate =
+                    policy.ExpirationDate,
+
+                CancellationEffectiveAtUtc =
+                    policy.CancellationEffectiveAtUtc,
+
+                PlanName =
+                    snapshot.PlanName,
+
+                AnnualPremium =
+                    snapshot.AnnualPremium,
+
+                PaymentFrequency =
+                    snapshot.PaymentFrequency
+                        .ToString(),
+
+                VehicleVin =
+                    snapshot.VehicleVin,
+
+                VehicleMake =
+                    snapshot.VehicleMake,
+
+                VehicleModel =
+                    snapshot.VehicleModel,
+
+                VehicleManufacturingYear =
+                    snapshot.VehicleManufacturingYear,
+
+                VehicleType =
+                    snapshot.VehicleType,
+
+                FuelType =
+                    snapshot.FuelType,
+
+                VehicleValue =
+                    snapshot.VehicleValue,
+
+                DriverId =
+                    snapshot.DriverId,
+
+                DriverAge =
+                    snapshot.DriverAge,
+
+                DrivingExperienceYears =
+                    snapshot.DrivingExperienceYears,
+
+                LicenceValid =
+                    snapshot.LicenceValid,
+
+                HasDocument =
+                    policy.Document is not null,
+
+                Coverages =
+                    snapshot.Coverages
+                        .Select(
+                            coverage =>
+                                new PolicyCoverageDto
+                                {
+                                    CoverageName =
+                                        coverage.CoverageName,
+
+                                    ResolvedLimitAmount =
+                                        coverage.ResolvedLimitAmount,
+
+                                    DeductibleAmount =
+                                        coverage.DeductibleAmount
+                                })
+                        .ToList(),
+
+                AddOns =
+                    snapshot.AddOns
+                        .Select(
+                            addOn =>
+                                new PolicyAddOnDto
+                                {
+                                    AddOnName =
+                                        addOn.AddOnName,
+
+                                    AnnualPrice =
+                                        addOn.AnnualPrice
+                                })
+                        .ToList()
+            };
+
+        return PolicyOperationResult.Success(
+            policyDto);
+    }
+    private static string GetEffectivePolicyStatus(
+    Policy policy)
+    {
+        var nowUtc =
+            DateTime.UtcNow;
+
+        if (policy.CancellationEffectiveAtUtc.HasValue &&
+            nowUtc >=
+                policy.CancellationEffectiveAtUtc.Value)
+        {
+            return "Cancelled";
+        }
+
+        var today =
+            DateOnly.FromDateTime(
+                nowUtc);
+
+        if (today < policy.EffectiveDate)
+        {
+            return "Issued";
+        }
+
+        if (today < policy.ExpirationDate)
+        {
+            return "Active";
+        }
+
+        return "Expired";
+    }
+    public async Task<PolicyPaymentsResult> GetPaymentsAsync(
+    Guid policyId,
+    string customerIdentityUserId)
+    {
+        if (policyId == Guid.Empty)
+        {
+            return PolicyPaymentsResult.Missing(
+                "Policy was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            throw new ArgumentException(
+                "Customer Identity User ID is required.",
+                nameof(customerIdentityUserId));
+        }
+
+        var customerResult =
+            await _customerVehicleClient
+                .GetCustomerProfileAsync(
+                    customerIdentityUserId);
+
+        if (customerResult.DependencyUnavailable)
+        {
+            return PolicyPaymentsResult.Unavailable(
+                customerResult.Message ??
+                "Customer information is temporarily unavailable.");
+        }
+
+        if (customerResult.NotFound ||
+            !customerResult.Succeeded ||
+            customerResult.Customer is null)
+        {
+            return PolicyPaymentsResult.Missing(
+                "Customer profile was not found.");
+        }
+
+        var policy =
+            await _policyRepository
+                .GetByIdAsync(
+                    policyId);
+
+        if (policy is null)
+        {
+            return PolicyPaymentsResult.Missing(
+                "Policy was not found.");
+        }
+
+        if (policy.CustomerProfileId !=
+            customerResult.Customer.CustomerProfileId)
+        {
+            return PolicyPaymentsResult.AccessDenied(
+                "Policy does not belong to the current Customer.");
+        }
+
+        if (policy.PaymentSchedule is null)
+        {
+            throw new InvalidOperationException(
+                "Policy does not contain a payment schedule.");
+        }
+
+        var installments =
+            policy.PaymentSchedule
+                .Installments
+                .OrderBy(
+                    installment =>
+                        installment.InstallmentNumber)
+                .ToList();
+
+        var earliestOutstandingInstallment =
+            installments
+                .FirstOrDefault(
+                    installment =>
+                        installment.PaidAtUtc is null &&
+                        installment.ContractStatus ==
+                            InstallmentContractStatus.Payable);
+
+        var installmentDtos =
+            new List<PolicyInstallmentDto>();
+
+        foreach (var installment in installments)
+        {
+            string status;
+
+            if (installment.PaidAtUtc.HasValue)
+            {
+                status =
+                    "Paid";
+            }
+            else if (installment.ContractStatus ==
+                     InstallmentContractStatus.NoLongerDue)
+            {
+                status =
+                    "NoLongerDue";
+            }
+            else
+            {
+                var today =
+                    DateOnly.FromDateTime(
+                        DateTime.UtcNow);
+
+                if (today > installment.DueDate)
+                {
+                    status =
+                        "Overdue";
+                }
+                else if (today == installment.DueDate)
+                {
+                    status =
+                        "Due";
+                }
+                else
+                {
+                    status =
+                        "Upcoming";
+                }
+            }
+
+            var canPayNow =
+                false;
+
+            if (earliestOutstandingInstallment is not null &&
+                earliestOutstandingInstallment.Id ==
+                    installment.Id &&
+                installment.PaidAtUtc is null &&
+                installment.ContractStatus ==
+                    InstallmentContractStatus.Payable)
+            {
+                var today =
+                    DateOnly.FromDateTime(
+                        DateTime.UtcNow);
+
+                if (today >= installment.DueDate)
+                {
+                    canPayNow =
+                        true;
+                }
+            }
+
+            installmentDtos.Add(
+                new PolicyInstallmentDto
+                {
+                    InstallmentId =
+                        installment.Id,
+
+                    InstallmentNumber =
+                        installment.InstallmentNumber,
+
+                    Amount =
+                        installment.Amount,
+
+                    DueDate =
+                        installment.DueDate,
+
+                    Status =
+                        status,
+
+                    PaidAtUtc =
+                        installment.PaidAtUtc,
+
+                    CanPayNow =
+                        canPayNow
+                });
+        }
+
+        var totalPaid =
+            installments
+                .Where(
+                    installment =>
+                        installment.PaidAtUtc.HasValue)
+                .Sum(
+                    installment =>
+                        installment.Amount);
+
+        var remainingAmount =
+            installments
+                .Where(
+                    installment =>
+                        installment.PaidAtUtc is null &&
+                        installment.ContractStatus ==
+                            InstallmentContractStatus.Payable)
+                .Sum(
+                    installment =>
+                        installment.Amount);
+
+        var payments =
+            new PolicyPaymentsDto
+            {
+                PolicyId =
+                    policy.Id,
+
+                PolicyNumber =
+                    policy.PolicyNumber,
+
+                AnnualPremium =
+                    policy.PaymentSchedule.AnnualPremium,
+
+                PaymentFrequency =
+                    policy.PaymentSchedule
+                        .Frequency
+                        .ToString(),
+
+                TotalPaid =
+                    totalPaid,
+
+                RemainingAmount =
+                    remainingAmount,
+
+                Installments =
+                    installmentDtos
+            };
+
+        return PolicyPaymentsResult.Success(
+            payments);
+    }
+
+
+    private static string GetInstallmentStatus(
+    Installment installment)
+    {
+        if (installment.PaidAtUtc.HasValue)
+        {
+            return "Paid";
+        }
+
+        if (installment.ContractStatus ==
+            InstallmentContractStatus.NoLongerDue)
+        {
+            return "NoLongerDue";
+        }
+
+        var today =
+            DateOnly.FromDateTime(
+                DateTime.UtcNow);
+
+        if (today > installment.DueDate)
+        {
+            return "Overdue";
+        }
+
+        if (today == installment.DueDate)
+        {
+            return "Due";
+        }
+
+        return "Upcoming";
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Services\PolicyServicingService.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Policies;
+using PolicyBillingService.Application.Interfaces;
+using PolicyBillingService.Application.Interfaces.Clients;
+using PolicyBillingService.Application.Interfaces.Repositories;
+using PolicyBillingService.Domain.Entities;
+using PolicyBillingService.Domain.Enums;
+
+namespace PolicyBillingService.Application.Services;
+
+public class PolicyServicingService
+    : IPolicyServicingService
+{
+    private readonly IPolicyServicingRepository
+        _servicingRepository;
+
+    private readonly ICustomerVehicleClient
+        _customerVehicleClient;
+
+    public PolicyServicingService(
+        IPolicyServicingRepository servicingRepository,
+        ICustomerVehicleClient customerVehicleClient)
+    {
+        _servicingRepository =
+            servicingRepository;
+
+        _customerVehicleClient =
+            customerVehicleClient;
+    }
+
+    public async Task<CancelPolicyResult> CancelAsync(
+        Guid policyId,
+        string customerIdentityUserId)
+    {
+        if (policyId == Guid.Empty)
+        {
+            return CancelPolicyResult.Missing(
+                "Policy was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            throw new ArgumentException(
+                "Customer Identity User ID is required.",
+                nameof(customerIdentityUserId));
+        }
+
+        var customerResult =
+            await _customerVehicleClient
+                .GetCustomerProfileAsync(
+                    customerIdentityUserId);
+
+        if (customerResult.DependencyUnavailable)
+        {
+            return CancelPolicyResult.Unavailable(
+                customerResult.Message ??
+                "Customer information is temporarily unavailable.");
+        }
+
+        if (!customerResult.Succeeded ||
+            customerResult.Customer is null)
+        {
+            return CancelPolicyResult.Missing(
+                "Customer profile was not found.");
+        }
+
+        var policy =
+            await _servicingRepository
+                .GetForUpdateAsync(
+                    policyId);
+
+        if (policy is null)
+        {
+            return CancelPolicyResult.Missing(
+                "Policy was not found.");
+        }
+
+        if (policy.CustomerProfileId !=
+            customerResult.Customer.CustomerProfileId)
+        {
+            return CancelPolicyResult.AccessDenied(
+                "Policy does not belong to the current Customer.");
+        }
+
+        if (policy.CancellationEffectiveAtUtc.HasValue)
+        {
+            return CancelPolicyResult.Invalid(
+                "Policy has already been cancelled.");
+        }
+
+        var nowUtc =
+            DateTime.UtcNow;
+
+        var today =
+            DateOnly.FromDateTime(
+                nowUtc);
+
+        if (today >= policy.ExpirationDate)
+        {
+            return CancelPolicyResult.Invalid(
+                "An expired Policy cannot be cancelled.");
+        }
+
+        var cancellationEffectiveAtUtc =
+            nowUtc;
+
+        policy.CancellationEffectiveAtUtc =
+            cancellationEffectiveAtUtc;
+
+        var noLongerDueCount =
+            0;
+
+        foreach (var installment
+                 in policy.PaymentSchedule.Installments)
+        {
+            if (installment.PaidAtUtc.HasValue)
+            {
+                continue;
+            }
+
+            if (installment.ContractStatus !=
+                InstallmentContractStatus.Payable)
+            {
+                continue;
+            }
+
+            installment.ContractStatus =
+                InstallmentContractStatus.NoLongerDue;
+
+            noLongerDueCount++;
+        }
+
+        var history =
+            new PolicyStatusHistory
+            {
+                Id =
+                    Guid.NewGuid(),
+
+                PolicyId =
+                    policy.Id,
+
+                Action =
+                    PolicyHistoryAction.Cancelled,
+
+                OccurredAtUtc =
+                    cancellationEffectiveAtUtc,
+
+                PerformedByIdentityUserId =
+                    customerIdentityUserId
+            };
+
+        await _servicingRepository
+            .ExecuteInTransactionAsync(
+                async () =>
+                {
+                    await _servicingRepository
+                        .AddStatusHistoryAsync(
+                            history);
+
+                    await _servicingRepository
+                        .SaveChangesAsync();
+                });
+
+        return CancelPolicyResult.Success(
+            new CancelPolicyDto
+            {
+                PolicyId =
+                    policy.Id,
+
+                PolicyNumber =
+                    policy.PolicyNumber,
+
+                EffectiveStatus =
+                    "Cancelled",
+
+                CancellationEffectiveAtUtc =
+                    cancellationEffectiveAtUtc,
+
+                NoLongerDueInstallmentCount =
+                    noLongerDueCount
+            });
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Services\PurchaseService.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Purchases;
+using PolicyBillingService.Application.Dtos.Underwriting;
+using PolicyBillingService.Application.Interfaces;
+using PolicyBillingService.Application.Interfaces.Clients;
+using PolicyBillingService.Application.Interfaces.Repositories;
+using PolicyBillingService.Domain.Entities;
+using PolicyBillingService.Domain.Enums;
+
+namespace PolicyBillingService.Application.Services;
+
+public class PurchaseService : IPurchaseService
+{
+    private readonly IUnderwritingClient
+        _underwritingClient;
+
+    private readonly ICustomerVehicleClient
+        _customerVehicleClient;
+
+    private readonly IPolicyRepository
+        _policyRepository;
+
+    private readonly IPaymentScheduleGenerator
+        _scheduleGenerator;
+
+    private readonly IPurchaseRepository
+        _purchaseRepository;
+
+    public PurchaseService(
+        IUnderwritingClient underwritingClient,
+        ICustomerVehicleClient customerVehicleClient,
+        IPolicyRepository policyRepository,
+        IPurchaseRepository purchaseRepository,
+        IPaymentScheduleGenerator scheduleGenerator)
+    {
+        _underwritingClient =
+            underwritingClient;
+
+        _customerVehicleClient =
+            customerVehicleClient;
+
+        _policyRepository =
+            policyRepository;
+
+        _purchaseRepository =
+            purchaseRepository;
+
+        _scheduleGenerator =
+            scheduleGenerator;
+    }
+
+    public async Task<ConfigurePurchaseResult> ConfigureAsync(
+        Guid underwritingApplicationId,
+        string customerIdentityUserId,
+        ConfigurePurchaseRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(
+            request);
+
+        if (underwritingApplicationId == Guid.Empty)
+        {
+            return ConfigurePurchaseResult.Missing(
+                "Underwriting application was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            throw new ArgumentException(
+                "Customer Identity User ID is required.",
+                nameof(customerIdentityUserId));
+        }
+
+        if (!Enum.IsDefined(
+                typeof(PaymentFrequency),
+                request.PaymentFrequency))
+        {
+            return ConfigurePurchaseResult.Invalid(
+                "Payment Frequency is invalid.");
+        }
+
+        /*
+         * =====================================================
+         * CUSTOMER
+         * =====================================================
+         */
+
+        var customerResult =
+            await _customerVehicleClient
+                .GetCustomerProfileAsync(
+                    customerIdentityUserId);
+
+        if (customerResult.DependencyUnavailable)
+        {
+            return ConfigurePurchaseResult.Unavailable(
+                customerResult.Message ??
+                "Customer information is temporarily unavailable.");
+        }
+
+        if (!customerResult.Succeeded ||
+            customerResult.Customer is null)
+        {
+            return ConfigurePurchaseResult.Missing(
+                "Customer profile was not found.");
+        }
+
+        /*
+         * =====================================================
+         * APPROVED UNDERWRITING OFFER
+         * =====================================================
+         */
+
+        var offerResult =
+            await _underwritingClient
+                .GetApprovedOfferAsync(
+                    underwritingApplicationId);
+
+        if (offerResult.DependencyUnavailable)
+        {
+            return ConfigurePurchaseResult.Unavailable(
+                offerResult.Message ??
+                "Underwriting information is temporarily unavailable.");
+        }
+
+        if (offerResult.NotFound)
+        {
+            return ConfigurePurchaseResult.Missing(
+                offerResult.Message ??
+                "Underwriting application was not found.");
+        }
+
+        if (!offerResult.Succeeded ||
+            offerResult.Offer is null)
+        {
+            return ConfigurePurchaseResult.Invalid(
+                offerResult.Message ??
+                "Underwriting offer is not available for purchase.");
+        }
+
+        var offer =
+            offerResult.Offer;
+
+        if (offer.CustomerProfileId !=
+            customerResult.Customer.CustomerProfileId)
+        {
+            return ConfigurePurchaseResult.AccessDenied(
+                "Underwriting offer does not belong to the current Customer.");
+        }
+
+        /*
+         * =====================================================
+         * VALIDATE RENEWAL CONTEXT
+         * =====================================================
+         */
+
+        var renewalValidationMessage =
+            ValidateRenewalContext(
+                offer);
+
+        if (renewalValidationMessage is not null)
+        {
+            return ConfigurePurchaseResult.Invalid(
+                renewalValidationMessage);
+        }
+
+        var isRenewal =
+            IsRenewalOffer(
+                offer);
+
+        DateOnly effectiveDate;
+
+        if (isRenewal)
+        {
+            /*
+             * For a Renewal, PolicyBilling controls the date.
+             *
+             * The successor Policy must begin exactly when
+             * the predecessor Policy expires.
+             */
+
+            effectiveDate =
+                offer.RenewalEffectiveDate!.Value;
+
+            if (request.EffectiveDate !=
+                effectiveDate)
+            {
+                return ConfigurePurchaseResult.Invalid(
+                    $"Renewal Effective Date must be {effectiveDate:yyyy-MM-dd}.");
+            }
+
+            var sourcePolicyValidation =
+                await ValidateSourcePolicyAsync(
+                    offer);
+
+            if (sourcePolicyValidation is not null)
+            {
+                return ConfigurePurchaseResult.Invalid(
+                    sourcePolicyValidation);
+            }
+        }
+        else
+        {
+            /*
+             * Normal new-business purchase.
+             */
+
+            var today =
+                DateOnly.FromDateTime(
+                    DateTime.UtcNow);
+
+            var latestEffectiveDate =
+                today.AddDays(30);
+
+            if (request.EffectiveDate < today ||
+                request.EffectiveDate >
+                    latestEffectiveDate)
+            {
+                return ConfigurePurchaseResult.Invalid(
+                    "Effective Date must be between today and 30 calendar days from today.");
+            }
+
+            effectiveDate =
+                request.EffectiveDate;
+        }
+
+        /*
+         * =====================================================
+         * POLICY TERM
+         * =====================================================
+         */
+
+        var expirationDate =
+            effectiveDate.AddYears(1);
+
+        /*
+         * =====================================================
+         * OVERLAP VALIDATION
+         * =====================================================
+         *
+         * HasOverlappingPolicyAsync uses the half-open rule:
+         *
+         * existing.EffectiveDate < newExpirationDate
+         * &&
+         * newEffectiveDate < existing.ExpirationDate
+         *
+         * Therefore:
+         *
+         * old expires 2027-10-10
+         * new starts  2027-10-10
+         *
+         * is NOT considered an overlap.
+         */
+
+        var hasOverlap =
+            await _policyRepository
+                .HasOverlappingPolicyAsync(
+                    offer.VehicleId,
+                    effectiveDate,
+                    expirationDate);
+
+        if (hasOverlap)
+        {
+            return ConfigurePurchaseResult.Overlap(
+                "The selected Effective Date overlaps an existing Policy term for this Vehicle.");
+        }
+
+        /*
+         * =====================================================
+         * PAYMENT SCHEDULE PREVIEW
+         * =====================================================
+         */
+
+        var schedule =
+            _scheduleGenerator.Generate(
+                offer.AnnualPremium,
+                effectiveDate,
+                request.PaymentFrequency);
+
+        return ConfigurePurchaseResult.Success(
+            new ConfigurePurchaseDto
+            {
+                UnderwritingApplicationId =
+                    offer.UnderwritingApplicationId,
+
+                CustomerProfileId =
+                    offer.CustomerProfileId,
+
+                VehicleId =
+                    offer.VehicleId,
+
+                PlanName =
+                    offer.PlanName,
+
+                AnnualPremium =
+                    offer.AnnualPremium,
+
+                EffectiveDate =
+                    effectiveDate,
+
+                ExpirationDate =
+                    expirationDate,
+
+                OfferValidUntilUtc =
+                    offer.OfferValidUntilUtc,
+
+                PaymentSchedule =
+                    schedule
+            });
+    }
+
+    public async Task<AcceptPurchaseResult> AcceptAsync(
+        Guid underwritingApplicationId,
+        string customerIdentityUserId,
+        AcceptPurchaseRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(
+            request);
+
+        if (underwritingApplicationId == Guid.Empty)
+        {
+            return AcceptPurchaseResult.Missing(
+                "Underwriting application was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            throw new ArgumentException(
+                "Customer Identity User ID is required.",
+                nameof(customerIdentityUserId));
+        }
+
+        if (!Enum.IsDefined(
+                typeof(PaymentFrequency),
+                request.PaymentFrequency))
+        {
+            return AcceptPurchaseResult.Invalid(
+                "Payment Frequency is invalid.");
+        }
+
+        /*
+         * =====================================================
+         * IDEMPOTENCY
+         * =====================================================
+         */
+
+        var existingPurchase =
+            await _purchaseRepository
+                .GetByUnderwritingApplicationIdAsync(
+                    underwritingApplicationId);
+
+        if (existingPurchase is not null)
+        {
+            return AcceptPurchaseResult.Duplicate(
+                "This Underwriting offer has already been accepted.");
+        }
+
+        /*
+         * =====================================================
+         * CUSTOMER
+         * =====================================================
+         */
+
+        var customerResult =
+            await _customerVehicleClient
+                .GetCustomerProfileAsync(
+                    customerIdentityUserId);
+
+        if (customerResult.DependencyUnavailable)
+        {
+            return AcceptPurchaseResult.Unavailable(
+                customerResult.Message ??
+                "Customer information is temporarily unavailable.");
+        }
+
+        if (!customerResult.Succeeded ||
+            customerResult.Customer is null)
+        {
+            return AcceptPurchaseResult.Missing(
+                "Customer profile was not found.");
+        }
+
+        /*
+         * =====================================================
+         * APPROVED OFFER
+         * =====================================================
+         */
+
+        var offerResult =
+            await _underwritingClient
+                .GetApprovedOfferAsync(
+                    underwritingApplicationId);
+
+        if (offerResult.DependencyUnavailable)
+        {
+            return AcceptPurchaseResult.Unavailable(
+                offerResult.Message ??
+                "Underwriting information is temporarily unavailable.");
+        }
+
+        if (offerResult.NotFound)
+        {
+            return AcceptPurchaseResult.Missing(
+                offerResult.Message ??
+                "Underwriting application was not found.");
+        }
+
+        if (!offerResult.Succeeded ||
+            offerResult.Offer is null)
+        {
+            return AcceptPurchaseResult.Invalid(
+                offerResult.Message ??
+                "Underwriting offer is not available for purchase.");
+        }
+
+        var offer =
+            offerResult.Offer;
+
+        if (offer.CustomerProfileId !=
+            customerResult.Customer.CustomerProfileId)
+        {
+            return AcceptPurchaseResult.AccessDenied(
+                "Underwriting offer does not belong to the current Customer.");
+        }
+
+        /*
+         * =====================================================
+         * VALIDATE RENEWAL CONTEXT
+         * =====================================================
+         */
+
+        var renewalValidationMessage =
+            ValidateRenewalContext(
+                offer);
+
+        if (renewalValidationMessage is not null)
+        {
+            return AcceptPurchaseResult.Invalid(
+                renewalValidationMessage);
+        }
+
+        var isRenewal =
+            IsRenewalOffer(
+                offer);
+
+        DateOnly effectiveDate;
+
+        if (isRenewal)
+        {
+            effectiveDate =
+                offer.RenewalEffectiveDate!.Value;
+
+            /*
+             * Never trust a caller-supplied effective date
+             * for a Renewal.
+             *
+             * It must match the date carried through the
+             * Quote -> Underwriting lineage.
+             */
+
+            if (request.EffectiveDate !=
+                effectiveDate)
+            {
+                return AcceptPurchaseResult.Invalid(
+                    $"Renewal Effective Date must be {effectiveDate:yyyy-MM-dd}.");
+            }
+
+            var sourcePolicyValidation =
+                await ValidateSourcePolicyAsync(
+                    offer);
+
+            if (sourcePolicyValidation is not null)
+            {
+                return AcceptPurchaseResult.Invalid(
+                    sourcePolicyValidation);
+            }
+        }
+        else
+        {
+            var today =
+                DateOnly.FromDateTime(
+                    DateTime.UtcNow);
+
+            var latestEffectiveDate =
+                today.AddDays(30);
+
+            if (request.EffectiveDate < today ||
+                request.EffectiveDate >
+                    latestEffectiveDate)
+            {
+                return AcceptPurchaseResult.Invalid(
+                    "Effective Date must be between today and 30 calendar days from today.");
+            }
+
+            effectiveDate =
+                request.EffectiveDate;
+        }
+
+        /*
+         * =====================================================
+         * POLICY TERM
+         * =====================================================
+         */
+
+        var expirationDate =
+            effectiveDate.AddYears(1);
+
+        /*
+         * =====================================================
+         * OVERLAP
+         * =====================================================
+         */
+
+        var hasOverlap =
+            await _policyRepository
+                .HasOverlappingPolicyAsync(
+                    offer.VehicleId,
+                    effectiveDate,
+                    expirationDate);
+
+        if (hasOverlap)
+        {
+            return AcceptPurchaseResult.Duplicate(
+                "The selected Effective Date overlaps an existing Policy term for this Vehicle.");
+        }
+
+        /*
+         * =====================================================
+         * PAYMENT SCHEDULE
+         * =====================================================
+         */
+
+        var schedule =
+            _scheduleGenerator.Generate(
+                offer.AnnualPremium,
+                effectiveDate,
+                request.PaymentFrequency);
+
+        var acceptedAtUtc =
+            DateTime.UtcNow;
+
+        /*
+         * =====================================================
+         * CREATE PURCHASE
+         * =====================================================
+         */
+
+        var purchase =
+            new Purchase
+            {
+                Id =
+                    Guid.NewGuid(),
+
+                UnderwritingApplicationId =
+                    offer.UnderwritingApplicationId,
+
+                RenewalId =
+                    offer.RenewalId,
+
+                SourcePolicyId =
+                    offer.SourcePolicyId,
+
+                CustomerProfileId =
+                    offer.CustomerProfileId,
+
+                VehicleId =
+                    offer.VehicleId,
+
+                EffectiveDate =
+                    effectiveDate,
+
+                PaymentFrequency =
+                    request.PaymentFrequency,
+
+                AnnualPremium =
+                    offer.AnnualPremium,
+
+                AcceptedAtUtc =
+                    acceptedAtUtc,
+
+                IssuedPolicyId =
+                    null
+            };
+
+        await _purchaseRepository.AddAsync(
+            purchase);
+
+        try
+        {
+            await _purchaseRepository
+                .SaveChangesAsync();
+        }
+        catch
+        {
+            /*
+             * Existing UnderwritingApplicationId uniqueness
+             * protects normal and Renewal purchases.
+             */
+
+            var concurrentPurchase =
+                await _purchaseRepository
+                    .GetByUnderwritingApplicationIdAsync(
+                        underwritingApplicationId);
+
+            if (concurrentPurchase is not null)
+            {
+                return AcceptPurchaseResult.Duplicate(
+                    "This Underwriting offer has already been accepted.");
+            }
+
+            throw;
+        }
+
+        return AcceptPurchaseResult.Success(
+            new AcceptPurchaseDto
+            {
+                PurchaseId =
+                    purchase.Id,
+
+                UnderwritingApplicationId =
+                    purchase.UnderwritingApplicationId,
+
+                CustomerProfileId =
+                    purchase.CustomerProfileId,
+
+                VehicleId =
+                    purchase.VehicleId,
+
+                PlanName =
+                    offer.PlanName,
+
+                AnnualPremium =
+                    purchase.AnnualPremium,
+
+                EffectiveDate =
+                    purchase.EffectiveDate,
+
+                ExpirationDate =
+                    expirationDate,
+
+                PaymentFrequency =
+                    purchase.PaymentFrequency
+                        .ToString(),
+
+                AcceptedAtUtc =
+                    purchase.AcceptedAtUtc,
+
+                AmountDueNow =
+                    schedule.AmountDueNow,
+
+                InstallmentCount =
+                    schedule.InstallmentCount,
+
+                IssuedPolicyId =
+                    purchase.IssuedPolicyId
+            });
+    }
+
+    /*
+     * =========================================================
+     * RENEWAL HELPERS
+     * =========================================================
+     */
+
+    private static bool IsRenewalOffer(
+        ApprovedOfferDto offer)
+    {
+        return offer.RenewalId.HasValue &&
+               offer.SourcePolicyId.HasValue &&
+               offer.RenewalEffectiveDate.HasValue;
+    }
+
+    private static string? ValidateRenewalContext(
+        ApprovedOfferDto offer)
+    {
+        var hasAnyRenewalContext =
+            offer.RenewalId.HasValue ||
+            offer.SourcePolicyId.HasValue ||
+            offer.RenewalEffectiveDate.HasValue;
+
+        if (!hasAnyRenewalContext)
+        {
+            return null;
+        }
+
+        var hasCompleteRenewalContext =
+            offer.RenewalId.HasValue &&
+            offer.SourcePolicyId.HasValue &&
+            offer.RenewalEffectiveDate.HasValue;
+
+        if (!hasCompleteRenewalContext)
+        {
+            return
+                "The approved Underwriting offer contains incomplete Renewal information.";
+        }
+
+        if (offer.RenewalId!.Value ==
+            Guid.Empty)
+        {
+            return
+                "The approved Underwriting offer contains an invalid Renewal ID.";
+        }
+
+        if (offer.SourcePolicyId!.Value ==
+            Guid.Empty)
+        {
+            return
+                "The approved Underwriting offer contains an invalid Source Policy ID.";
+        }
+
+        if (offer.RenewalEffectiveDate!.Value ==
+            default)
+        {
+            return
+                "The approved Underwriting offer contains an invalid Renewal Effective Date.";
+        }
+
+        return null;
+    }
+
+    private async Task<string?>
+        ValidateSourcePolicyAsync(
+            ApprovedOfferDto offer)
+    {
+        if (!IsRenewalOffer(
+                offer))
+        {
+            return null;
+        }
+
+        var sourcePolicy =
+            await _policyRepository
+                .GetByIdAsync(
+                    offer.SourcePolicyId!.Value);
+
+        if (sourcePolicy is null)
+        {
+            return
+                "The Source Policy for this Renewal was not found.";
+        }
+
+        if (sourcePolicy.CustomerProfileId !=
+            offer.CustomerProfileId)
+        {
+            return
+                "The Renewal Customer does not match the Source Policy.";
+        }
+
+        if (sourcePolicy.VehicleId !=
+            offer.VehicleId)
+        {
+            return
+                "The Renewal Vehicle does not match the Source Policy.";
+        }
+
+        if (sourcePolicy.CancellationEffectiveAtUtc.HasValue)
+        {
+            return
+                "A cancelled Source Policy cannot be renewed.";
+        }
+
+        if (sourcePolicy.SuccessorPolicyId.HasValue)
+        {
+            return
+                "The Source Policy has already been renewed.";
+        }
+
+        if (sourcePolicy.ExpirationDate !=
+            offer.RenewalEffectiveDate!.Value)
+        {
+            return
+                "The Renewal Effective Date must match the Source Policy Expiration Date.";
+        }
+
+        return null;
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Services\RenewalService.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.QuoteRating;
+using PolicyBillingService.Application.Dtos.Renewals;
+using PolicyBillingService.Application.Interfaces;
+using PolicyBillingService.Application.Interfaces.Clients;
+using PolicyBillingService.Application.Interfaces.Repositories;
+using PolicyBillingService.Domain.Entities;
+
+namespace PolicyBillingService.Application.Services;
+
+public class RenewalService : IRenewalService
+{
+    private readonly IPolicyRepository
+        _policyRepository;
+
+    private readonly IRenewalRepository
+        _renewalRepository;
+
+    private readonly ICustomerVehicleClient
+        _customerVehicleClient;
+
+    private readonly IQuoteRatingClient
+        _quoteRatingClient;
+
+    public RenewalService(
+        IPolicyRepository policyRepository,
+        IRenewalRepository renewalRepository,
+        ICustomerVehicleClient customerVehicleClient,
+        IQuoteRatingClient quoteRatingClient)
+    {
+        _policyRepository =
+            policyRepository;
+
+        _renewalRepository =
+            renewalRepository;
+
+        _customerVehicleClient =
+            customerVehicleClient;
+
+        _quoteRatingClient =
+            quoteRatingClient;
+    }
+
+    public async Task<StartRenewalResult> StartAsync(
+        Guid policyId,
+        string agentIdentityUserId)
+    {
+        if (policyId == Guid.Empty)
+        {
+            return StartRenewalResult.Missing(
+                "Policy was not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            throw new ArgumentException(
+                "Agent Identity User ID is required.",
+                nameof(agentIdentityUserId));
+        }
+
+        /*
+         * =====================================================
+         * LOAD SOURCE POLICY
+         * =====================================================
+         */
+
+        var policy =
+            await _policyRepository
+                .GetByIdAsync(
+                    policyId);
+
+        if (policy is null)
+        {
+            return StartRenewalResult.Missing(
+                "Policy was not found.");
+        }
+
+        /*
+         * =====================================================
+         * VERIFY AGENT ASSIGNMENT
+         * =====================================================
+         */
+
+        var assignmentResult =
+            await _customerVehicleClient
+                .CheckAgentAssignmentAsync(
+                    policy.CustomerProfileId,
+                    agentIdentityUserId);
+
+        if (assignmentResult.DependencyUnavailable)
+        {
+            return StartRenewalResult.Unavailable(
+                assignmentResult.Message ??
+                "Customer assignment information is temporarily unavailable.");
+        }
+
+        if (assignmentResult.NotFound)
+        {
+            return StartRenewalResult.Missing(
+                assignmentResult.Message ??
+                "Customer profile was not found.");
+        }
+
+        if (!assignmentResult.Succeeded ||
+            !assignmentResult.IsAssigned)
+        {
+            return StartRenewalResult.AccessDenied(
+                "Customer is not assigned to the current Agent.");
+        }
+
+        /*
+         * =====================================================
+         * SOURCE POLICY ELIGIBILITY
+         * =====================================================
+         */
+
+        if (policy.CancellationEffectiveAtUtc.HasValue)
+        {
+            return StartRenewalResult.Invalid(
+                "A cancelled Policy cannot be renewed.");
+        }
+
+        var today =
+            DateOnly.FromDateTime(
+                DateTime.UtcNow);
+
+        if (today < policy.EffectiveDate)
+        {
+            return StartRenewalResult.Invalid(
+                "Renewal cannot be started for a Policy that is not yet active.");
+        }
+
+        if (today >= policy.ExpirationDate)
+        {
+            return StartRenewalResult.Invalid(
+                "An expired Policy cannot start this renewal workflow.");
+        }
+
+        var renewalWindowStarts =
+            policy.ExpirationDate
+                .AddDays(-30);
+
+        if (today < renewalWindowStarts)
+        {
+            return StartRenewalResult.Invalid(
+                $"Renewal becomes available on {renewalWindowStarts:yyyy-MM-dd}.");
+        }
+
+        /*
+         * The successor Policy begins exactly when the
+         * predecessor Policy expires.
+         */
+        var renewalEffectiveDate =
+            policy.ExpirationDate;
+
+        /*
+         * =====================================================
+         * FIND OR CREATE RENEWAL
+         * =====================================================
+         */
+
+        var renewal =
+            await _renewalRepository
+                .GetBySourcePolicyIdAsync(
+                    policy.Id);
+
+        if (renewal is null)
+        {
+            var newRenewal =
+                new Renewal
+                {
+                    Id =
+                        Guid.NewGuid(),
+
+                    SourcePolicyId =
+                        policy.Id,
+
+                    CustomerProfileId =
+                        policy.CustomerProfileId,
+
+                    VehicleId =
+                        policy.VehicleId,
+
+                    StartedAtUtc =
+                        DateTime.UtcNow,
+
+                    RenewalQuoteId =
+                        null,
+
+                    RenewedPolicyId =
+                        null
+                };
+
+            try
+            {
+                await _renewalRepository
+                    .AddAsync(
+                        newRenewal);
+
+                await _renewalRepository
+                    .SaveChangesAsync();
+
+                renewal =
+                    newRenewal;
+            }
+            catch
+            {
+                /*
+                 * Another request may have created the
+                 * Renewal concurrently.
+                 */
+
+                renewal =
+                    await _renewalRepository
+                        .GetBySourcePolicyIdAsync(
+                            policy.Id);
+
+                if (renewal is null)
+                {
+                    throw;
+                }
+            }
+        }
+
+        /*
+         * Defensive validation.
+         *
+         * The Renewal found for this Source Policy must
+         * describe the same contractual context.
+         */
+
+        if (renewal.SourcePolicyId !=
+            policy.Id)
+        {
+            return StartRenewalResult.Invalid(
+                "Renewal does not match the Source Policy.");
+        }
+
+        if (renewal.CustomerProfileId !=
+            policy.CustomerProfileId)
+        {
+            return StartRenewalResult.Invalid(
+                "Renewal Customer does not match the Source Policy.");
+        }
+
+        if (renewal.VehicleId !=
+            policy.VehicleId)
+        {
+            return StartRenewalResult.Invalid(
+                "Renewal Vehicle does not match the Source Policy.");
+        }
+
+        /*
+         * =====================================================
+         * RENEWAL ALREADY HAS A QUOTE
+         * =====================================================
+         *
+         * If PolicyBilling already persisted the Quote ID,
+         * this is an idempotent retry.
+         */
+
+        if (renewal.RenewalQuoteId.HasValue)
+        {
+            return StartRenewalResult.Success(
+                MapResult(
+                    renewal,
+                    policy.PolicyNumber,
+                    policy.ExpirationDate));
+        }
+
+        /*
+         * =====================================================
+         * START / RESUME QUOTE IN QUOTERATING
+         * =====================================================
+         */
+
+        var quoteResult =
+            await _quoteRatingClient
+                .StartRenewalQuoteAsync(
+                    new StartRenewalQuoteRequest
+                    {
+                        RenewalId =
+                            renewal.Id,
+
+                        SourcePolicyId =
+                            policy.Id,
+
+                        CustomerProfileId =
+                            policy.CustomerProfileId,
+
+                        VehicleId =
+                            policy.VehicleId,
+
+                        AgentIdentityUserId =
+                            agentIdentityUserId,
+
+                        RenewalEffectiveDate =
+                            renewalEffectiveDate
+                    });
+
+        if (quoteResult.DependencyUnavailable)
+        {
+            return StartRenewalResult.Unavailable(
+                quoteResult.Message ??
+                "QuoteRatingService is temporarily unavailable.");
+        }
+
+        if (quoteResult.Conflict)
+        {
+            return StartRenewalResult.Duplicate(
+                quoteResult.Message ??
+                "Renewal Quote could not be started.");
+        }
+
+        if (!quoteResult.Succeeded ||
+            quoteResult.Quote is null)
+        {
+            return StartRenewalResult.Unavailable(
+                quoteResult.Message ??
+                "Renewal Quote could not be started.");
+        }
+
+        var quote =
+            quoteResult.Quote;
+
+        /*
+         * =====================================================
+         * VALIDATE QUOTERATING RESPONSE
+         * =====================================================
+         */
+
+        if (quote.QuoteId == Guid.Empty)
+        {
+            return StartRenewalResult.Unavailable(
+                "QuoteRatingService returned an invalid Quote ID.");
+        }
+
+        if (quote.RenewalId !=
+            renewal.Id)
+        {
+            return StartRenewalResult.Unavailable(
+                "QuoteRatingService returned a Quote for a different Renewal.");
+        }
+
+        if (quote.SourcePolicyId !=
+            policy.Id)
+        {
+            return StartRenewalResult.Unavailable(
+                "QuoteRatingService returned a Quote for a different Source Policy.");
+        }
+
+        if (quote.CustomerProfileId !=
+            policy.CustomerProfileId)
+        {
+            return StartRenewalResult.Unavailable(
+                "QuoteRatingService returned a Quote for a different Customer.");
+        }
+
+        if (quote.VehicleId !=
+            policy.VehicleId)
+        {
+            return StartRenewalResult.Unavailable(
+                "QuoteRatingService returned a Quote for a different Vehicle.");
+        }
+
+        if (quote.RenewalEffectiveDate !=
+            renewalEffectiveDate)
+        {
+            return StartRenewalResult.Unavailable(
+                "QuoteRatingService returned an unexpected Renewal Effective Date.");
+        }
+
+        /*
+         * =====================================================
+         * PERSIST RENEWAL QUOTE ID
+         * =====================================================
+         *
+         * Get a tracked Renewal because the earlier lookup
+         * may be AsNoTracking().
+         */
+
+        var trackedRenewal =
+            await _renewalRepository
+                .GetByIdForUpdateAsync(
+                    renewal.Id);
+
+        if (trackedRenewal is null)
+        {
+            throw new InvalidOperationException(
+                "Renewal could not be reloaded after Quote creation.");
+        }
+
+        /*
+         * Another request may have completed this update while
+         * QuoteRating was processing the request.
+         */
+
+        if (trackedRenewal.RenewalQuoteId.HasValue)
+        {
+            if (trackedRenewal.RenewalQuoteId.Value !=
+                quote.QuoteId)
+            {
+                return StartRenewalResult.Invalid(
+                    "Renewal is already associated with a different Quote.");
+            }
+
+            return StartRenewalResult.Success(
+                MapResult(
+                    trackedRenewal,
+                    policy.PolicyNumber,
+                    policy.ExpirationDate));
+        }
+
+        trackedRenewal.RenewalQuoteId =
+            quote.QuoteId;
+
+        await _renewalRepository
+            .SaveChangesAsync();
+
+        /*
+         * =====================================================
+         * SUCCESS
+         * =====================================================
+         */
+
+        return StartRenewalResult.Success(
+            MapResult(
+                trackedRenewal,
+                policy.PolicyNumber,
+                policy.ExpirationDate));
+    }
+
+    private static StartRenewalDto MapResult(
+        Renewal renewal,
+        string sourcePolicyNumber,
+        DateOnly sourcePolicyExpirationDate)
+    {
+        return new StartRenewalDto
+        {
+            RenewalId =
+                renewal.Id,
+
+            SourcePolicyId =
+                renewal.SourcePolicyId,
+
+            SourcePolicyNumber =
+                sourcePolicyNumber,
+
+            CustomerProfileId =
+                renewal.CustomerProfileId,
+
+            VehicleId =
+                renewal.VehicleId,
+
+            StartedAtUtc =
+                renewal.StartedAtUtc,
+
+            CurrentPolicyExpirationDate =
+                sourcePolicyExpirationDate,
+
+            RenewalEffectiveDate =
+                sourcePolicyExpirationDate,
+
+            RenewalQuoteId =
+                renewal.RenewalQuoteId
+        };
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.Application\Services\SimulatedPaymentProcessor.cs
+================================================================================
+using PolicyBillingService.Application.Dtos.Payments;
+using PolicyBillingService.Application.Interfaces;
+using PolicyBillingService.Domain.Enums;
+
+namespace PolicyBillingService.Application.Services;
+
+public class SimulatedPaymentProcessor
+    : IPaymentProcessor
+{
+    public PaymentSimulationResult Process(
+        PaymentMethod method,
+        string testScenario)
+    {
+        if (!Enum.IsDefined(
+                typeof(PaymentMethod),
+                method))
+        {
+            return PaymentSimulationResult.Failure(
+                "INVALID_PAYMENT_METHOD",
+                "Payment method is invalid.");
+        }
+
+        var scenario =
+            testScenario
+                .Trim()
+                .ToUpperInvariant();
+
+        return scenario switch
+        {
+            "SUCCESS" =>
+                PaymentSimulationResult.Success(),
+
+            "FAIL" =>
+                PaymentSimulationResult.Failure(
+                    "SIMULATED_FAILURE",
+                    "The simulated payment was declined."),
+
+            _ =>
+                PaymentSimulationResult.Failure(
+                    "INVALID_TEST_SCENARIO",
+                    "Test scenario must be SUCCESS or FAIL.")
+        };
+    }
+}

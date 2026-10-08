@@ -1,0 +1,1923 @@
+
+================================================================================
+FILE: PolicyBillingService.API\appsettings.Development.json
+================================================================================
+{
+
+  "Services": {
+    "UnderwritingService": "https://localhost:7025/",
+    "CustomerVehicleService": "https://localhost:7133/",
+    "QuoteRatingService": "https://localhost:7097"
+  },
+  
+
+  "Jwt": {
+    "Key": "YOUR_LOCAL_DEVELOPMENT_SIGNING_KEY_AT_LEAST_32_CHARACTERS"
+  }
+}
+
+================================================================================
+FILE: PolicyBillingService.API\appsettings.json
+================================================================================
+{
+  "ConnectionStrings": {
+    "PolicyBillingDb": "Server=(localdb)\\MSSQLLocalDB;Database=PolicyBillingDb;Trusted_Connection=True;TrustServerCertificate=True;"
+  },
+
+  "Jwt": {
+    "Issuer": "AutoInsurance.IdentityService",
+    "Audience": "AutoInsurance"
+  },
+
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "PolicyDocuments": {
+    "StoragePath": "PolicyDocuments"
+  },
+
+  "AllowedHosts": "*"
+}
+
+================================================================================
+FILE: PolicyBillingService.API\Controllers\AgentPoliciesController.cs
+================================================================================
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using PolicyBillingService.Application.Interfaces;
+using PolicyBillingService.Application.Interfaces.Clients;
+using PolicyBillingService.Application.Interfaces.Documents;
+using PolicyBillingService.Application.Interfaces.Repositories;
+
+namespace PolicyBillingService.API.Controllers;
+
+[ApiController]
+[Route("api/agent")]
+[Authorize(Roles = "Agent")]
+public class AgentPoliciesController : ControllerBase
+{
+    private readonly IAgentPolicyService
+        _agentPolicyService;
+    private readonly IRenewalService
+    _renewalService;
+    private readonly IPolicyRepository
+        _policyRepository;
+
+    private readonly IPolicyDocumentRepository
+        _policyDocumentRepository;
+
+    private readonly IPolicyDocumentStorage
+        _policyDocumentStorage;
+
+    private readonly ICustomerVehicleClient
+        _customerVehicleClient;
+
+    public AgentPoliciesController(
+        IAgentPolicyService agentPolicyService,
+        IPolicyRepository policyRepository,
+        IPolicyDocumentRepository policyDocumentRepository,
+        IPolicyDocumentStorage policyDocumentStorage,
+        ICustomerVehicleClient customerVehicleClient,
+        IRenewalService renewalService)
+    {
+        _agentPolicyService =
+            agentPolicyService;
+
+        _policyRepository =
+            policyRepository;
+
+        _policyDocumentRepository =
+            policyDocumentRepository;
+
+        _policyDocumentStorage =
+            policyDocumentStorage;
+
+        _customerVehicleClient =
+            customerVehicleClient;
+        _renewalService =
+    renewalService;
+    }
+    [HttpGet(
+    "policies/{policyId:guid}/renewal")]
+    public async Task<IActionResult> GetRenewal(
+    Guid policyId)
+    {
+        var agentIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _agentPolicyService
+                .GetRenewalAsync(
+                    policyId,
+                    agentIdentityUserId);
+
+        if (result.Succeeded &&
+            result.Renewal is not null)
+        {
+            return Ok(
+                result.Renewal);
+        }
+
+        if (result.DependencyUnavailable)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Customer assignment information is temporarily unavailable."
+                });
+        }
+
+        if (result.Forbidden)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Customer is not assigned to the current Agent."
+                });
+        }
+
+        if (result.NotFound)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Policy was not found."
+                });
+        }
+
+        return BadRequest(
+            new
+            {
+                message =
+                    result.Message ??
+                    "Policy Renewal information could not be loaded."
+            });
+    }
+    [HttpGet(
+        "customers/{customerProfileId:guid}/policies")]
+    public async Task<IActionResult>
+        GetCustomerPolicies(
+            Guid customerProfileId)
+    {
+        var agentIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _agentPolicyService
+                .GetCustomerPoliciesAsync(
+                    customerProfileId,
+                    agentIdentityUserId);
+
+        if (result.Succeeded)
+        {
+            return Ok(
+                result.Policies);
+        }
+
+        if (result.DependencyUnavailable)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Customer assignment information is temporarily unavailable."
+                });
+        }
+
+        if (result.Forbidden)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Customer is not assigned to the current Agent."
+                });
+        }
+
+        if (result.CustomerNotFound)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Customer profile was not found."
+                });
+        }
+
+        return BadRequest(
+            new
+            {
+                message =
+                    result.Message ??
+                    "Customer Policies could not be loaded."
+            });
+    }
+    [HttpPost(
+    "policies/{policyId:guid}/renewal")]
+    public async Task<IActionResult> StartRenewal(
+    Guid policyId)
+    {
+        var agentIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _renewalService
+                .StartAsync(
+                    policyId,
+                    agentIdentityUserId);
+
+        if (result.Succeeded &&
+            result.Renewal is not null)
+        {
+            return StatusCode(
+                StatusCodes.Status201Created,
+                result.Renewal);
+        }
+
+        if (result.DependencyUnavailable)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        if (result.Forbidden)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        if (result.NotFound)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        if (result.Conflict)
+        {
+            return Conflict(
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        if (result.InvalidState)
+        {
+            return Conflict(
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        return BadRequest(
+            new
+            {
+                message =
+                    result.Message ??
+                    "Renewal could not be started."
+            });
+    }
+
+    [HttpGet("policies/{policyId:guid}")]
+    public async Task<IActionResult> GetPolicy(
+        Guid policyId)
+    {
+        var agentIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _agentPolicyService
+                .GetPolicyAsync(
+                    policyId,
+                    agentIdentityUserId);
+
+        if (result.Succeeded &&
+            result.Policy is not null)
+        {
+            return Ok(
+                result.Policy);
+        }
+
+        if (result.DependencyUnavailable)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Customer assignment information is temporarily unavailable."
+                });
+        }
+
+        if (result.Forbidden)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Customer is not assigned to the current Agent."
+                });
+        }
+
+        if (result.NotFound)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Policy was not found."
+                });
+        }
+
+        return BadRequest(
+            new
+            {
+                message =
+                    result.Message ??
+                    "Policy could not be loaded."
+            });
+    }
+
+    [HttpGet(
+        "policies/{policyId:guid}/payments")]
+    public async Task<IActionResult> GetPayments(
+        Guid policyId)
+    {
+        var agentIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _agentPolicyService
+                .GetPaymentsAsync(
+                    policyId,
+                    agentIdentityUserId);
+
+        if (result.Succeeded &&
+            result.Payments is not null)
+        {
+            return Ok(
+                result.Payments);
+        }
+
+        if (result.DependencyUnavailable)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Customer assignment information is temporarily unavailable."
+                });
+        }
+
+        if (result.Forbidden)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Customer is not assigned to the current Agent."
+                });
+        }
+
+        if (result.NotFound)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Policy was not found."
+                });
+        }
+
+        return BadRequest(
+            new
+            {
+                message =
+                    result.Message ??
+                    "Policy payment information could not be loaded."
+            });
+    }
+
+    [HttpGet(
+        "policies/{policyId:guid}/document")]
+    public async Task<IActionResult> GetDocument(
+        Guid policyId)
+    {
+        var agentIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        if (policyId == Guid.Empty)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        "Policy was not found."
+                });
+        }
+
+        var policy =
+            await _policyRepository
+                .GetByIdAsync(
+                    policyId);
+
+        if (policy is null)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        "Policy was not found."
+                });
+        }
+
+        var assignmentResult =
+            await _customerVehicleClient
+                .CheckAgentAssignmentAsync(
+                    policy.CustomerProfileId,
+                    agentIdentityUserId);
+
+        if (assignmentResult.DependencyUnavailable)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new
+                {
+                    message =
+                        assignmentResult.Message ??
+                        "Customer assignment information is temporarily unavailable."
+                });
+        }
+
+        if (assignmentResult.NotFound)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        assignmentResult.Message ??
+                        "Customer profile was not found."
+                });
+        }
+
+        if (!assignmentResult.Succeeded ||
+            !assignmentResult.IsAssigned)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        "Customer is not assigned to the current Agent."
+                });
+        }
+
+        var document =
+            await _policyDocumentRepository
+                .GetByPolicyIdAsync(
+                    policy.Id);
+
+        if (document is null)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        "Policy document was not found."
+                });
+        }
+
+        var content =
+            await _policyDocumentStorage
+                .ReadAsync(
+                    document.StoredFileName);
+
+        if (content is null)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        "Policy document file is unavailable."
+                });
+        }
+
+        return File(
+            content,
+            document.ContentType,
+            document.FileName);
+    }
+
+    private string? GetCurrentUserId()
+    {
+        return User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.API\Controllers\InstallmentsController.cs
+================================================================================
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using PolicyBillingService.Application.Dtos.Payments;
+using PolicyBillingService.Application.Interfaces;
+
+namespace PolicyBillingService.API.Controllers;
+
+[ApiController]
+[Route("api/installments")]
+[Authorize(Roles = "Customer")]
+public class InstallmentsController : ControllerBase
+{
+    private readonly IInstallmentPaymentService
+        _installmentPaymentService;
+
+    public InstallmentsController(
+        IInstallmentPaymentService installmentPaymentService)
+    {
+        _installmentPaymentService =
+            installmentPaymentService;
+    }
+
+    [HttpPost("{installmentId:guid}/payments")]
+    public async Task<IActionResult> PayInstallment(
+        Guid installmentId,
+        [FromBody] MakePaymentRequest request)
+    {
+        var customerIdentityUserId =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            return Unauthorized(
+                new
+                {
+                    message =
+                        "Authenticated Customer identity could not be determined."
+                });
+        }
+
+        var result =
+            await _installmentPaymentService
+                .PayAsync(
+                    installmentId,
+                    customerIdentityUserId,
+                    request);
+
+        if (result.Succeeded &&
+            result.Payment is not null)
+        {
+            return Ok(
+                result.Payment);
+        }
+
+        if (result.PaymentFailed &&
+            result.Payment is not null)
+        {
+            return Ok(
+                result.Payment);
+        }
+
+        if (result.DependencyUnavailable)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new
+                {
+                    message =
+                        result.Message ??
+                        "A required service is temporarily unavailable."
+                });
+        }
+
+        if (result.Forbidden)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        result.Message ??
+                        "You are not authorized to pay this installment."
+                });
+        }
+
+        if (result.NotFound)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Installment was not found."
+                });
+        }
+
+        if (result.InvalidState)
+        {
+            return Conflict(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Installment cannot be paid in its current state."
+                });
+        }
+
+        return BadRequest(
+            new
+            {
+                message =
+                    result.Message ??
+                    "Installment payment could not be processed."
+            });
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.API\Controllers\PoliciesController.cs
+================================================================================
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using PolicyBillingService.Application.Interfaces;
+
+namespace PolicyBillingService.API.Controllers;
+
+[ApiController]
+[Route("api/policies")]
+[Authorize(Roles = "Customer")]
+public class PoliciesController : ControllerBase
+{
+    private readonly IPolicyService _policyService;
+    private readonly IPolicyServicingService
+    _policyServicingService;
+
+    private readonly IPolicyDocumentService
+    _policyDocumentService;
+
+    public PoliciesController(
+    IPolicyService policyService,
+    IPolicyDocumentService policyDocumentService,
+    IPolicyServicingService policyServicingService)
+    {
+        _policyService =
+            policyService;
+
+        _policyDocumentService =
+            policyDocumentService;
+
+        _policyServicingService =
+            policyServicingService;
+    }
+    [HttpGet]
+    public async Task<IActionResult> GetMyPolicies()
+    {
+        var customerIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _policyService.GetMyPoliciesAsync(
+                customerIdentityUserId);
+
+        if (result.Succeeded)
+        {
+            return Ok(
+                result.Policies);
+        }
+
+        if (result.DependencyUnavailable)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new
+                {
+                    message = result.Message
+                });
+        }
+
+        if (result.CustomerNotFound)
+        {
+            return NotFound(
+                new
+                {
+                    message = result.Message
+                });
+        }
+
+        return BadRequest();
+    }
+
+    [HttpGet("{policyId:guid}/document")]
+    public async Task<IActionResult> GetDocument(
+    Guid policyId)
+    {
+        var customerIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _policyDocumentService.GetAsync(
+                policyId,
+                customerIdentityUserId);
+
+        if (result.Succeeded &&
+            result.Content is not null &&
+            result.ContentType is not null &&
+            result.FileName is not null)
+        {
+            return File(
+                result.Content,
+                result.ContentType,
+                result.FileName);
+        }
+
+        if (result.DependencyUnavailable)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        if (result.Forbidden)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        return NotFound(
+            new
+            {
+                message =
+                    result.Message ??
+                    "Policy document was not found."
+            });
+    }
+    [HttpPost("{policyId:guid}/cancel")]
+    public async Task<IActionResult> CancelPolicy(
+    Guid policyId)
+    {
+        var customerIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _policyServicingService
+                .CancelAsync(
+                    policyId,
+                    customerIdentityUserId);
+
+        if (result.Succeeded &&
+            result.Policy is not null)
+        {
+            return Ok(
+                result.Policy);
+        }
+
+        if (result.DependencyUnavailable)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Customer information is temporarily unavailable."
+                });
+        }
+
+        if (result.Forbidden)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        result.Message ??
+                        "You are not authorized to cancel this Policy."
+                });
+        }
+
+        if (result.NotFound)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Policy was not found."
+                });
+        }
+
+        if (result.InvalidState)
+        {
+            return Conflict(
+                new
+                {
+                    message =
+                        result.Message ??
+                        "Policy cannot be cancelled."
+                });
+        }
+
+        return BadRequest(
+            new
+            {
+                message =
+                    result.Message ??
+                    "Policy cancellation could not be completed."
+            });
+    }
+
+    [HttpPost("{policyId:guid}/document/generate")]
+    public async Task<IActionResult> GenerateDocument(
+    Guid policyId)
+    {
+        if (!HttpContext.RequestServices
+            .GetRequiredService<IWebHostEnvironment>()
+            .IsDevelopment())
+        {
+            return NotFound();
+        }
+
+        var result =
+            await _policyDocumentService
+                .GenerateMissingAsync(
+                    policyId);
+
+        if (result.Succeeded)
+        {
+            return Ok(
+                new
+                {
+                    documentId =
+                        result.DocumentId,
+
+                    message =
+                        "Policy document generated successfully."
+                });
+        }
+
+        if (result.AlreadyExists)
+        {
+            return Conflict(
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        return NotFound(
+            new
+            {
+                message =
+                    result.Message ??
+                    "Policy was not found."
+            });
+    }
+
+    [HttpGet("{policyId:guid}")]
+    public async Task<IActionResult> GetPolicy(
+        Guid policyId)
+    {
+        var customerIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _policyService.GetPolicyAsync(
+                policyId,
+                customerIdentityUserId);
+
+        if (result.Succeeded &&
+            result.Policy is not null)
+        {
+            return Ok(
+                result.Policy);
+        }
+
+        if (result.DependencyUnavailable)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new
+                {
+                    message = result.Message
+                });
+        }
+
+        if (result.Forbidden)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message = result.Message
+                });
+        }
+
+        return NotFound(
+            new
+            {
+                message =
+                    result.Message ??
+                    "Policy was not found."
+            });
+    }
+
+    [HttpGet("{policyId:guid}/payments")]
+    public async Task<IActionResult> GetPayments(
+        Guid policyId)
+    {
+        var customerIdentityUserId =
+            GetCurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _policyService.GetPaymentsAsync(
+                policyId,
+                customerIdentityUserId);
+
+        if (result.Succeeded &&
+            result.Payments is not null)
+        {
+            return Ok(
+                result.Payments);
+        }
+
+        if (result.DependencyUnavailable)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new
+                {
+                    message = result.Message
+                });
+        }
+
+        if (result.Forbidden)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message = result.Message
+                });
+        }
+
+        return NotFound(
+            new
+            {
+                message =
+                    result.Message ??
+                    "Policy was not found."
+            });
+    }
+
+    private string? GetCurrentUserId()
+    {
+        return User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.API\Controllers\PurchasesController.cs
+================================================================================
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using PolicyBillingService.Application.Dtos.Payments;
+using PolicyBillingService.Application.Dtos.Purchases;
+using PolicyBillingService.Application.Interfaces;
+using System.Security.Claims;
+
+namespace PolicyBillingService.API.Controllers;
+
+[ApiController]
+[Route("api/purchases")]
+[Authorize(Roles = "Customer")]
+public class PurchasesController : ControllerBase
+{
+    private readonly IPurchaseService _purchaseService;
+    private readonly IFirstPaymentService
+    _firstPaymentService;
+
+    public PurchasesController(
+    IPurchaseService purchaseService,
+    IFirstPaymentService firstPaymentService)
+    {
+        _purchaseService =
+            purchaseService;
+
+        _firstPaymentService =
+            firstPaymentService;
+    }
+
+    [HttpPost("{underwritingApplicationId:guid}/configure")]
+    public async Task<IActionResult> Configure(
+        Guid underwritingApplicationId,
+        [FromBody] ConfigurePurchaseRequest request)
+    {
+        var customerIdentityUserId =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _purchaseService.ConfigureAsync(
+                underwritingApplicationId,
+                customerIdentityUserId,
+                request);
+
+        if (result.Succeeded &&
+            result.Configuration is not null)
+        {
+            return Ok(
+                result.Configuration);
+        }
+
+        if (result.DependencyUnavailable)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        if (result.Forbidden)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        if (result.NotFound)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        if (result.Conflict)
+        {
+            return Conflict(
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        return BadRequest(
+            new
+            {
+                message =
+                    result.Message ??
+                    "Purchase configuration is invalid."
+            });
+    }
+
+    [HttpPost("{underwritingApplicationId:guid}/accept")]
+    public async Task<IActionResult> Accept(
+    Guid underwritingApplicationId,
+    [FromBody] AcceptPurchaseRequest request)
+    {
+        var customerIdentityUserId =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _purchaseService.AcceptAsync(
+                underwritingApplicationId,
+                customerIdentityUserId,
+                request);
+
+        if (result.Succeeded &&
+            result.Purchase is not null)
+        {
+            return Ok(
+                result.Purchase);
+        }
+
+        if (result.DependencyUnavailable)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        if (result.Forbidden)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        if (result.NotFound)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        if (result.Conflict)
+        {
+            return Conflict(
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        return BadRequest(
+            new
+            {
+                message =
+                    result.Message ??
+                    "Purchase could not be accepted."
+            });
+    }
+
+    [HttpPost("{purchaseId:guid}/payments")]
+    public async Task<IActionResult> MakeFirstPayment(
+    Guid purchaseId,
+    [FromBody] MakePaymentRequest request)
+    {
+        var customerIdentityUserId =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _firstPaymentService.PayAsync(
+                purchaseId,
+                customerIdentityUserId,
+                request);
+
+        if (result.Succeeded &&
+            result.Payment is not null)
+        {
+            return Ok(
+                result.Payment);
+        }
+
+        if (result.PaymentFailed &&
+            result.Payment is not null)
+        {
+            return Ok(
+                result.Payment);
+        }
+
+        if (result.DependencyUnavailable)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        if (result.Forbidden)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        if (result.NotFound)
+        {
+            return NotFound(
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        if (result.InvalidState)
+        {
+            return Conflict(
+                new
+                {
+                    message =
+                        result.Message
+                });
+        }
+
+        return BadRequest(
+            new
+            {
+                message =
+                    result.Message ??
+                    "Payment could not be processed."
+            });
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.API\Controllers\WeatherForecastController.cs
+================================================================================
+using Microsoft.AspNetCore.Mvc;
+
+namespace PolicyBillingService.API.Controllers
+{
+    [ApiController]
+    [Route("[controller]")]
+    public class WeatherForecastController : ControllerBase
+    {
+        private static readonly string[] Summaries = new[]
+        {
+            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+        };
+
+        private readonly ILogger<WeatherForecastController> _logger;
+
+        public WeatherForecastController(ILogger<WeatherForecastController> logger)
+        {
+            _logger = logger;
+        }
+
+        [HttpGet(Name = "GetWeatherForecast")]
+        public IEnumerable<WeatherForecast> Get()
+        {
+            return Enumerable.Range(1, 5).Select(index => new WeatherForecast
+            {
+                Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+                TemperatureC = Random.Shared.Next(-20, 55),
+                Summary = Summaries[Random.Shared.Next(Summaries.Length)]
+            })
+            .ToArray();
+        }
+    }
+}
+
+
+================================================================================
+FILE: PolicyBillingService.API\PolicyBillingService.API.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.19" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.19">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PolicyBillingService.Application\PolicyBillingService.Application.csproj" />
+    <ProjectReference Include="..\PolicyBillingService.Infrastructure\PolicyBillingService.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
+
+
+================================================================================
+FILE: PolicyBillingService.API\Program.cs
+================================================================================
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using PolicyBillingService.Application.Interfaces;
+using PolicyBillingService.Application.Interfaces.Clients;
+using PolicyBillingService.Application.Interfaces.Documents;
+using PolicyBillingService.Application.Interfaces.Repositories;
+using PolicyBillingService.Application.Services;
+using PolicyBillingService.Infrastructure.Clients;
+using PolicyBillingService.Infrastructure.Documents;
+using PolicyBillingService.Infrastructure.Persistence;
+using PolicyBillingService.Infrastructure.Repositories;
+using QuestPDF.Infrastructure;
+using System.Text;
+
+namespace PolicyBillingService.API;
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var builder =
+            WebApplication.CreateBuilder(args);
+
+        /*
+         * =====================================================
+         * CONTROLLERS
+         * =====================================================
+         */
+        QuestPDF.Settings.License =
+    LicenseType.Community;
+        builder.Services.AddControllers();
+
+        builder.Services.AddEndpointsApiExplorer();
+
+        /*
+         * =====================================================
+         * SWAGGER
+         * =====================================================
+         */
+
+        builder.Services.AddSwaggerGen(options =>
+        {
+            options.AddSecurityDefinition(
+                "Bearer",
+                new OpenApiSecurityScheme
+                {
+                    Name =
+                        "Authorization",
+
+                    Type =
+                        SecuritySchemeType.Http,
+
+                    Scheme =
+                        "bearer",
+
+                    BearerFormat =
+                        "JWT",
+
+                    In =
+                        ParameterLocation.Header,
+
+                    Description =
+                        "Enter the JWT access token."
+                });
+
+            options.AddSecurityRequirement(
+                new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference =
+                                new OpenApiReference
+                                {
+                                    Type =
+                                        ReferenceType
+                                            .SecurityScheme,
+
+                                    Id =
+                                        "Bearer"
+                                }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
+        });
+
+        /*
+         * =====================================================
+         * DATABASE
+         * =====================================================
+         */
+
+        var connectionString =
+            builder.Configuration
+                .GetConnectionString(
+                    "PolicyBillingDb")
+            ?? throw new InvalidOperationException(
+                "Connection string 'PolicyBillingDb' was not found.");
+
+        builder.Services.AddDbContext<
+            PolicyBillingDbContext>(
+            options =>
+                options.UseSqlServer(
+                    connectionString));
+
+        /*
+         * =====================================================
+         * REPOSITORIES
+         * =====================================================
+         */
+
+        builder.Services.AddScoped<
+            IPolicyRepository,
+            PolicyRepository>();
+        builder.Services.AddScoped<
+    IPaymentProcessor,
+    SimulatedPaymentProcessor>();
+        builder.Services.AddScoped<
+    IPaymentRepository,
+    PaymentRepository>();
+        builder.Services.AddScoped<
+    IFirstPaymentService,
+    FirstPaymentService>();
+        builder.Services.AddScoped<
+    IPolicyIssuanceRepository,
+    PolicyIssuanceRepository>();
+        builder.Services.AddScoped<
+    IPolicyService,
+    PolicyService>();
+        builder.Services.AddScoped<
+    IPolicyPdfGenerator,
+    PolicyPdfGenerator>();
+        builder.Services.AddScoped<
+    IAgentPolicyService,
+    AgentPolicyService>();
+        builder.Services.AddScoped<
+    IRenewalRepository,
+    RenewalRepository>();
+        builder.Services.AddScoped<
+    IRenewalService,
+    RenewalService>();
+
+        var policyDocumentStoragePath =
+    builder.Configuration[
+        "PolicyDocuments:StoragePath"]
+    ?? "PolicyDocuments";
+
+        var absolutePolicyDocumentStoragePath =
+            Path.Combine(
+                builder.Environment.ContentRootPath,
+                policyDocumentStoragePath);
+
+        builder.Services.AddSingleton<
+            IPolicyDocumentStorage>(
+                new LocalPolicyDocumentStorage(
+                    absolutePolicyDocumentStoragePath));
+
+        builder.Services.AddScoped<
+    IPolicyDocumentRepository,
+    PolicyDocumentRepository>();
+        builder.Services.AddScoped<
+    IPolicyDocumentService,
+    PolicyDocumentService>();
+        builder.Services.AddScoped<
+    IInstallmentPaymentService,
+    InstallmentPaymentService>();
+        builder.Services.AddScoped<
+IPolicyServicingRepository,
+PolicyServicingRepository>();
+        builder.Services.AddScoped<
+    IPolicyServicingService,
+    PolicyServicingService>();
+        /*
+         * =====================================================
+         * APPLICATION SERVICES
+         * =====================================================
+         */
+
+        builder.Services.AddScoped<
+            IPaymentScheduleGenerator,
+            PaymentScheduleGenerator>();
+
+        builder.Services.AddScoped<
+            IPurchaseService,
+            PurchaseService>();
+        builder.Services.AddScoped<
+    IPurchaseRepository,
+    PurchaseRepository>();
+
+        builder.Services.AddHttpClient<
+    IQuoteRatingClient,
+    QuoteRatingClient>(
+        client =>
+        {
+            var baseUrl =
+                builder.Configuration[
+                    "Services:QuoteRatingService"];
+
+            if (string.IsNullOrWhiteSpace(
+                    baseUrl))
+            {
+                throw new InvalidOperationException(
+                    "QuoteRatingService URL is not configured.");
+            }
+
+            client.BaseAddress =
+                new Uri(baseUrl);
+
+            client.Timeout =
+                TimeSpan.FromSeconds(10);
+        });
+        /*
+         * =====================================================
+         * UNDERWRITING SERVICE CLIENT
+         * =====================================================
+         */
+
+        builder.Services.AddHttpClient<
+            IUnderwritingClient,
+            UnderwritingClient>(
+            client =>
+            {
+                var baseUrl =
+                    builder.Configuration[
+                        "Services:UnderwritingService"];
+
+                if (string.IsNullOrWhiteSpace(
+                        baseUrl))
+                {
+                    throw new InvalidOperationException(
+                        "UnderwritingService URL is not configured.");
+                }
+
+                client.BaseAddress =
+                    new Uri(baseUrl);
+
+                client.Timeout =
+                    TimeSpan.FromSeconds(10);
+            });
+
+        /*
+         * =====================================================
+         * CUSTOMER VEHICLE SERVICE CLIENT
+         * =====================================================
+         */
+
+        builder.Services.AddHttpClient<
+            ICustomerVehicleClient,
+            CustomerVehicleClient>(
+            client =>
+            {
+                var baseUrl =
+                    builder.Configuration[
+                        "Services:CustomerVehicleService"];
+
+                if (string.IsNullOrWhiteSpace(
+                        baseUrl))
+                {
+                    throw new InvalidOperationException(
+                        "CustomerVehicleService URL is not configured.");
+                }
+
+                client.BaseAddress =
+                    new Uri(baseUrl);
+
+                client.Timeout =
+                    TimeSpan.FromSeconds(10);
+            });
+
+        /*
+         * =====================================================
+         * JWT AUTHENTICATION
+         * =====================================================
+         */
+
+        var jwtIssuer =
+            builder.Configuration[
+                "Jwt:Issuer"];
+
+        var jwtAudience =
+            builder.Configuration[
+                "Jwt:Audience"];
+
+        var jwtKey =
+            builder.Configuration[
+                "Jwt:Key"];
+
+        if (string.IsNullOrWhiteSpace(
+                jwtIssuer) ||
+            string.IsNullOrWhiteSpace(
+                jwtAudience) ||
+            string.IsNullOrWhiteSpace(
+                jwtKey))
+        {
+            throw new InvalidOperationException(
+                "JWT configuration is incomplete.");
+        }
+
+        builder.Services
+            .AddAuthentication(
+                JwtBearerDefaults
+                    .AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters =
+                    new TokenValidationParameters
+                    {
+                        ValidateIssuer =
+                            true,
+
+                        ValidIssuer =
+                            jwtIssuer,
+
+                        ValidateAudience =
+                            true,
+
+                        ValidAudience =
+                            jwtAudience,
+
+                        ValidateIssuerSigningKey =
+                            true,
+
+                        IssuerSigningKey =
+                            new SymmetricSecurityKey(
+                                Encoding.UTF8.GetBytes(
+                                    jwtKey)),
+
+                        ValidateLifetime =
+                            true,
+
+                        ClockSkew =
+                            TimeSpan.Zero
+                    };
+            });
+
+        builder.Services.AddAuthorization();
+
+        /*
+         * =====================================================
+         * BUILD
+         * =====================================================
+         */
+
+        var app =
+            builder.Build();
+
+        /*
+         * =====================================================
+         * DATABASE MIGRATIONS
+         * =====================================================
+         */
+
+        if (!app.Environment.IsEnvironment(
+                "IntegrationTesting"))
+        {
+            using var scope =
+                app.Services.CreateScope();
+
+            var dbContext =
+                scope.ServiceProvider
+                    .GetRequiredService<
+                        PolicyBillingDbContext>();
+
+            dbContext.Database.Migrate();
+        }
+
+        /*
+         * =====================================================
+         * DEVELOPMENT
+         * =====================================================
+         */
+
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+
+            app.UseSwaggerUI();
+        }
+
+        /*
+         * =====================================================
+         * HTTP PIPELINE
+         * =====================================================
+         */
+
+        app.UseHttpsRedirection();
+
+        app.UseAuthentication();
+
+        app.UseAuthorization();
+
+        /*
+         * =====================================================
+         * ENDPOINTS
+         * =====================================================
+         */
+
+        app.MapControllers();
+
+        /*
+         * =====================================================
+         * RUN
+         * =====================================================
+         */
+
+        app.Run();
+    }
+}
+
+================================================================================
+FILE: PolicyBillingService.API\Properties\launchSettings.json
+================================================================================
+{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:1084",
+      "sslPort": 44396
+    }
+  },
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "http://localhost:5102",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "https": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "https://localhost:7009;http://localhost:5102",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
+
+
+================================================================================
+FILE: PolicyBillingService.API\WeatherForecast.cs
+================================================================================
+namespace PolicyBillingService.API
+{
+    public class WeatherForecast
+    {
+        public DateOnly Date { get; set; }
+
+        public int TemperatureC { get; set; }
+
+        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+
+        public string? Summary { get; set; }
+    }
+}
+

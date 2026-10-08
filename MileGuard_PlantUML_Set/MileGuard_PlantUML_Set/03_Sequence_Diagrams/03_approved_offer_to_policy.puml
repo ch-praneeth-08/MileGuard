@@ -1,0 +1,42 @@
+@startuml
+!theme plain
+skinparam shadowing false
+autonumber
+actor Customer
+participant "Angular App" as UI
+participant "Ocelot Gateway" as GW
+participant "UnderwritingService" as UW
+participant "PolicyBillingService" as PB
+participant "PolicyBillingDb" as DB
+
+Customer -> UI : Open approved underwriting offer
+UI -> GW : GET /underwriting/api/customer/underwriting/{id}
+GW -> UW : Read customer-facing underwriting state
+UW --> GW : Approved offer + completion deadline
+GW --> UI : Approved offer
+
+Customer -> UI : Choose effective date + payment frequency
+UI -> GW : POST /policies/api/purchases/{applicationId}/configure
+GW -> PB : Validate offer + build schedule preview
+PB -> UW : GET /internal/underwriting/{id}/approval
+UW --> PB : Approved non-lapsed offer context
+PB --> GW : Schedule preview
+GW --> UI : Review purchase configuration
+
+Customer -> UI : Accept offer
+UI -> GW : POST /policies/api/purchases/{applicationId}/accept
+GW -> PB : Record acceptance
+PB -> UW : Revalidate approved offer
+UW --> PB : Valid
+PB --> GW : Purchase created / payment required
+GW --> UI : Payment screen
+
+Customer -> UI : Pay first installment
+UI -> GW : POST /policies/api/purchases/{purchaseId}/payments
+GW -> PB : Simulate payment
+PB -> DB : Atomic payment + policy issuance transaction
+DB --> PB : Policy + schedule + PDF metadata committed
+PB --> GW : Payment successful + issued Policy
+GW --> UI : Policy issued
+UI --> Customer : Policy number + document + schedule
+@enduml

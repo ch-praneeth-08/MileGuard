@@ -1,0 +1,476 @@
+
+================================================================================
+FILE: PolicyBillingService.Domain\Entities\Installment.cs
+================================================================================
+using PolicyBillingService.Domain.Enums;
+
+namespace PolicyBillingService.Domain.Entities;
+
+public class Installment
+{
+    public Guid Id { get; set; }
+
+    public Guid PaymentScheduleId { get; set; }
+
+    public int InstallmentNumber { get; set; }
+
+    public decimal Amount { get; set; }
+
+    public DateOnly DueDate { get; set; }
+
+    public DateTime? PaidAtUtc { get; set; }
+
+    public InstallmentContractStatus ContractStatus
+    {
+        get;
+        set;
+    } = InstallmentContractStatus.Payable;
+
+    public PaymentSchedule PaymentSchedule { get; set; } =
+        null!;
+
+    public ICollection<PaymentTransaction>
+        Transactions
+    { get; set; } =
+            new List<PaymentTransaction>();
+}
+
+================================================================================
+FILE: PolicyBillingService.Domain\Entities\PaymentSchedule.cs
+================================================================================
+using PolicyBillingService.Domain.Enums;
+
+namespace PolicyBillingService.Domain.Entities;
+
+public class PaymentSchedule
+{
+    public Guid Id { get; set; }
+
+    public Guid PolicyId { get; set; }
+
+    public PaymentFrequency Frequency { get; set; }
+
+    public decimal AnnualPremium { get; set; }
+
+    public DateTime CreatedAtUtc { get; set; }
+
+    public Policy Policy { get; set; } =
+        null!;
+
+    public ICollection<Installment>
+        Installments
+    { get; set; } =
+            new List<Installment>();
+}
+
+================================================================================
+FILE: PolicyBillingService.Domain\Entities\PaymentTransaction.cs
+================================================================================
+using PolicyBillingService.Domain.Enums;
+
+namespace PolicyBillingService.Domain.Entities;
+
+public class PaymentTransaction
+{
+    public Guid Id { get; set; }
+
+    public string PaymentReference { get; set; } =
+        string.Empty;
+
+    public Guid? PurchaseId { get; set; }
+
+    public Guid? InstallmentId { get; set; }
+
+    public decimal Amount { get; set; }
+
+    public PaymentMethod Method { get; set; }
+
+    public PaymentResult Result { get; set; }
+
+    public DateTime AttemptedAtUtc { get; set; }
+
+    public string? FailureCode { get; set; }
+
+    public string? FailureMessage { get; set; }
+
+    public Purchase? Purchase { get; set; }
+
+    public Installment? Installment { get; set; }
+}
+
+================================================================================
+FILE: PolicyBillingService.Domain\Entities\Policy.cs
+================================================================================
+namespace PolicyBillingService.Domain.Entities;
+
+public class Policy
+{
+    public Guid Id { get; set; }
+
+    public string PolicyNumber { get; set; } =
+        string.Empty;
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public Guid OriginatingUnderwritingApplicationId
+    {
+        get;
+        set;
+    }
+
+    public DateTime IssuedAtUtc { get; set; }
+
+    public DateOnly EffectiveDate { get; set; }
+
+    public DateOnly ExpirationDate { get; set; }
+
+    public DateTime? CancellationEffectiveAtUtc { get; set; }
+
+    public Guid? PredecessorPolicyId { get; set; }
+
+    public Guid? SuccessorPolicyId { get; set; }
+
+    public Policy? PredecessorPolicy { get; set; }
+
+    public Policy? SuccessorPolicy { get; set; }
+
+    public PolicySnapshot Snapshot { get; set; } =
+        null!;
+
+    public PaymentSchedule PaymentSchedule { get; set; } =
+        null!;
+
+    public PolicyDocument? Document { get; set; }
+
+    public ICollection<PolicyStatusHistory>
+        StatusHistory
+    { get; set; } =
+            new List<PolicyStatusHistory>();
+}
+
+================================================================================
+FILE: PolicyBillingService.Domain\Entities\PolicyAddOnSnapshot.cs
+================================================================================
+namespace PolicyBillingService.Domain.Entities;
+
+public class PolicyAddOnSnapshot
+{
+    public Guid Id { get; set; }
+
+    public Guid PolicySnapshotId { get; set; }
+
+    public string AddOnName { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPrice { get; set; }
+
+    public PolicySnapshot PolicySnapshot { get; set; } =
+        null!;
+}
+
+================================================================================
+FILE: PolicyBillingService.Domain\Entities\PolicyCoverageSnapshot.cs
+================================================================================
+namespace PolicyBillingService.Domain.Entities;
+
+public class PolicyCoverageSnapshot
+{
+    public Guid Id { get; set; }
+
+    public Guid PolicySnapshotId { get; set; }
+
+    public string CoverageName { get; set; } =
+        string.Empty;
+
+    public decimal ResolvedLimitAmount { get; set; }
+
+    public decimal? DeductibleAmount { get; set; }
+
+    public PolicySnapshot PolicySnapshot { get; set; } =
+        null!;
+}
+
+
+================================================================================
+FILE: PolicyBillingService.Domain\Entities\PolicyDocument.cs
+================================================================================
+namespace PolicyBillingService.Domain.Entities;
+
+public class PolicyDocument
+{
+    public Guid Id { get; set; }
+
+    public Guid PolicyId { get; set; }
+
+    public string FileName { get; set; } =
+        string.Empty;
+
+    public string StoredFileName { get; set; } =
+        string.Empty;
+
+    public string ContentType { get; set; } =
+        "application/pdf";
+
+    public long SizeBytes { get; set; }
+
+    public DateTime GeneratedAtUtc { get; set; }
+
+    public Policy Policy { get; set; } =
+        null!;
+}
+
+================================================================================
+FILE: PolicyBillingService.Domain\Entities\PolicySnapshot.cs
+================================================================================
+using PolicyBillingService.Domain.Enums;
+
+namespace PolicyBillingService.Domain.Entities;
+
+public class PolicySnapshot
+{
+    public Guid Id { get; set; }
+
+    public Guid PolicyId { get; set; }
+
+    public Guid UnderwritingApplicationId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public string AgentIdentityUserId { get; set; } =
+        string.Empty;
+
+    public DateOnly CustomerDateOfBirth { get; set; }
+
+    public string Geography { get; set; } =
+        string.Empty;
+
+    public Guid DriverId { get; set; }
+
+    public int DriverAge { get; set; }
+
+    public int DrivingExperienceYears { get; set; }
+
+    public DateOnly LicenceIssueDate { get; set; }
+
+    public DateOnly LicenceExpiryDate { get; set; }
+
+    public bool LicenceValid { get; set; }
+
+    public string VehicleVin { get; set; } =
+        string.Empty;
+
+    public string VehicleMake { get; set; } =
+        string.Empty;
+
+    public string VehicleModel { get; set; } =
+        string.Empty;
+
+    public int VehicleManufacturingYear { get; set; }
+
+    public string VehicleType { get; set; } =
+        string.Empty;
+
+    public string FuelType { get; set; } =
+        string.Empty;
+
+    public decimal VehicleValue { get; set; }
+
+    public int CurrentOdometer { get; set; }
+
+    public int AnnualMileage { get; set; }
+
+    public string OwnershipType { get; set; } =
+        string.Empty;
+
+    public DateOnly VehiclePurchaseDate { get; set; }
+
+    public Guid PlanId { get; set; }
+
+    public string PlanName { get; set; } =
+        string.Empty;
+
+    public decimal AnnualPremium { get; set; }
+
+    public PaymentFrequency PaymentFrequency { get; set; }
+
+    public DateOnly EffectiveDate { get; set; }
+
+    public DateOnly ExpirationDate { get; set; }
+
+    public Policy Policy { get; set; } =
+        null!;
+
+    public ICollection<PolicyCoverageSnapshot>
+        Coverages
+    { get; set; } =
+            new List<PolicyCoverageSnapshot>();
+
+    public ICollection<PolicyAddOnSnapshot>
+        AddOns
+    { get; set; } =
+            new List<PolicyAddOnSnapshot>();
+}
+
+================================================================================
+FILE: PolicyBillingService.Domain\Entities\PolicyStatusHistory.cs
+================================================================================
+using PolicyBillingService.Domain.Enums;
+
+namespace PolicyBillingService.Domain.Entities;
+
+public class PolicyStatusHistory
+{
+    public Guid Id { get; set; }
+
+    public Guid PolicyId { get; set; }
+
+    public PolicyHistoryAction Action { get; set; }
+
+    public DateTime OccurredAtUtc { get; set; }
+
+    public string PerformedByIdentityUserId { get; set; } =
+        string.Empty;
+
+    public Policy Policy { get; set; } =
+        null!;
+}
+
+================================================================================
+FILE: PolicyBillingService.Domain\Entities\Purchase.cs
+================================================================================
+using PolicyBillingService.Domain.Enums;
+
+namespace PolicyBillingService.Domain.Entities;
+
+public class Purchase
+{
+    public Guid Id { get; set; }
+
+    public Guid UnderwritingApplicationId { get; set; }
+
+    public Guid? RenewalId { get; set; }
+
+    public Guid? SourcePolicyId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public DateOnly EffectiveDate { get; set; }
+
+    public PaymentFrequency PaymentFrequency { get; set; }
+
+    public decimal AnnualPremium { get; set; }
+
+    public DateTime AcceptedAtUtc { get; set; }
+
+    public Guid? IssuedPolicyId { get; set; }
+
+    public Policy? IssuedPolicy { get; set; }
+
+    public ICollection<PaymentTransaction>
+        PaymentTransactions
+    { get; set; } =
+        new List<PaymentTransaction>();
+}
+
+================================================================================
+FILE: PolicyBillingService.Domain\Entities\Renewal.cs
+================================================================================
+namespace PolicyBillingService.Domain.Entities;
+
+public class Renewal
+{
+    public Guid Id { get; set; }
+
+    public Guid SourcePolicyId { get; set; }
+
+    public Guid CustomerProfileId { get; set; }
+
+    public Guid VehicleId { get; set; }
+
+    public DateTime StartedAtUtc { get; set; }
+
+    public Guid? RenewalQuoteId { get; set; }
+
+    public Guid? RenewedPolicyId { get; set; }
+
+    public Policy SourcePolicy { get; set; } =
+        null!;
+}
+
+================================================================================
+FILE: PolicyBillingService.Domain\Enums\InstallmentContractStatus.cs
+================================================================================
+namespace PolicyBillingService.Domain.Enums;
+
+public enum InstallmentContractStatus
+{
+    Payable = 1,
+    NoLongerDue = 2
+}
+
+
+================================================================================
+FILE: PolicyBillingService.Domain\Enums\PaymentFrequency.cs
+================================================================================
+namespace PolicyBillingService.Domain.Enums;
+
+public enum PaymentFrequency
+{
+    Annual = 1,
+    SemiAnnual = 2,
+    Quarterly = 3,
+    Monthly = 4
+}
+
+================================================================================
+FILE: PolicyBillingService.Domain\Enums\PaymentMethod.cs
+================================================================================
+namespace PolicyBillingService.Domain.Enums;
+
+public enum PaymentMethod
+{
+    Card = 1,
+    Upi = 2
+}
+
+================================================================================
+FILE: PolicyBillingService.Domain\Enums\PaymentResult.cs
+================================================================================
+namespace PolicyBillingService.Domain.Enums;
+
+public enum PaymentResult
+{
+    Succeeded = 1,
+    Failed = 2
+}
+
+================================================================================
+FILE: PolicyBillingService.Domain\Enums\PolicyHistoryAction.cs
+================================================================================
+namespace PolicyBillingService.Domain.Enums;
+
+public enum PolicyHistoryAction
+{
+    Issued = 1,
+    Cancelled = 2
+}
+
+================================================================================
+FILE: PolicyBillingService.Domain\PolicyBillingService.Domain.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
+

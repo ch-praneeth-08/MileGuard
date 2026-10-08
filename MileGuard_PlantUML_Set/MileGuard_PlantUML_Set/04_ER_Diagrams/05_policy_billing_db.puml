@@ -1,0 +1,136 @@
+@startuml
+!theme plain
+hide methods
+hide stereotypes
+skinparam linetype ortho
+skinparam shadowing false
+entity "Purchases" as PU {
+  * Id : GUID
+  --
+  UnderwritingApplicationId
+  CustomerId
+  EffectiveDate
+  PaymentFrequency
+  Status
+  AcceptedAt
+}
+entity "Policies" as POL {
+  * Id : GUID
+  --
+  PolicyNumber
+  CustomerId
+  VehicleId
+  UnderwritingApplicationId
+  PreviousPolicyId
+  Status
+  EffectiveDate
+  ExpirationDate
+  CancellationEffectiveDate
+  CancellationReason
+  IssuedAt
+}
+entity "PolicySnapshots" as PS {
+  * Id : GUID
+  --
+  PolicyId : FK
+  NamedInsuredSnapshot
+  DriverSnapshot
+  VehicleSnapshot
+  PlanName
+  AnnualPremium
+  PaymentFrequency
+}
+entity "PolicyCoverageSnapshots" as PCS {
+  * Id : GUID
+  --
+  PolicySnapshotId : FK
+  CoverageCode
+  CoverageName
+  LimitAmount
+  DeductibleAmount
+}
+entity "PolicyAddOnSnapshots" as PAS {
+  * Id : GUID
+  --
+  PolicySnapshotId : FK
+  AddOnName
+  AnnualPrice
+}
+entity "PaymentSchedules" as SCH {
+  * Id : GUID
+  --
+  PolicyId : FK
+  Frequency
+  AnnualPremium
+  CreatedAt
+}
+entity "Installments" as INST {
+  * Id : GUID
+  --
+  ScheduleId : FK
+  InstallmentNumber
+  Amount
+  DueDate
+  Status
+  PaidAt
+}
+entity "PaymentTransactions" as PT {
+  * Id : GUID
+  --
+  PaymentReference
+  InstallmentId : FK
+  Amount
+  PaymentMethod
+  Status
+  CreatedAt
+  ProcessedAt
+  FailureReason
+  MockTransactionReference
+}
+entity "PolicyDocuments" as PD {
+  * Id : GUID
+  --
+  PolicyId : FK
+  OriginalFileName
+  StoredFileName
+  StoragePath
+  ContentType
+  GeneratedAt
+}
+entity "Renewals" as RN {
+  * Id : GUID
+  --
+  CurrentPolicyId : FK
+  NewPolicyId : FK
+  Status
+  RequestedAt
+  AgentIdentityUserId
+  UnderwritingApplicationId
+  CompletedAt
+}
+entity "PolicyStatusHistory" as PSH {
+  * Id : GUID
+  --
+  PolicyId : FK
+  FromStatus
+  ToStatus
+  ChangedAt
+  ChangedBy
+}
+PU ..> POL : acceptance eventually creates Policy
+POL ||--|| PS
+PS ||--o{ PCS
+PS ||--o{ PAS
+POL ||--|| SCH
+SCH ||--o{ INST
+INST ||--o{ PT
+POL ||--|| PD
+POL ||--o{ PSH
+POL ||--o{ RN : current
+POL ||--o{ RN : predecessor
+note right of POL
+Unique PolicyNumber and unique
+OriginatingUnderwritingApplicationId.
+No overlapping active/effective term per Vehicle.
+end note
+@enduml

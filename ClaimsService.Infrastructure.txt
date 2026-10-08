@@ -1,0 +1,1001 @@
+
+================================================================================
+FILE: ClaimsService.Infrastructure\ClaimsService.Infrastructure.csproj
+================================================================================
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\ClaimsService.Application\ClaimsService.Application.csproj" />
+    <ProjectReference Include="..\ClaimsService.Domain\ClaimsService.Domain.csproj" />
+  </ItemGroup>
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.19">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.19" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
+
+
+================================================================================
+FILE: ClaimsService.Infrastructure\Class1.cs
+================================================================================
+namespace ClaimsService.Infrastructure
+{
+    public class Class1
+    {
+
+    }
+}
+
+
+================================================================================
+FILE: ClaimsService.Infrastructure\Clients\CustomerVehicleClient.cs
+================================================================================
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using ClaimsService.Application.Dtos.External;
+using ClaimsService.Application.Exceptions;
+using ClaimsService.Application.Interfaces.Clients;
+using Microsoft.AspNetCore.Http;
+
+namespace ClaimsService.Infrastructure.Clients;
+
+public class CustomerVehicleClient : ICustomerVehicleClient
+{
+    private readonly HttpClient _httpClient;
+
+    private readonly IHttpContextAccessor
+        _httpContextAccessor;
+
+    public CustomerVehicleClient(
+        HttpClient httpClient,
+        IHttpContextAccessor httpContextAccessor)
+    {
+        _httpClient =
+            httpClient;
+
+        _httpContextAccessor =
+            httpContextAccessor;
+    }
+
+    public async Task<CustomerReferenceDto?> GetCustomerAsync(
+        string customerIdentityUserId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(
+                customerIdentityUserId))
+        {
+            throw new ArgumentException(
+                "Customer Identity User ID is required.",
+                nameof(customerIdentityUserId));
+        }
+
+        using var request =
+            new HttpRequestMessage(
+                HttpMethod.Get,
+                "api/customers/me");
+
+        AddAuthorizationHeader(
+            request);
+
+        using var response =
+            await SendAsync(
+                request,
+                cancellationToken);
+
+        if (response.StatusCode ==
+            HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (response.StatusCode ==
+            HttpStatusCode.Forbidden)
+        {
+            throw new ForbiddenException(
+                "Customer profile access was denied.");
+        }
+
+        if (response.StatusCode ==
+            HttpStatusCode.Unauthorized)
+        {
+            throw new ForbiddenException(
+                "Customer authorization is invalid or has expired.");
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new ServiceUnavailableException(
+                "Customer information could not be loaded.");
+        }
+
+        var customer =
+            await response.Content
+                .ReadFromJsonAsync<CustomerReferenceDto>(
+                    cancellationToken:
+                        cancellationToken);
+
+        if (customer is null)
+        {
+            throw new ServiceUnavailableException(
+                "Customer Vehicle service returned an invalid Customer response.");
+        }
+
+        return customer;
+    }
+
+    public async Task<bool> IsCustomerAssignedToAgentAsync(
+        Guid customerProfileId,
+        string agentIdentityUserId,
+        CancellationToken cancellationToken = default)
+    {
+        if (customerProfileId ==
+            Guid.Empty)
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            return false;
+        }
+
+        using var request =
+            new HttpRequestMessage(
+                HttpMethod.Get,
+                $"api/agent/customers/{customerProfileId}");
+
+        AddAuthorizationHeader(
+            request);
+
+        using var response =
+            await SendAsync(
+                request,
+                cancellationToken);
+
+        if (response.IsSuccessStatusCode)
+        {
+            return true;
+        }
+
+        if (response.StatusCode ==
+            HttpStatusCode.Forbidden)
+        {
+            return false;
+        }
+
+        if (response.StatusCode ==
+            HttpStatusCode.NotFound)
+        {
+            return false;
+        }
+
+        if (response.StatusCode ==
+            HttpStatusCode.Unauthorized)
+        {
+            throw new ForbiddenException(
+                "Agent authorization is invalid or has expired.");
+        }
+
+        throw new ServiceUnavailableException(
+            "Customer assignment information is temporarily unavailable.");
+    }
+
+    private async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _httpClient.SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead,
+                cancellationToken);
+        }
+        catch (HttpRequestException)
+        {
+            throw new ServiceUnavailableException(
+                "Customer Vehicle service is temporarily unavailable.");
+        }
+        catch (TaskCanceledException)
+            when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new ServiceUnavailableException(
+                "Customer Vehicle service request timed out.");
+        }
+    }
+
+    private void AddAuthorizationHeader(
+        HttpRequestMessage request)
+    {
+        var httpContext =
+            _httpContextAccessor.HttpContext;
+
+        if (httpContext is null)
+        {
+            throw new ForbiddenException(
+                "The current request context is unavailable.");
+        }
+
+        var authorization =
+            httpContext
+                .Request
+                .Headers
+                .Authorization
+                .FirstOrDefault();
+
+        if (string.IsNullOrWhiteSpace(
+                authorization))
+        {
+            throw new ForbiddenException(
+                "Authorization information is missing.");
+        }
+
+        if (!AuthenticationHeaderValue.TryParse(
+                authorization,
+                out var authorizationHeader))
+        {
+            throw new ForbiddenException(
+                "Authorization information is invalid.");
+        }
+
+        request.Headers.Authorization =
+            authorizationHeader;
+    }
+}
+
+================================================================================
+FILE: ClaimsService.Infrastructure\Clients\IdentityClient.cs
+================================================================================
+using System.Net;
+using System.Net.Http.Json;
+using ClaimsService.Application.Dtos.External;
+using ClaimsService.Application.Exceptions;
+using ClaimsService.Application.Interfaces.Clients;
+
+namespace ClaimsService.Infrastructure.Clients;
+
+public class IdentityClient : IIdentityClient
+{
+    private readonly HttpClient _httpClient;
+
+    public IdentityClient(
+        HttpClient httpClient)
+    {
+        _httpClient =
+            httpClient;
+    }
+
+    public async Task<IReadOnlyList<ClaimsOfficerIdentityDto>>
+        GetEligibleClaimsOfficersAsync(
+            CancellationToken cancellationToken = default)
+    {
+        using var response =
+            await SendAsync(
+                new HttpRequestMessage(
+                    HttpMethod.Get,
+                    "internal/identity/claims-officers/eligible"),
+                cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new ServiceUnavailableException(
+                "Eligible Claims Officer information could not be loaded.");
+        }
+
+        var claimsOfficers =
+            await response.Content
+                .ReadFromJsonAsync<
+                    List<ClaimsOfficerIdentityDto>>(
+                    cancellationToken:
+                        cancellationToken);
+
+        return claimsOfficers ??
+            [];
+    }
+
+    public async Task<ClaimsOfficerIdentityDto?>
+        GetEligibleClaimsOfficerAsync(
+            string identityUserId,
+            CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(
+                identityUserId))
+        {
+            return null;
+        }
+
+        var encodedIdentityUserId =
+            Uri.EscapeDataString(
+                identityUserId);
+
+        using var response =
+            await SendAsync(
+                new HttpRequestMessage(
+                    HttpMethod.Get,
+                    $"internal/identity/claims-officers/{encodedIdentityUserId}/eligible"),
+                cancellationToken);
+
+        if (response.StatusCode ==
+            HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new ServiceUnavailableException(
+                "Claims Officer eligibility could not be verified.");
+        }
+
+        return await response.Content
+            .ReadFromJsonAsync<
+                ClaimsOfficerIdentityDto>(
+                cancellationToken:
+                    cancellationToken);
+    }
+
+    private async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _httpClient.SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead,
+                cancellationToken);
+        }
+        catch (HttpRequestException)
+        {
+            throw new ServiceUnavailableException(
+                "Identity service is temporarily unavailable.");
+        }
+        catch (TaskCanceledException)
+            when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new ServiceUnavailableException(
+                "Identity service request timed out.");
+        }
+    }
+}
+
+================================================================================
+FILE: ClaimsService.Infrastructure\Clients\PolicyBillingClient.cs
+================================================================================
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using ClaimsService.Application.Dtos.External;
+using ClaimsService.Application.Exceptions;
+using ClaimsService.Application.Interfaces.Clients;
+using Microsoft.AspNetCore.Http;
+
+namespace ClaimsService.Infrastructure.Clients;
+
+public class PolicyBillingClient : IPolicyBillingClient
+{
+    private readonly HttpClient _httpClient;
+
+    private readonly IHttpContextAccessor
+        _httpContextAccessor;
+
+    public PolicyBillingClient(
+        HttpClient httpClient,
+        IHttpContextAccessor httpContextAccessor)
+    {
+        _httpClient =
+            httpClient;
+
+        _httpContextAccessor =
+            httpContextAccessor;
+    }
+
+    public async Task<PolicyForClaimDto?> GetAgentPolicyAsync(
+        Guid policyId,
+        string agentIdentityUserId,
+        CancellationToken cancellationToken = default)
+    {
+        if (policyId == Guid.Empty)
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                agentIdentityUserId))
+        {
+            throw new ForbiddenException(
+                "Agent identity is required.");
+        }
+
+        using var request =
+            new HttpRequestMessage(
+                HttpMethod.Get,
+                $"api/agent/policies/{policyId}");
+
+        AddAuthorizationHeader(
+            request);
+
+        using var response =
+            await SendAsync(
+                request,
+                cancellationToken);
+
+        if (response.StatusCode ==
+            HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (response.StatusCode ==
+            HttpStatusCode.Forbidden)
+        {
+            throw new ForbiddenException(
+                "The selected Policy is not available to the current Agent.");
+        }
+
+        if (response.StatusCode ==
+            HttpStatusCode.Unauthorized)
+        {
+            throw new ForbiddenException(
+                "Agent authorization is invalid or has expired.");
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new ServiceUnavailableException(
+                "Policy information could not be loaded.");
+        }
+
+        var policy =
+            await response.Content
+                .ReadFromJsonAsync<PolicyForClaimDto>(
+                    cancellationToken:
+                        cancellationToken);
+
+        if (policy is null)
+        {
+            throw new ServiceUnavailableException(
+                "Policy Billing service returned an invalid Policy response.");
+        }
+
+        return policy;
+    }
+
+    private async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _httpClient.SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead,
+                cancellationToken);
+        }
+        catch (HttpRequestException)
+        {
+            throw new ServiceUnavailableException(
+                "Policy Billing service is temporarily unavailable.");
+        }
+        catch (TaskCanceledException)
+            when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new ServiceUnavailableException(
+                "Policy Billing service request timed out.");
+        }
+    }
+
+    private void AddAuthorizationHeader(
+        HttpRequestMessage request)
+    {
+        var httpContext =
+            _httpContextAccessor.HttpContext;
+
+        if (httpContext is null)
+        {
+            throw new ForbiddenException(
+                "The current request context is unavailable.");
+        }
+
+        var authorization =
+            httpContext
+                .Request
+                .Headers
+                .Authorization
+                .FirstOrDefault();
+
+        if (string.IsNullOrWhiteSpace(
+                authorization))
+        {
+            throw new ForbiddenException(
+                "Authorization information is missing.");
+        }
+
+        if (!AuthenticationHeaderValue.TryParse(
+                authorization,
+                out var authorizationHeader))
+        {
+            throw new ForbiddenException(
+                "Authorization information is invalid.");
+        }
+
+        request.Headers.Authorization =
+            authorizationHeader;
+    }
+}
+
+================================================================================
+FILE: ClaimsService.Infrastructure\DependencyInjection.cs
+================================================================================
+using ClaimsService.Application.Interfaces.Clients;
+using ClaimsService.Application.Interfaces.Repositories;
+using ClaimsService.Infrastructure.Clients;
+using ClaimsService.Infrastructure.Persistence;
+using ClaimsService.Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace ClaimsService.Infrastructure;
+
+public static class DependencyInjection
+{
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var connectionString =
+            configuration.GetConnectionString(
+                "ClaimsDb");
+
+        if (string.IsNullOrWhiteSpace(
+                connectionString))
+        {
+            throw new InvalidOperationException(
+                "Connection string 'ClaimsDb' is not configured.");
+        }
+
+        services.AddDbContext<ClaimsDbContext>(
+            options =>
+                options.UseSqlServer(
+                    connectionString));
+
+        services.AddScoped<
+            IClaimRepository,
+            ClaimRepository>();
+
+        services.AddHttpContextAccessor();
+
+        var customerVehicleServiceUrl =
+            configuration[
+                "Services:CustomerVehicleService"];
+
+        if (string.IsNullOrWhiteSpace(
+                customerVehicleServiceUrl))
+        {
+            throw new InvalidOperationException(
+                "Customer Vehicle service URL is not configured.");
+        }
+
+        var policyBillingServiceUrl =
+            configuration[
+                "Services:PolicyBillingService"];
+
+
+        if (string.IsNullOrWhiteSpace(
+                policyBillingServiceUrl))
+        {
+            throw new InvalidOperationException(
+                "Policy Billing service URL is not configured.");
+        }
+        var identityServiceUrl =
+    configuration[
+        "Services:IdentityService"];
+
+        if (string.IsNullOrWhiteSpace(
+                identityServiceUrl))
+        {
+            throw new InvalidOperationException(
+                "Identity service URL is not configured.");
+        }
+        services.AddHttpClient<
+            ICustomerVehicleClient,
+            CustomerVehicleClient>(
+            client =>
+            {
+                client.BaseAddress =
+                    new Uri(
+                        customerVehicleServiceUrl);
+
+                client.Timeout =
+                    TimeSpan.FromSeconds(15);
+            });
+
+        services.AddHttpClient<
+            IPolicyBillingClient,
+            PolicyBillingClient>(
+            client =>
+            {
+                client.BaseAddress =
+                    new Uri(
+                        policyBillingServiceUrl);
+
+                client.Timeout =
+                    TimeSpan.FromSeconds(15);
+            });
+
+        services.AddHttpClient<
+            IIdentityClient,
+            IdentityClient>(
+            client =>
+            {
+                client.BaseAddress =
+                    new Uri(
+                        identityServiceUrl);
+
+                client.Timeout =
+                    TimeSpan.FromSeconds(15);
+            });
+                return services;
+            }
+}
+
+================================================================================
+FILE: ClaimsService.Infrastructure\Persistence\ClaimsDbContext.cs
+================================================================================
+using ClaimsService.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace ClaimsService.Infrastructure.Persistence;
+
+public class ClaimsDbContext : DbContext
+{
+    public ClaimsDbContext(
+        DbContextOptions<ClaimsDbContext> options)
+        : base(options)
+    {
+    }
+
+    public DbSet<Claim> Claims =>
+        Set<Claim>();
+
+    protected override void OnModelCreating(
+        ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(
+            modelBuilder);
+
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            typeof(ClaimsDbContext).Assembly);
+    }
+}
+
+================================================================================
+FILE: ClaimsService.Infrastructure\Persistence\Configurations\ClaimConfiguration.cs
+================================================================================
+using ClaimsService.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace ClaimsService.Infrastructure.Persistence.Configurations;
+
+public class ClaimConfiguration :
+    IEntityTypeConfiguration<Claim>
+{
+    public void Configure(
+        EntityTypeBuilder<Claim> builder)
+    {
+        builder.ToTable(
+            "Claims");
+
+        builder.HasKey(
+            claim => claim.Id);
+
+        builder.Property(
+                claim => claim.ClaimNumber)
+            .HasMaxLength(50)
+            .IsRequired();
+
+        builder.HasIndex(
+                claim => claim.ClaimNumber)
+            .IsUnique();
+
+        builder.Property(
+                claim => claim.PolicyId)
+            .IsRequired();
+
+        builder.Property(
+                claim => claim.CustomerProfileId)
+            .IsRequired();
+
+        builder.Property(
+                claim => claim.VehicleId)
+            .IsRequired();
+
+        builder.Property(
+                claim => claim.ClaimType)
+            .HasConversion<string>()
+            .HasMaxLength(50)
+            .IsRequired();
+
+        builder.Property(
+                claim => claim.IncidentAtUtc)
+            .IsRequired();
+
+        builder.Property(
+                claim => claim.IncidentLocation)
+            .HasMaxLength(250)
+            .IsRequired();
+
+        builder.Property(
+                claim => claim.IncidentDescription)
+            .HasMaxLength(2000)
+            .IsRequired();
+
+        builder.Property(
+                claim => claim.EstimatedLossAmount)
+            .HasPrecision(
+                18,
+                2)
+            .IsRequired();
+
+        builder.Property(
+                claim => claim.Status)
+            .HasConversion<string>()
+            .HasMaxLength(50)
+            .IsRequired();
+
+        builder.Property(
+                claim => claim.SubmittedAtUtc)
+            .IsRequired();
+
+        builder.Property(
+                claim =>
+                    claim.AssignedClaimsOfficerIdentityUserId)
+            .HasMaxLength(450);
+
+        builder.Property(
+                claim =>
+                    claim.AssignedByAdminIdentityUserId)
+            .HasMaxLength(450);
+
+        builder.Property(
+                claim =>
+                    claim.ReviewedByIdentityUserId)
+            .HasMaxLength(450);
+
+        builder.Property(
+                claim => claim.DecisionReason)
+            .HasMaxLength(2000);
+
+        builder.Property(
+                claim => claim.ApprovedAmount)
+            .HasPrecision(
+                18,
+                2);
+
+        builder.HasIndex(
+            claim =>
+                claim.CustomerProfileId);
+
+        builder.HasIndex(
+            claim =>
+                claim.PolicyId);
+
+        builder.HasIndex(
+            claim =>
+                claim.VehicleId);
+
+        builder.HasIndex(
+            claim =>
+                claim.Status);
+
+        builder.HasIndex(
+            claim =>
+                claim.SubmittedAtUtc);
+
+        builder.HasIndex(
+            claim =>
+                claim.AssignedClaimsOfficerIdentityUserId);
+
+        builder.HasIndex(
+            claim =>
+                claim.ReviewedByIdentityUserId);
+    }
+}
+
+================================================================================
+FILE: ClaimsService.Infrastructure\Repositories\ClaimRepository.cs
+================================================================================
+using ClaimsService.Application.Interfaces.Repositories;
+using ClaimsService.Domain.Entities;
+using ClaimsService.Domain.Enums;
+using ClaimsService.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+
+namespace ClaimsService.Infrastructure.Repositories;
+
+public class ClaimRepository : IClaimRepository
+{
+    private readonly ClaimsDbContext _dbContext;
+
+    public ClaimRepository(
+        ClaimsDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task AddAsync(
+        Claim claim)
+    {
+        ArgumentNullException.ThrowIfNull(
+            claim);
+
+        await _dbContext.Claims.AddAsync(
+            claim);
+    }
+
+    public async Task<Claim?> GetByIdAsync(
+        Guid claimId)
+    {
+        return await _dbContext.Claims
+            .FirstOrDefaultAsync(
+                claim =>
+                    claim.Id == claimId);
+    }
+
+    public async Task<IReadOnlyList<Claim>>
+        GetByCustomerProfileIdAsync(
+            Guid customerProfileId)
+    {
+        return await _dbContext.Claims
+            .AsNoTracking()
+            .Where(
+                claim =>
+                    claim.CustomerProfileId ==
+                    customerProfileId)
+            .OrderByDescending(
+                claim =>
+                    claim.SubmittedAtUtc)
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<Claim>>
+        GetAllAsync()
+    {
+        return await _dbContext.Claims
+            .AsNoTracking()
+            .OrderByDescending(
+                claim =>
+                    claim.SubmittedAtUtc)
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<Claim>>
+        GetByStatusesAsync(
+            IReadOnlyCollection<ClaimStatus> statuses)
+    {
+        ArgumentNullException.ThrowIfNull(
+            statuses);
+
+        if (statuses.Count == 0)
+        {
+            return [];
+        }
+
+        return await _dbContext.Claims
+            .AsNoTracking()
+            .Where(
+                claim =>
+                    statuses.Contains(
+                        claim.Status))
+            .OrderBy(
+                claim =>
+                    claim.SubmittedAtUtc)
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<Claim>>
+        GetUnassignedAsync()
+    {
+        return await _dbContext.Claims
+            .AsNoTracking()
+            .Where(
+                claim =>
+                    claim.Status ==
+                        ClaimStatus.Submitted &&
+                    claim.AssignedClaimsOfficerIdentityUserId ==
+                        null)
+            .OrderBy(
+                claim =>
+                    claim.SubmittedAtUtc)
+            .ToListAsync();
+    }
+
+    public async Task<IReadOnlyList<Claim>>
+        GetByAssignedClaimsOfficerAsync(
+            string claimsOfficerIdentityUserId)
+    {
+        if (string.IsNullOrWhiteSpace(
+                claimsOfficerIdentityUserId))
+        {
+            return [];
+        }
+
+        return await _dbContext.Claims
+            .AsNoTracking()
+            .Where(
+                claim =>
+                    claim.AssignedClaimsOfficerIdentityUserId ==
+                    claimsOfficerIdentityUserId)
+            .OrderByDescending(
+                claim =>
+                    claim.AssignedAtUtc)
+            .ToListAsync();
+    }
+
+    public async Task<int>
+        GetActionableCountByClaimsOfficerAsync(
+            string claimsOfficerIdentityUserId)
+    {
+        if (string.IsNullOrWhiteSpace(
+                claimsOfficerIdentityUserId))
+        {
+            return 0;
+        }
+
+        return await _dbContext.Claims
+            .AsNoTracking()
+            .CountAsync(
+                claim =>
+                    claim.AssignedClaimsOfficerIdentityUserId ==
+                        claimsOfficerIdentityUserId &&
+                    (
+                        claim.Status ==
+                            ClaimStatus.Submitted ||
+                        claim.Status ==
+                            ClaimStatus.InReview ||
+                        claim.Status ==
+                            ClaimStatus.Approved ||
+                        claim.Status ==
+                            ClaimStatus.Settled
+                    ));
+    }
+
+    public async Task<bool> ClaimNumberExistsAsync(
+        string claimNumber)
+    {
+        if (string.IsNullOrWhiteSpace(
+                claimNumber))
+        {
+            return false;
+        }
+
+        return await _dbContext.Claims
+            .AsNoTracking()
+            .AnyAsync(
+                claim =>
+                    claim.ClaimNumber ==
+                    claimNumber);
+    }
+
+    public async Task SaveChangesAsync()
+    {
+        await _dbContext.SaveChangesAsync();
+    }
+}
