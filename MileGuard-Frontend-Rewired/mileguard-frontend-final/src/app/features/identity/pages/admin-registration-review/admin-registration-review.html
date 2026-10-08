@@ -1,0 +1,384 @@
+<main
+  class="min-h-screen bg-[var(--color-warm-white)]"
+>
+  <!-- Top bar -->
+  <header
+    class="border-b border-[var(--color-border)] bg-white"
+  >
+    <div
+      class="mx-auto flex max-w-5xl items-center justify-between px-5 py-4 sm:px-8"
+    >
+      <div
+        class="flex items-center gap-3"
+      >
+        <span
+          class="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-primary)] text-sm font-bold text-white"
+          aria-hidden="true"
+        >
+          AI
+        </span>
+
+        <div>
+          <p
+            class="text-sm font-semibold text-[var(--color-ink)]"
+          >
+            Auto Insurance
+          </p>
+
+          <p
+            class="text-xs text-zinc-500"
+          >
+            Admin
+          </p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        (click)="back()"
+        class="text-sm font-semibold text-zinc-500 transition hover:text-[var(--color-ink)]"
+      >
+        Back to Internal Users
+      </button>
+    </div>
+  </header>
+
+  <div
+    class="mx-auto max-w-5xl px-5 py-8 sm:px-8 lg:py-12"
+  >
+    <!-- Breadcrumb -->
+    <p
+      class="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400"
+    >
+      Admin / Internal Users / Registration Review
+    </p>
+
+    <!-- Header -->
+    <div class="mt-3">
+      <h1
+        class="text-4xl font-semibold tracking-[-0.04em] text-[var(--color-ink)]"
+      >
+        Review registration
+      </h1>
+
+      <p
+        class="mt-3 max-w-2xl text-sm leading-6 text-zinc-600"
+      >
+        Review the applicant details, select an operational
+        role when approving, or reject the registration.
+      </p>
+    </div>
+
+    @if (errorMessage()) {
+      <div
+        role="alert"
+        class="mt-7 rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm leading-6 text-[var(--color-danger)]"
+      >
+        {{ errorMessage() }}
+      </div>
+    }
+
+    @if (actionMessage()) {
+      <div
+        role="status"
+        class="mt-7 rounded-xl border border-green-200 bg-green-50 px-5 py-4 text-sm font-medium text-[var(--color-success)]"
+      >
+        {{ actionMessage() }}
+      </div>
+    }
+
+    @if (isLoading()) {
+      <!-- Loading -->
+      <section
+        class="mt-8 rounded-2xl border border-[var(--color-border)] bg-white p-6 sm:p-8"
+      >
+        <div
+          class="h-5 w-56 animate-pulse rounded bg-zinc-200"
+        ></div>
+
+        <div
+          class="mt-8 grid gap-6 sm:grid-cols-2"
+        >
+          @for (item of [1, 2, 3, 4]; track item) {
+            <div>
+              <div
+                class="h-3 w-24 animate-pulse rounded bg-zinc-100"
+              ></div>
+
+              <div
+                class="mt-3 h-5 w-44 animate-pulse rounded bg-zinc-200"
+              ></div>
+            </div>
+          }
+        </div>
+      </section>
+    } @else if (registration(); as applicant) {
+
+      <!-- Applicant information -->
+      <section
+        class="mt-8 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white"
+      >
+        <div
+          class="border-b border-[var(--color-border)] px-6 py-5 sm:px-8"
+        >
+          <div
+            class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"
+          >
+            <div>
+              <p
+                class="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-400"
+              >
+                Applicant
+              </p>
+
+              <h2
+                class="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[var(--color-ink)]"
+              >
+                {{ applicant.firstName }}
+                {{ applicant.lastName }}
+              </h2>
+            </div>
+
+            <span
+              class="inline-flex w-fit items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-[var(--color-warning)]"
+            >
+              <span
+                class="h-1.5 w-1.5 rounded-full bg-[var(--color-warning)]"
+                aria-hidden="true"
+              ></span>
+
+              {{ applicant.status }}
+            </span>
+          </div>
+        </div>
+
+        <div
+          class="grid gap-7 px-6 py-7 sm:grid-cols-2 sm:px-8"
+        >
+          <div>
+            <p
+              class="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+            >
+              First Name
+            </p>
+
+            <p
+              class="mt-2 text-sm font-semibold text-[var(--color-ink)]"
+            >
+              {{ applicant.firstName }}
+            </p>
+          </div>
+
+          <div>
+            <p
+              class="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+            >
+              Last Name
+            </p>
+
+            <p
+              class="mt-2 text-sm font-semibold text-[var(--color-ink)]"
+            >
+              {{ applicant.lastName }}
+            </p>
+          </div>
+
+          <div>
+            <p
+              class="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+            >
+              Email
+            </p>
+
+            <p
+              class="mt-2 break-all text-sm font-semibold text-[var(--color-ink)]"
+            >
+              {{ applicant.email }}
+            </p>
+          </div>
+
+          <div>
+            <p
+              class="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+            >
+              Registered On
+            </p>
+
+            <p
+              class="mt-2 text-sm font-semibold text-[var(--color-ink)]"
+            >
+              {{
+                applicant.registeredAtUtc
+                  | date: 'dd MMM yyyy, h:mm a'
+              }}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Approval -->
+      <section
+        class="mt-6 rounded-2xl border border-[var(--color-border)] bg-white p-6 sm:p-8"
+      >
+        <div
+          class="max-w-2xl"
+        >
+          <p
+            class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+          >
+            Approval
+          </p>
+
+          <h2
+            class="mt-2 text-xl font-semibold tracking-[-0.025em] text-[var(--color-ink)]"
+          >
+            Assign an operational role
+          </h2>
+
+          <p
+            class="mt-2 text-sm leading-6 text-zinc-600"
+          >
+            A role is assigned only when the registration is
+            approved. Pending applicants do not have an
+            operational role.
+          </p>
+        </div>
+
+        <form
+          [formGroup]="form"
+          (ngSubmit)="approve()"
+          class="mt-6"
+        >
+          <label
+            for="role"
+            class="mb-2 block text-sm font-medium text-[var(--color-ink)]"
+          >
+            Operational Role
+          </label>
+
+          <select
+            id="role"
+            formControlName="role"
+            class="w-full max-w-md rounded-xl border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-ink)] outline-none transition focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+          >
+            <option
+              value=""
+              disabled
+            >
+              Select a role
+            </option>
+
+            @for (role of roles; track role) {
+              <option
+                [value]="role"
+              >
+                {{ role }}
+              </option>
+            }
+          </select>
+
+          @if (
+            form.controls.role.touched &&
+            form.controls.role.hasError('required')
+          ) {
+            <p
+              class="mt-2 text-sm text-[var(--color-danger)]"
+            >
+              Select an operational role before approval.
+            </p>
+          }
+
+          <!-- Actions -->
+          <div
+            class="mt-8 flex flex-col-reverse gap-3 border-t border-[var(--color-border)] pt-6 sm:flex-row sm:justify-end"
+          >
+            <button
+              type="button"
+              (click)="openRejectConfirmation()"
+              [disabled]="isSubmitting()"
+              class="rounded-xl border border-red-200 bg-white px-5 py-3 text-sm font-semibold text-[var(--color-danger)] transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Reject Registration
+            </button>
+
+            <button
+              type="submit"
+              [disabled]="
+                form.invalid ||
+                isSubmitting()
+              "
+              class="rounded-xl bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-dark)] focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              @if (isSubmitting()) {
+                Processing...
+              } @else {
+                Approve & Activate
+              }
+            </button>
+          </div>
+        </form>
+      </section>
+    }
+  </div>
+
+  <!-- Reject confirmation -->
+  @if (showRejectConfirmation()) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-5"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="reject-title"
+    >
+      <section
+        class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl sm:p-7"
+      >
+        <div
+          class="flex h-11 w-11 items-center justify-center rounded-xl bg-red-100 font-semibold text-[var(--color-danger)]"
+          aria-hidden="true"
+        >
+          !
+        </div>
+
+        <h2
+          id="reject-title"
+          class="mt-5 text-2xl font-semibold tracking-[-0.03em] text-[var(--color-ink)]"
+        >
+          Reject registration?
+        </h2>
+
+        <p
+          class="mt-3 text-sm leading-6 text-zinc-600"
+        >
+          This applicant will not receive internal access.
+          No operational role will be assigned.
+        </p>
+
+        <div
+          class="mt-7 flex justify-end gap-3"
+        >
+          <button
+            type="button"
+            (click)="cancelReject()"
+            [disabled]="isSubmitting()"
+            class="rounded-xl border border-[var(--color-border)] px-4 py-2.5 text-sm font-semibold text-zinc-600 transition hover:bg-zinc-50 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            (click)="confirmReject()"
+            [disabled]="isSubmitting()"
+            class="rounded-xl bg-[var(--color-danger)] px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+          >
+            @if (isSubmitting()) {
+              Rejecting...
+            } @else {
+              Reject Registration
+            }
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</main>

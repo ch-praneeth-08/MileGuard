@@ -1,0 +1,57 @@
+<main class="min-h-screen bg-[var(--mg-bg)] text-[var(--mg-green-950)]">
+  <section class="relative overflow-hidden border-b border-[var(--mg-border-light)] bg-[var(--mg-green-950)] text-white">
+    <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:grid lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:gap-16 lg:py-28">
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--mg-orange-300)]">MileGuard</p>
+        <h1 class="mt-5 max-w-3xl text-5xl font-semibold tracking-[-0.05em] sm:text-6xl lg:text-7xl">Protection for every mile.</h1>
+        <p class="mt-6 max-w-2xl text-base leading-7 text-white/70 sm:text-lg">A modern motor-insurance journey that keeps your profile, vehicle, quote, underwriting, payment and protection experience connected.</p>
+        <div class="mt-9 flex flex-wrap gap-3">
+          <a routerLink="/register" class="rounded-xl bg-[var(--mg-orange-500)] px-5 py-3.5 text-sm font-bold text-[var(--mg-green-950)] transition hover:translate-y-[-1px]">Get started</a>
+          <a routerLink="/login" class="rounded-xl border border-white/15 bg-white/5 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10">Sign in</a>
+        </div>
+      </div>
+      <div class="mt-12 lg:mt-0">
+        <div class="overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 p-3 shadow-2xl">
+          <div class="rounded-[1.5rem] bg-gradient-to-br from-white/10 to-transparent p-8">
+            <div class="flex items-end justify-between gap-6">
+              <div>
+                <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">Your journey</p>
+                <p class="mt-2 text-2xl font-semibold">From profile to protection.</p>
+              </div>
+              <div class="h-12 w-12 rounded-2xl bg-[var(--mg-orange-500)]/90"></div>
+            </div>
+            <div class="mt-10 space-y-5">
+              @for (step of ['Profile', 'Driver', 'Vehicle', 'Quote', 'Underwriting', 'Policy']; track step; let i = $index) {
+                <div class="flex items-center gap-4">
+                  <div class="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xs font-semibold">{{ i + 1 }}</div>
+                  <div class="flex-1 border-b border-white/10 pb-4 text-sm font-medium text-white/80">{{ step }}</div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-20">
+    <div class="max-w-2xl">
+      <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--mg-orange-600)]">How MileGuard works</p>
+      <h2 class="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">One connected insurance experience.</h2>
+    </div>
+    <div class="mt-10 grid gap-5 md:grid-cols-3">
+      <article class="rounded-[1.5rem] border border-[var(--mg-border-light)] bg-white p-6 shadow-[var(--mg-shadow-sm)]">
+        <p class="text-sm font-semibold">Tell us about you</p>
+        <p class="mt-3 text-sm leading-6 text-[var(--mg-text-secondary)]">Build your customer profile and driver information once, then keep it current throughout your journey.</p>
+      </article>
+      <article class="rounded-[1.5rem] border border-[var(--mg-border-light)] bg-white p-6 shadow-[var(--mg-shadow-sm)]">
+        <p class="text-sm font-semibold">Tell us about your vehicle</p>
+        <p class="mt-3 text-sm leading-6 text-[var(--mg-text-secondary)]">Your vehicles stay connected to the quote, underwriting and policy workflows that follow.</p>
+      </article>
+      <article class="rounded-[1.5rem] border border-[var(--mg-border-light)] bg-white p-6 shadow-[var(--mg-shadow-sm)]">
+        <p class="text-sm font-semibold">Move into protection</p>
+        <p class="mt-3 text-sm leading-6 text-[var(--mg-text-secondary)]">Follow the journey through quote, underwriting, payment and policy without losing the context that matters.</p>
+      </article>
+    </div>
+  </section>
+</main>

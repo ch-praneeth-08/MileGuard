@@ -1,0 +1,239 @@
+<main
+  class="min-h-screen bg-[var(--color-warm-white)] lg:grid lg:grid-cols-[0.9fr_1.1fr]"
+>
+  <!-- Left security panel -->
+  <section
+    class="hidden min-h-screen bg-[var(--color-deep-graphite)] px-12 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-16 xl:py-12"
+  >
+    <!-- Brand -->
+    <div
+      class="inline-flex items-center gap-3 text-lg font-semibold tracking-[-0.02em]"
+    >
+      <span
+        class="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-primary)] text-sm font-bold text-white"
+        aria-hidden="true"
+      >
+        AI
+      </span>
+
+      <span>Auto Insurance</span>
+    </div>
+
+    <!-- Main content -->
+    <div class="max-w-lg">
+      <p
+        class="mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-blue-300"
+      >
+        Account security
+      </p>
+
+      <h1
+        class="text-5xl font-semibold leading-[1.08] tracking-[-0.045em] xl:text-6xl"
+      >
+        Your secure access is ready.
+      </h1>
+
+      <p
+        class="mt-6 max-w-md text-base leading-7 text-zinc-300"
+      >
+        Two-factor authentication is now enabled for your
+        internal account. Future sign-ins will require a
+        current authenticator code.
+      </p>
+
+      <!-- Journey -->
+      <div class="mt-12 border-t border-white/10 pt-8">
+        <div class="space-y-6">
+          <!-- Approved -->
+          <div class="flex items-center gap-4">
+            <div
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-success)] text-sm font-semibold text-white"
+              aria-hidden="true"
+            >
+              âœ“
+            </div>
+
+            <div>
+              <p class="text-sm font-semibold text-white">
+                Account approved
+              </p>
+
+              <p class="mt-1 text-xs text-zinc-400">
+                Your operational role is active
+              </p>
+            </div>
+          </div>
+
+          <!-- 2FA complete -->
+          <div class="flex items-center gap-4">
+            <div
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-success)] text-sm font-semibold text-white"
+              aria-hidden="true"
+            >
+              âœ“
+            </div>
+
+            <div>
+              <p class="text-sm font-semibold text-white">
+                Two-factor authentication enabled
+              </p>
+
+              <p class="mt-1 text-xs text-zinc-400">
+                Your authenticator has been verified
+              </p>
+            </div>
+          </div>
+
+          <!-- Current -->
+          <div class="flex items-center gap-4">
+            <div
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-xs font-semibold text-white"
+              aria-hidden="true"
+            >
+              03
+            </div>
+
+            <div>
+              <p class="text-sm font-semibold text-white">
+                Continue to your workspace
+              </p>
+
+              <p class="mt-1 text-xs text-zinc-400">
+                Your secure operational session is ready
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="text-xs text-zinc-500">
+      Personal Auto Insurance
+    </p>
+  </section>
+
+  <!-- Right success panel -->
+  <section
+    class="flex min-h-screen items-center justify-center px-6 py-12 sm:px-10 lg:px-14 xl:px-20"
+  >
+    <div class="w-full max-w-lg">
+      <!-- Mobile brand -->
+      <div
+        class="mb-12 inline-flex items-center gap-3 text-lg font-semibold tracking-[-0.02em] text-[var(--color-ink)] lg:hidden"
+      >
+        <span
+          class="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-primary)] text-sm font-bold text-white"
+          aria-hidden="true"
+        >
+          AI
+        </span>
+
+        <span>Auto Insurance</span>
+      </div>
+
+      <!-- Success icon -->
+      <div
+        class="mb-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-green-100 text-xl font-semibold text-[var(--color-success)]"
+        aria-hidden="true"
+      >
+        âœ“
+      </div>
+
+      <p
+        class="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-success)]"
+      >
+        Security enabled
+      </p>
+
+      <h2
+        class="max-w-lg text-4xl font-semibold leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[42px]"
+      >
+        Two-factor authentication enabled
+      </h2>
+
+      <p
+        class="mt-5 max-w-md text-base leading-7 text-zinc-600"
+      >
+        Your account is secured and ready to use.
+      </p>
+
+      @if (currentUser(); as user) {
+        <!-- Account information -->
+        <div
+          class="mt-8 rounded-2xl border border-[var(--color-border)] bg-white p-5"
+        >
+          <div
+            class="grid gap-5 sm:grid-cols-2"
+          >
+            <div>
+              <p
+                class="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-400"
+              >
+                Account
+              </p>
+
+              <p
+                class="mt-2 break-all text-sm font-semibold text-[var(--color-ink)]"
+              >
+                {{ user.email }}
+              </p>
+            </div>
+
+            <div>
+              <p
+                class="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-400"
+              >
+                Role
+              </p>
+
+              <p
+                class="mt-2 text-sm font-semibold text-[var(--color-ink)]"
+              >
+                {{ user.role }}
+              </p>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Security information -->
+      <div
+        class="mt-5 rounded-2xl border border-green-200 bg-green-50 p-5"
+      >
+        <div class="flex items-start gap-4">
+          <div
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-100 text-sm font-semibold text-[var(--color-success)]"
+            aria-hidden="true"
+          >
+            âœ“
+          </div>
+
+          <div>
+            <p
+              class="text-sm font-semibold text-[var(--color-ink)]"
+            >
+              Authenticator verified
+            </p>
+
+            <p
+              class="mt-1 text-sm leading-6 text-zinc-600"
+            >
+              Future sign-ins will ask for the current
+              six-digit code from your authenticator after
+              your password has been verified.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Continue -->
+      <button
+        type="button"
+        (click)="continueToDashboard()"
+        class="mt-8 flex w-full items-center justify-center rounded-xl bg-[var(--color-primary)] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-dark)] focus:outline-none focus:ring-4 focus:ring-blue-200"
+      >
+        Continue to Dashboard
+      </button>
+    </div>
+  </section>
+</main>

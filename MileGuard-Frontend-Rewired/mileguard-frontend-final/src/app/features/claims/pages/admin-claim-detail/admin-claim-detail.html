@@ -1,0 +1,663 @@
+<div
+  class="min-h-screen bg-[var(--color-warm-white)]"
+>
+  <main>
+    <div
+      class="mx-auto max-w-[1100px] px-5 py-8 sm:px-8 lg:px-10 lg:py-10"
+    >
+      <button
+        type="button"
+        (click)="returnToUnassignedClaims()"
+        class="text-xs font-semibold text-[var(--color-primary)] transition hover:text-[var(--color-primary-dark)]"
+      >
+        â† Back to Unassigned Claims
+      </button>
+
+      @if (isLoading()) {
+        <section
+          class="mt-8 space-y-5"
+          aria-label="Loading Claim assignment"
+        >
+          <div
+            class="h-44 animate-pulse rounded-2xl border border-[var(--color-border)] bg-white"
+          ></div>
+
+          <div
+            class="h-64 animate-pulse rounded-2xl border border-[var(--color-border)] bg-white"
+          ></div>
+
+          <div
+            class="h-64 animate-pulse rounded-2xl border border-[var(--color-border)] bg-white"
+          ></div>
+        </section>
+      }
+
+      @if (
+        !isLoading() &&
+        errorMessage()
+      ) {
+        <section
+          role="alert"
+          class="mt-8 rounded-2xl border border-red-200 bg-white p-6 shadow-sm"
+        >
+          <h1
+            class="text-xl font-semibold text-[var(--color-ink)]"
+          >
+            Claim assignment unavailable
+          </h1>
+
+          <p
+            class="mt-2 text-sm leading-6 text-zinc-600"
+          >
+            {{ errorMessage() }}
+          </p>
+
+          <button
+            type="button"
+            (click)="retry()"
+            class="mt-5 rounded-xl bg-[var(--color-primary)] px-5 py-2.5 text-xs font-semibold text-white"
+          >
+            Retry
+          </button>
+        </section>
+      }
+
+      @if (
+        !isLoading() &&
+        !errorMessage() &&
+        claim();
+        as currentClaim
+      ) {
+        <section class="mt-7">
+          <p
+            class="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400"
+          >
+            Admin / Claims / Assignment
+          </p>
+
+          <div
+            class="mt-3 flex flex-col justify-between gap-5 sm:flex-row sm:items-start"
+          >
+            <div>
+              <p
+                class="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+              >
+                Insurance Claim
+              </p>
+
+              <h1
+                class="mt-1 text-4xl font-semibold tracking-[-0.04em] text-[var(--color-ink)]"
+              >
+                {{ currentClaim.claimNumber }}
+              </h1>
+
+              <p
+                class="mt-3 max-w-2xl text-sm leading-6 text-zinc-600"
+              >
+                Review the submitted Claim and assign an
+                eligible Claims Officer for processing.
+              </p>
+            </div>
+
+            <span
+              class="w-fit rounded-full px-3 py-1.5 text-xs font-semibold"
+              [class]="
+                statusClasses(
+                  currentClaim.status
+                )
+              "
+            >
+              {{
+                statusLabel(
+                  currentClaim.status
+                )
+              }}
+            </span>
+          </div>
+        </section>
+
+        <section
+          class="mt-7 rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-sm"
+        >
+          <div
+            class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
+          >
+            <div>
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+              >
+                Claim Type
+              </p>
+
+              <p
+                class="mt-2 text-sm font-semibold text-[var(--color-ink)]"
+              >
+                {{
+                  claimTypeLabel(
+                    currentClaim.claimType
+                  )
+                }}
+              </p>
+            </div>
+
+            <div>
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+              >
+                Estimated Loss
+              </p>
+
+              <p
+                class="mt-2 text-sm font-semibold text-[var(--color-ink)]"
+              >
+                â‚¹{{
+                  currentClaim.estimatedLossAmount
+                    | number:
+                      '1.0-0'
+                }}
+              </p>
+            </div>
+
+            <div>
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+              >
+                Incident
+              </p>
+
+              <p
+                class="mt-2 text-xs font-medium text-zinc-700"
+              >
+                {{
+                  currentClaim.incidentAtUtc
+                    | date:
+                      'dd MMM yyyy, h:mm a'
+                }}
+              </p>
+            </div>
+
+            <div>
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+              >
+                Submitted
+              </p>
+
+              <p
+                class="mt-2 text-xs font-medium text-zinc-700"
+              >
+                {{
+                  currentClaim.submittedAtUtc
+                    | date:
+                      'dd MMM yyyy, h:mm a'
+                }}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="mt-5 rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-sm"
+        >
+          <p
+            class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-primary)]"
+          >
+            Incident
+          </p>
+
+          <h2
+            class="mt-1 text-lg font-semibold text-[var(--color-ink)]"
+          >
+            Claim Information
+          </h2>
+
+          <div
+            class="mt-5 grid gap-5 sm:grid-cols-2"
+          >
+            <div>
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+              >
+                Location
+              </p>
+
+              <p
+                class="mt-2 text-sm font-medium text-zinc-700"
+              >
+                {{ currentClaim.incidentLocation }}
+              </p>
+            </div>
+
+            <div>
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+              >
+                Policy ID
+              </p>
+
+              <p
+                class="mt-2 break-all text-xs font-medium text-zinc-700"
+              >
+                {{ currentClaim.policyId }}
+              </p>
+            </div>
+          </div>
+
+          <div
+            class="mt-5 border-t border-[var(--color-border)] pt-5"
+          >
+            <p
+              class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+            >
+              Description
+            </p>
+
+            <p
+              class="mt-2 whitespace-pre-line text-sm leading-6 text-zinc-700"
+            >
+              {{ currentClaim.incidentDescription }}
+            </p>
+          </div>
+
+          <div
+            class="mt-5 grid gap-4 border-t border-[var(--color-border)] pt-5 sm:grid-cols-2"
+          >
+            <div>
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+              >
+                Customer Profile
+              </p>
+
+              <p
+                class="mt-2 break-all text-xs font-medium text-zinc-700"
+              >
+                {{ currentClaim.customerProfileId }}
+              </p>
+            </div>
+
+            <div>
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+              >
+                Vehicle
+              </p>
+
+              <p
+                class="mt-2 break-all text-xs font-medium text-zinc-700"
+              >
+                {{ currentClaim.vehicleId }}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        @if (
+          currentClaim
+            .assignedClaimsOfficerIdentityUserId
+        ) {
+          <section
+            class="mt-5 rounded-2xl border border-green-200 bg-green-50 p-6"
+          >
+            <p
+              class="text-xs font-semibold text-green-800"
+            >
+              Claims Officer assigned
+            </p>
+
+            <p
+              class="mt-2 break-all text-xs text-green-700"
+            >
+              {{
+                currentClaim
+                  .assignedClaimsOfficerIdentityUserId
+              }}
+            </p>
+
+            @if (currentClaim.assignedAtUtc) {
+              <p
+                class="mt-2 text-[10px] text-green-700"
+              >
+                Assigned
+                {{
+                  currentClaim.assignedAtUtc
+                    | date:
+                      'dd MMM yyyy, h:mm a'
+                }}
+              </p>
+            }
+          </section>
+        } @else {
+          <section
+            class="mt-5 rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-sm"
+          >
+            <p
+              class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-primary)]"
+            >
+              Assignment
+            </p>
+
+            <h2
+              class="mt-1 text-lg font-semibold text-[var(--color-ink)]"
+            >
+              Eligible Claims Officers
+            </h2>
+
+            <p
+              class="mt-1 max-w-2xl text-xs leading-5 text-zinc-500"
+            >
+              Select an eligible Claims Officer. Current
+              actionable Claim workload is shown to help
+              distribute assignments.
+            </p>
+
+            @if (
+              claimsOfficers().length === 0
+            ) {
+              <div
+                class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5"
+              >
+                <p
+                  class="text-xs font-semibold text-amber-800"
+                >
+                  No eligible Claims Officers
+                </p>
+
+                <p
+                  class="mt-1 text-[11px] leading-5 text-amber-700"
+                >
+                  IdentityService did not return an
+                  active Claims Officer who is currently
+                  eligible for assignment.
+                </p>
+              </div>
+            } @else {
+              <div
+                class="mt-6 grid gap-4 lg:grid-cols-2"
+              >
+                @for (
+                  claimsOfficer of claimsOfficers();
+                  track claimsOfficer.identityUserId
+                ) {
+                  <button
+                    type="button"
+                    (click)="
+                      selectClaimsOfficer(
+                        claimsOfficer
+                      )
+                    "
+                    [disabled]="isAssigning()"
+                    class="rounded-2xl border p-5 text-left transition disabled:cursor-not-allowed disabled:opacity-50"
+                    [class.border-blue-400]="
+                      isSelected(
+                        claimsOfficer
+                      )
+                    "
+                    [class.bg-blue-50]="
+                      isSelected(
+                        claimsOfficer
+                      )
+                    "
+                    [class.border-[var(--color-border)]]="
+                      !isSelected(
+                        claimsOfficer
+                      )
+                    "
+                    [class.bg-white]="
+                      !isSelected(
+                        claimsOfficer
+                      )
+                    "
+                  >
+                    <div
+                      class="flex items-start justify-between gap-4"
+                    >
+                      <div>
+                        <p
+                          class="text-sm font-semibold text-[var(--color-ink)]"
+                        >
+                          {{
+                            claimsOfficer.firstName
+                          }}
+                          {{
+                            claimsOfficer.lastName
+                          }}
+                        </p>
+
+                        <p
+                          class="mt-1 text-xs text-zinc-500"
+                        >
+                          {{ claimsOfficer.email }}
+                        </p>
+                      </div>
+
+                      @if (
+                        isSelected(
+                          claimsOfficer
+                        )
+                      ) {
+                        <span
+                          class="rounded-full bg-blue-100 px-3 py-1 text-[10px] font-semibold text-blue-700"
+                        >
+                          Selected
+                        </span>
+                      }
+                    </div>
+
+                    <div
+                      class="mt-5 border-t border-[var(--color-border)] pt-4"
+                    >
+                      <p
+                        class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                      >
+                        Active Workload
+                      </p>
+
+                      <p
+                        class="mt-1 text-xl font-semibold text-[var(--color-ink)]"
+                      >
+                        {{
+                          claimsOfficer.actionableClaimCount
+                        }}
+                      </p>
+
+                      <p
+                        class="mt-1 text-[10px] text-zinc-500"
+                      >
+                        actionable Claims
+                      </p>
+                    </div>
+                  </button>
+                }
+              </div>
+            }
+
+            @if (
+              selectedClaimsOfficerId.touched &&
+              selectedClaimsOfficerId.invalid
+            ) {
+              <p
+                class="mt-4 text-xs text-red-600"
+              >
+                Select a Claims Officer.
+              </p>
+            }
+
+            @if (assignmentError()) {
+              <div
+                role="alert"
+                class="mt-5 rounded-xl border border-red-200 bg-red-50 p-4"
+              >
+                <p
+                  class="text-xs leading-5 text-red-700"
+                >
+                  {{ assignmentError() }}
+                </p>
+              </div>
+            }
+
+            <div
+              class="mt-6 flex justify-end border-t border-[var(--color-border)] pt-5"
+            >
+              <button
+                type="button"
+                (click)="
+                  openAssignmentConfirmation()
+                "
+                [disabled]="
+                  selectedClaimsOfficerId.invalid ||
+                  isAssigning() ||
+                  claimsOfficers().length === 0
+                "
+                class="rounded-xl bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-dark)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Assign Claims Officer
+              </button>
+            </div>
+          </section>
+        }
+      }
+    </div>
+  </main>
+
+  @if (
+    assignmentConfirmationOpen() &&
+    claim();
+    as currentClaim
+  ) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+      role="presentation"
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="assign-claims-officer-title"
+        class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+      >
+        <p
+          class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-primary)]"
+        >
+          Claim Assignment
+        </p>
+
+        <h2
+          id="assign-claims-officer-title"
+          class="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[var(--color-ink)]"
+        >
+          Assign Claims Officer?
+        </h2>
+
+        @if (
+          selectedClaimsOfficer();
+          as claimsOfficer
+        ) {
+          <p
+            class="mt-3 text-sm leading-6 text-zinc-600"
+          >
+            Assign Claim
+            <strong
+              class="text-[var(--color-ink)]"
+            >
+              {{ currentClaim.claimNumber }}
+            </strong>
+            to
+            <strong
+              class="text-[var(--color-ink)]"
+            >
+              {{ claimsOfficer.firstName }}
+              {{ claimsOfficer.lastName }}
+            </strong>?
+          </p>
+
+          <div
+            class="mt-5 rounded-xl bg-zinc-50 p-4"
+          >
+            <div
+              class="grid gap-4 sm:grid-cols-2"
+            >
+              <div>
+                <p
+                  class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                >
+                  Claims Officer
+                </p>
+
+                <p
+                  class="mt-1 text-xs font-semibold text-zinc-700"
+                >
+                  {{ claimsOfficer.firstName }}
+                  {{ claimsOfficer.lastName }}
+                </p>
+              </div>
+
+              <div>
+                <p
+                  class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                >
+                  Current Workload
+                </p>
+
+                <p
+                  class="mt-1 text-xs font-semibold text-zinc-700"
+                >
+                  {{
+                    claimsOfficer.actionableClaimCount
+                  }}
+                  actionable Claims
+                </p>
+              </div>
+            </div>
+          </div>
+        }
+
+        <div
+          class="mt-5 rounded-xl border border-blue-100 bg-blue-50 p-4"
+        >
+          <p
+            class="text-xs font-semibold text-[var(--color-ink)]"
+          >
+            The Claim will remain Submitted
+          </p>
+
+          <p
+            class="mt-1 text-[11px] leading-5 text-zinc-600"
+          >
+            Assignment does not begin review. The
+            selected Claims Officer must explicitly
+            start the review before the Claim moves to
+            In Review.
+          </p>
+        </div>
+
+        <div
+          class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
+        >
+          <button
+            type="button"
+            (click)="
+              closeAssignmentConfirmation()
+            "
+            [disabled]="isAssigning()"
+            class="rounded-xl border border-[var(--color-border)] bg-white px-5 py-3 text-sm font-semibold text-zinc-700 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            (click)="confirmAssignment()"
+            [disabled]="isAssigning()"
+            class="rounded-xl bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-dark)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            @if (isAssigning()) {
+              Assigning...
+            } @else {
+              Confirm Assignment
+            }
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</div>

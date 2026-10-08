@@ -1,0 +1,1174 @@
+<div
+  class="min-h-screen bg-[var(--color-warm-white)]"
+>
+  <div
+    class="min-h-screen block"
+  >
+    <!-- Sidebar -->
+
+    
+
+    <!-- Main -->
+
+    <main>
+      <header
+        class="border-b border-[var(--color-border)] bg-white"
+      >
+        <div
+          class="mx-auto flex max-w-[1250px] items-center justify-between px-5 py-4 sm:px-8"
+        >
+          <div class="flex items-center gap-3">
+            <span
+              class="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-primary)] text-sm font-bold text-white"
+              aria-hidden="true"
+            >
+              AI
+            </span>
+
+            <div>
+              <p
+                class="text-sm font-semibold text-[var(--color-ink)]"
+              >
+                Auto Insurance
+              </p>
+
+              <p class="text-xs text-zinc-500">
+                Customer Â· Policy
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            (click)="backToPolicies()"
+            class="text-xs font-semibold text-zinc-500 transition hover:text-[var(--color-primary)]"
+          >
+            Back to Policies
+          </button>
+        </div>
+      </header>
+
+      <div
+        class="mx-auto max-w-[1250px] px-5 py-8 sm:px-8 lg:px-10 lg:py-10"
+      >
+        <!-- Loading -->
+
+        @if (isLoading()) {
+          <section class="space-y-5">
+            <div
+              class="h-36 animate-pulse rounded-2xl border border-[var(--color-border)] bg-white"
+            ></div>
+
+            <div
+              class="h-64 animate-pulse rounded-2xl border border-[var(--color-border)] bg-white"
+            ></div>
+
+            <div
+              class="h-72 animate-pulse rounded-2xl border border-[var(--color-border)] bg-white"
+            ></div>
+          </section>
+        }
+
+        <!-- Load error -->
+
+        @if (
+          !isLoading() &&
+          errorMessage()
+        ) {
+          <section
+            role="alert"
+            class="rounded-2xl border border-red-200 bg-white p-6 shadow-sm"
+          >
+            <div
+              class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-sm font-bold text-[var(--color-danger)]"
+            >
+              !
+            </div>
+
+            <h1
+              class="mt-4 text-xl font-semibold text-[var(--color-ink)]"
+            >
+              Policy unavailable
+            </h1>
+
+            <p
+              class="mt-2 max-w-2xl text-sm leading-6 text-zinc-600"
+            >
+              {{ errorMessage() }}
+            </p>
+
+            <div class="mt-5 flex gap-3">
+              <button
+                type="button"
+                (click)="retry()"
+                class="rounded-xl bg-[var(--color-primary)] px-5 py-2.5 text-xs font-semibold text-white"
+              >
+                Retry
+              </button>
+
+              <button
+                type="button"
+                (click)="backToPolicies()"
+                class="rounded-xl border border-[var(--color-border)] bg-white px-5 py-2.5 text-xs font-semibold text-zinc-600"
+              >
+                Back
+              </button>
+            </div>
+          </section>
+        }
+
+        @if (
+          !isLoading() &&
+          !errorMessage() &&
+          policy();
+          as currentPolicy
+        ) {
+          <!-- Heading -->
+
+          <p
+            class="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400"
+          >
+            Customer / Policies / Policy
+          </p>
+
+          <div
+            class="mt-3 flex flex-col justify-between gap-5 sm:flex-row sm:items-start"
+          >
+            <div>
+              <p
+                class="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+              >
+                Insurance Policy
+              </p>
+
+              <div
+                class="mt-2 flex flex-wrap items-center gap-3"
+              >
+                <h1
+                  class="text-3xl font-semibold tracking-[-0.04em] text-[var(--color-ink)]"
+                >
+                  {{ currentPolicy.policyNumber }}
+                </h1>
+
+                <span
+                  class="rounded-full px-3 py-1 text-[10px] font-semibold"
+                  [class]="statusClasses()"
+                >
+                  {{ currentPolicy.effectiveStatus }}
+                </span>
+              </div>
+
+              <p
+                class="mt-3 text-sm text-zinc-600"
+              >
+                {{ currentPolicy.planName }}
+              </p>
+            </div>
+
+            <div class="sm:text-right">
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+              >
+                Annual Premium
+              </p>
+
+              <p
+                class="mt-1 text-3xl font-semibold tracking-[-0.04em] text-[var(--color-ink)]"
+              >
+                â‚¹{{
+                  currentPolicy.annualPremium
+                    | number: '1.0-0'
+                }}
+              </p>
+
+              <p
+                class="mt-1 text-[10px] text-zinc-500"
+              >
+                {{ currentPolicy.paymentFrequency }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Messages -->
+
+          @if (successMessage()) {
+            <div
+              role="status"
+              class="mt-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3.5"
+            >
+              <p
+                class="text-xs font-semibold text-green-800"
+              >
+                {{ successMessage() }}
+              </p>
+            </div>
+          }
+
+          @if (actionErrorMessage()) {
+            <div
+              role="alert"
+              class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3.5"
+            >
+              <p
+                class="text-xs leading-5 text-red-700"
+              >
+                {{ actionErrorMessage() }}
+              </p>
+            </div>
+          }
+
+          <!-- Policy term -->
+
+          <section
+            class="mt-7 rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-sm"
+          >
+            <p
+              class="text-[9px] font-semibold uppercase tracking-[0.1em] text-[var(--color-primary)]"
+            >
+              Policy Term
+            </p>
+
+            <div
+              class="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
+            >
+              <div>
+                <p
+                  class="text-[9px] uppercase text-zinc-400"
+                >
+                  Effective Date
+                </p>
+
+                <p
+                  class="mt-1 text-sm font-semibold text-[var(--color-ink)]"
+                >
+                  {{
+                    currentPolicy.effectiveDate
+                      | date: 'dd MMM yyyy'
+                  }}
+                </p>
+              </div>
+
+              <div>
+                <p
+                  class="text-[9px] uppercase text-zinc-400"
+                >
+                  Expiration Date
+                </p>
+
+                <p
+                  class="mt-1 text-sm font-semibold text-[var(--color-ink)]"
+                >
+                  {{
+                    currentPolicy.expirationDate
+                      | date: 'dd MMM yyyy'
+                  }}
+                </p>
+              </div>
+
+              <div>
+                <p
+                  class="text-[9px] uppercase text-zinc-400"
+                >
+                  Issued
+                </p>
+
+                <p
+                  class="mt-1 text-sm font-semibold text-[var(--color-ink)]"
+                >
+                  {{
+                    currentPolicy.issuedAtUtc
+                      | date:
+                        'dd MMM yyyy, h:mm a'
+                  }}
+                </p>
+              </div>
+
+              <div>
+                <p
+                  class="text-[9px] uppercase text-zinc-400"
+                >
+                  Payment Frequency
+                </p>
+
+                <p
+                  class="mt-1 text-sm font-semibold text-[var(--color-ink)]"
+                >
+                  {{
+                    currentPolicy.paymentFrequency
+                  }}
+                </p>
+              </div>
+            </div>
+
+            @if (
+              currentPolicy.cancellationEffectiveAtUtc
+            ) {
+              <div
+                class="mt-5 rounded-xl border border-red-100 bg-red-50 p-4"
+              >
+                <p
+                  class="text-[9px] font-semibold uppercase text-red-600"
+                >
+                  Cancellation Effective
+                </p>
+
+                <p
+                  class="mt-1 text-xs font-semibold text-red-800"
+                >
+                  {{
+                    currentPolicy
+                      .cancellationEffectiveAtUtc
+                      | date:
+                        'dd MMM yyyy, h:mm a'
+                  }}
+                </p>
+              </div>
+            }
+          </section>
+
+          <!-- Vehicle and driver -->
+
+          <section
+            class="mt-6 grid gap-6 lg:grid-cols-2"
+          >
+            <article
+              class="rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-sm"
+            >
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.1em] text-[var(--color-primary)]"
+              >
+                Insured Vehicle
+              </p>
+
+              <h2
+                class="mt-2 text-xl font-semibold text-[var(--color-ink)]"
+              >
+                {{
+                  currentPolicy.vehicleManufacturingYear
+                }}
+                {{ currentPolicy.vehicleMake }}
+                {{ currentPolicy.vehicleModel }}
+              </h2>
+
+              <p
+                class="mt-2 text-xs text-zinc-500"
+              >
+                VIN {{ currentPolicy.vehicleVin }}
+              </p>
+
+              <dl
+                class="mt-6 grid grid-cols-2 gap-5"
+              >
+                <div>
+                  <dt
+                    class="text-[9px] uppercase text-zinc-400"
+                  >
+                    Vehicle Type
+                  </dt>
+
+                  <dd
+                    class="mt-1 text-xs font-semibold"
+                  >
+                    {{ currentPolicy.vehicleType }}
+                  </dd>
+                </div>
+
+                <div>
+                  <dt
+                    class="text-[9px] uppercase text-zinc-400"
+                  >
+                    Fuel Type
+                  </dt>
+
+                  <dd
+                    class="mt-1 text-xs font-semibold"
+                  >
+                    {{ currentPolicy.fuelType }}
+                  </dd>
+                </div>
+
+                <div>
+                  <dt
+                    class="text-[9px] uppercase text-zinc-400"
+                  >
+                    Vehicle Value
+                  </dt>
+
+                  <dd
+                    class="mt-1 text-xs font-semibold"
+                  >
+                    â‚¹{{
+                      currentPolicy.vehicleValue
+                        | number: '1.0-0'
+                    }}
+                  </dd>
+                </div>
+              </dl>
+            </article>
+
+            <article
+              class="rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-sm"
+            >
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.1em] text-[var(--color-primary)]"
+              >
+                Driver Snapshot
+              </p>
+
+              <dl
+                class="mt-5 grid grid-cols-2 gap-5"
+              >
+                <div>
+                  <dt
+                    class="text-[9px] uppercase text-zinc-400"
+                  >
+                    Driver Age
+                  </dt>
+
+                  <dd
+                    class="mt-1 text-sm font-semibold"
+                  >
+                    {{ currentPolicy.driverAge }}
+                  </dd>
+                </div>
+
+                <div>
+                  <dt
+                    class="text-[9px] uppercase text-zinc-400"
+                  >
+                    Experience
+                  </dt>
+
+                  <dd
+                    class="mt-1 text-sm font-semibold"
+                  >
+                    {{
+                      currentPolicy
+                        .drivingExperienceYears
+                    }}
+                    years
+                  </dd>
+                </div>
+
+                <div>
+                  <dt
+                    class="text-[9px] uppercase text-zinc-400"
+                  >
+                    Licence
+                  </dt>
+
+                  <dd
+                    class="mt-1 text-sm font-semibold"
+                    [class.text-green-700]="
+                      currentPolicy.licenceValid
+                    "
+                    [class.text-red-700]="
+                      !currentPolicy.licenceValid
+                    "
+                  >
+                    {{
+                      currentPolicy.licenceValid
+                        ? 'Valid'
+                        : 'Invalid'
+                    }}
+                  </dd>
+                </div>
+              </dl>
+            </article>
+          </section>
+
+          <!-- Coverage -->
+
+          <section
+            class="mt-6 rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-sm"
+          >
+            <p
+              class="text-[9px] font-semibold uppercase tracking-[0.1em] text-[var(--color-primary)]"
+            >
+              Contractual Coverage
+            </p>
+
+            <h2
+              class="mt-1 text-lg font-semibold text-[var(--color-ink)]"
+            >
+              Coverage Snapshot
+            </h2>
+
+            <div
+              class="mt-5 overflow-x-auto rounded-xl border border-[var(--color-border)]"
+            >
+              <table
+                class="w-full min-w-[650px] border-collapse text-left"
+              >
+                <thead>
+                  <tr
+                    class="border-b border-[var(--color-border)] bg-[#FAF9F6]"
+                  >
+                    <th
+                      class="px-4 py-3 text-[9px] font-semibold uppercase text-zinc-400"
+                    >
+                      Coverage
+                    </th>
+
+                    <th
+                      class="px-4 py-3 text-[9px] font-semibold uppercase text-zinc-400"
+                    >
+                      Limit
+                    </th>
+
+                    <th
+                      class="px-4 py-3 text-[9px] font-semibold uppercase text-zinc-400"
+                    >
+                      Deductible
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  @for (
+                    coverage of currentPolicy.coverages;
+                    track coverage.coverageName
+                  ) {
+                    <tr
+                      class="border-b border-[var(--color-border)] last:border-b-0"
+                    >
+                      <td
+                        class="px-4 py-3 text-xs font-semibold text-[var(--color-ink)]"
+                      >
+                        {{ coverage.coverageName }}
+                      </td>
+
+                      <td
+                        class="px-4 py-3 text-xs text-zinc-600"
+                      >
+                        â‚¹{{
+                          coverage.resolvedLimitAmount
+                            | number: '1.0-0'
+                        }}
+                      </td>
+
+                      <td
+                        class="px-4 py-3 text-xs text-zinc-600"
+                      >
+                        @if (
+                          coverage.deductibleAmount !==
+                          null
+                        ) {
+                          â‚¹{{
+                            coverage.deductibleAmount
+                              | number: '1.0-0'
+                          }}
+                        } @else {
+                          Not applicable
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mt-7">
+              <h3
+                class="text-sm font-semibold text-[var(--color-ink)]"
+              >
+                Add-ons
+              </h3>
+
+              @if (
+                currentPolicy.addOns.length === 0
+              ) {
+                <p
+                  class="mt-3 text-xs text-zinc-500"
+                >
+                  No optional add-ons are included in
+                  this Policy.
+                </p>
+              } @else {
+                <div
+                  class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+                >
+                  @for (
+                    addOn of currentPolicy.addOns;
+                    track addOn.addOnName
+                  ) {
+                    <div
+                      class="rounded-xl bg-zinc-50 p-4"
+                    >
+                      <p
+                        class="text-xs font-semibold text-[var(--color-ink)]"
+                      >
+                        {{ addOn.addOnName }}
+                      </p>
+
+                      <p
+                        class="mt-1 text-[10px] text-zinc-500"
+                      >
+                        â‚¹{{
+                          addOn.annualPrice
+                            | number: '1.0-0'
+                        }}
+                        / year
+                      </p>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </section>
+
+          <!-- Billing -->
+
+          @if (
+            payments();
+            as policyPayments
+          ) {
+            <section
+              class="mt-6 rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-sm"
+            >
+              <div
+                class="flex flex-col justify-between gap-4 sm:flex-row sm:items-start"
+              >
+                <div>
+                  <p
+                    class="text-[9px] font-semibold uppercase tracking-[0.1em] text-[var(--color-primary)]"
+                  >
+                    Billing
+                  </p>
+
+                  <h2
+                    class="mt-1 text-lg font-semibold text-[var(--color-ink)]"
+                  >
+                    Payment Schedule
+                  </h2>
+
+                  <p
+                    class="mt-1 text-xs text-zinc-500"
+                  >
+                    {{
+                      policyPayments.paymentFrequency
+                    }}
+                  </p>
+                </div>
+
+                <div
+                  class="grid grid-cols-2 gap-5 sm:text-right"
+                >
+                  <div>
+                    <p
+                      class="text-[9px] uppercase text-zinc-400"
+                    >
+                      Paid
+                    </p>
+
+                    <p
+                      class="mt-1 text-sm font-semibold text-green-700"
+                    >
+                      â‚¹{{
+                        policyPayments.totalPaid
+                          | number: '1.0-0'
+                      }}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p
+                      class="text-[9px] uppercase text-zinc-400"
+                    >
+                      Remaining
+                    </p>
+
+                    <p
+                      class="mt-1 text-sm font-semibold text-[var(--color-ink)]"
+                    >
+                      â‚¹{{
+                        policyPayments
+                          .remainingAmount
+                          | number: '1.0-0'
+                      }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="mt-6 overflow-x-auto rounded-xl border border-[var(--color-border)]"
+              >
+                <table
+                  class="w-full min-w-[760px] border-collapse text-left"
+                >
+                  <thead>
+                    <tr
+                      class="border-b border-[var(--color-border)] bg-[#FAF9F6]"
+                    >
+                      <th
+                        class="px-4 py-3 text-[9px] font-semibold uppercase text-zinc-400"
+                      >
+                        Installment
+                      </th>
+
+                      <th
+                        class="px-4 py-3 text-[9px] font-semibold uppercase text-zinc-400"
+                      >
+                        Due Date
+                      </th>
+
+                      <th
+                        class="px-4 py-3 text-[9px] font-semibold uppercase text-zinc-400"
+                      >
+                        Amount
+                      </th>
+
+                      <th
+                        class="px-4 py-3 text-[9px] font-semibold uppercase text-zinc-400"
+                      >
+                        Status
+                      </th>
+
+                      <th
+                        class="px-4 py-3 text-right text-[9px] font-semibold uppercase text-zinc-400"
+                      >
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    @for (
+                      installment of
+                        policyPayments.installments;
+                      track installment.installmentId
+                    ) {
+                      <tr
+                        class="border-b border-[var(--color-border)] last:border-b-0"
+                      >
+                        <td
+                          class="px-4 py-4 text-xs font-semibold"
+                        >
+                          #{{ installment.installmentNumber }}
+                        </td>
+
+                        <td
+                          class="px-4 py-4 text-xs text-zinc-600"
+                        >
+                          {{
+                            installment.dueDate
+                              | date: 'dd MMM yyyy'
+                          }}
+                        </td>
+
+                        <td
+                          class="px-4 py-4 text-xs font-semibold"
+                        >
+                          â‚¹{{
+                            installment.amount
+                              | number: '1.0-0'
+                          }}
+                        </td>
+
+                        <td class="px-4 py-4">
+                          <span
+                            class="rounded-full px-2.5 py-1 text-[10px] font-semibold"
+                            [class]="
+                              installmentClasses(
+                                installment.status
+                              )
+                            "
+                          >
+                            {{ installment.status }}
+                          </span>
+                        </td>
+
+                        <td
+                          class="px-4 py-4 text-right"
+                        >
+                          @if (
+                            installment.canPayNow
+                          ) {
+                            <button
+                              type="button"
+                              (click)="
+                                openPaymentDialog(
+                                  installment
+                                )
+                              "
+                              class="rounded-lg bg-[var(--color-primary)] px-4 py-2 text-xs font-semibold text-white"
+                            >
+                              Pay Now
+                            </button>
+                          } @else {
+                            <span
+                              class="text-[10px] text-zinc-400"
+                            >
+                              No action
+                            </span>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          }
+
+          <!-- Policy actions -->
+
+          <section
+            class="mt-6 rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-sm"
+          >
+            <p
+              class="text-[9px] font-semibold uppercase tracking-[0.1em] text-[var(--color-primary)]"
+            >
+              Policy Actions
+            </p>
+
+            <div
+              class="mt-5 flex flex-wrap gap-3"
+            >
+              @if (currentPolicy.hasDocument) {
+                <button
+                  type="button"
+                  (click)="downloadDocument()"
+                  [disabled]="isDownloading()"
+                  class="rounded-xl bg-[var(--color-primary)] px-5 py-3 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  @if (isDownloading()) {
+                    Downloading...
+                  } @else {
+                    Download Policy Document
+                  }
+                </button>
+              }
+
+              @if (canCancel()) {
+                <button
+                  type="button"
+                  (click)="openCancellationDialog()"
+                  [disabled]="isCancelling()"
+                  class="rounded-xl border border-red-200 bg-white px-5 py-3 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                >
+                  Cancel Policy
+                </button>
+              }
+            </div>
+
+            @if (!currentPolicy.hasDocument) {
+              <p
+                class="mt-4 text-xs text-zinc-500"
+              >
+                A Policy document is not currently
+                available for this Policy.
+              </p>
+            }
+          </section>
+        }
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ================================================= -->
+<!-- INSTALLMENT PAYMENT DIALOG -->
+<!-- ================================================= -->
+
+@if (
+  paymentDialogOpen() &&
+  selectedInstallment();
+  as installment
+) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+  >
+    <section
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="installment-payment-title"
+      class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+    >
+      <p
+        class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-primary)]"
+      >
+        Installment Payment
+      </p>
+
+      <h2
+        id="installment-payment-title"
+        class="mt-2 text-2xl font-semibold text-[var(--color-ink)]"
+      >
+        Pay installment
+        {{ installment.installmentNumber }}
+      </h2>
+
+      <div
+        class="mt-5 rounded-xl bg-zinc-50 p-4"
+      >
+        <p
+          class="text-[9px] uppercase text-zinc-400"
+        >
+          Amount
+        </p>
+
+        <p
+          class="mt-1 text-2xl font-semibold text-[var(--color-ink)]"
+        >
+          â‚¹{{
+            installment.amount
+              | number: '1.0-0'
+          }}
+        </p>
+
+        <p
+          class="mt-2 text-xs text-zinc-500"
+        >
+          Due
+          {{
+            installment.dueDate
+              | date: 'dd MMM yyyy'
+          }}
+        </p>
+      </div>
+
+      <form
+        [formGroup]="paymentForm"
+        class="mt-6 space-y-5"
+      >
+        <div>
+          <label
+            for="installmentPaymentMethod"
+            class="text-xs font-semibold text-[var(--color-ink)]"
+          >
+            Payment Method
+          </label>
+
+          <select
+            id="installmentPaymentMethod"
+            formControlName="method"
+            class="mt-2 w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-3 text-sm outline-none"
+          >
+            <option
+              [ngValue]="PaymentMethod.Card"
+            >
+              Card
+            </option>
+
+            <option
+              [ngValue]="PaymentMethod.Upi"
+            >
+              UPI
+            </option>
+          </select>
+        </div>
+
+        <div
+          class="rounded-xl border border-amber-200 bg-amber-50 p-4"
+        >
+          <p
+            class="text-xs font-semibold text-amber-800"
+          >
+            Development payment simulation
+          </p>
+
+          <p
+            class="mt-1 text-[10px] leading-5 text-amber-700"
+          >
+            No real payment credentials are
+            collected.
+          </p>
+
+          <label
+            for="installmentScenario"
+            class="mt-4 block text-[10px] font-semibold uppercase text-amber-800"
+          >
+            Simulation Outcome
+          </label>
+
+          <select
+            id="installmentScenario"
+            formControlName="testScenario"
+            class="mt-2 w-full rounded-lg border border-amber-200 bg-white px-3 py-2.5 text-xs"
+          >
+            <option value="SUCCESS">
+              Simulate successful payment
+            </option>
+
+            <option value="FAIL">
+              Simulate declined payment
+            </option>
+          </select>
+        </div>
+      </form>
+
+      @if (
+        paymentResult();
+        as result
+      ) {
+        @if (
+          result.paymentResult
+            .trim()
+            .toLowerCase() !==
+          'succeeded'
+        ) {
+          <div
+            class="mt-5 rounded-xl border border-red-200 bg-red-50 p-4"
+          >
+            <p
+              class="text-xs font-semibold text-red-800"
+            >
+              Payment unsuccessful
+            </p>
+
+            <p
+              class="mt-1 text-[11px] leading-5 text-red-700"
+            >
+              {{
+                result.failureMessage ??
+                'The simulated payment was declined.'
+              }}
+            </p>
+
+            <p
+              class="mt-3 break-all text-[10px] text-zinc-500"
+            >
+              Reference:
+              {{ result.paymentReference }}
+            </p>
+          </div>
+        }
+      }
+
+      @if (actionErrorMessage()) {
+        <div
+          class="mt-5 rounded-xl border border-red-200 bg-red-50 p-4"
+        >
+          <p
+            class="text-xs leading-5 text-red-700"
+          >
+            {{ actionErrorMessage() }}
+          </p>
+        </div>
+      }
+
+      <div
+        class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
+      >
+        <button
+          type="button"
+          (click)="closePaymentDialog()"
+          [disabled]="isPaying()"
+          class="rounded-xl border border-[var(--color-border)] px-5 py-3 text-xs font-semibold text-zinc-600 disabled:opacity-50"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          (click)="payInstallment()"
+          [disabled]="
+            paymentForm.invalid ||
+            isPaying()
+          "
+          class="rounded-xl bg-[var(--color-primary)] px-5 py-3 text-xs font-semibold text-white disabled:opacity-50"
+        >
+          @if (isPaying()) {
+            Processing...
+          } @else {
+            Pay â‚¹{{
+              installment.amount
+                | number: '1.0-0'
+            }}
+          }
+        </button>
+      </div>
+    </section>
+  </div>
+}
+
+<!-- ================================================= -->
+<!-- CANCELLATION DIALOG -->
+<!-- ================================================= -->
+
+@if (
+  cancellationDialogOpen() &&
+  policy();
+  as currentPolicy
+) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+  >
+    <section
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cancel-policy-title"
+      class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+    >
+      <p
+        class="text-[10px] font-semibold uppercase tracking-[0.1em] text-red-700"
+      >
+        Policy Cancellation
+      </p>
+
+      <h2
+        id="cancel-policy-title"
+        class="mt-2 text-2xl font-semibold text-[var(--color-ink)]"
+      >
+        Cancel this Policy?
+      </h2>
+
+      <p
+        class="mt-3 text-sm leading-6 text-zinc-600"
+      >
+        You are about to cancel Policy
+        <strong
+          class="text-[var(--color-ink)]"
+        >
+          {{ currentPolicy.policyNumber }}
+        </strong>.
+      </p>
+
+      <div
+        class="mt-5 rounded-xl border border-red-200 bg-red-50 p-4"
+      >
+        <p
+          class="text-xs font-semibold text-red-800"
+        >
+          This action affects coverage
+        </p>
+
+        <p
+          class="mt-1 text-[11px] leading-5 text-red-700"
+        >
+          The backend will determine the authoritative
+          cancellation state and mark installments that
+          are no longer due.
+        </p>
+      </div>
+
+      <div
+        class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
+      >
+        <button
+          type="button"
+          (click)="closeCancellationDialog()"
+          [disabled]="isCancelling()"
+          class="rounded-xl border border-[var(--color-border)] px-5 py-3 text-xs font-semibold text-zinc-600 disabled:opacity-50"
+        >
+          Keep Policy
+        </button>
+
+        <button
+          type="button"
+          (click)="confirmCancellation()"
+          [disabled]="isCancelling()"
+          class="rounded-xl bg-red-700 px-5 py-3 text-xs font-semibold text-white transition hover:bg-red-800 disabled:opacity-50"
+        >
+          @if (isCancelling()) {
+            Cancelling...
+          } @else {
+            Confirm Cancellation
+          }
+        </button>
+      </div>
+    </section>
+  </div>
+}

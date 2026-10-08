@@ -1,0 +1,202 @@
+<main
+  class="min-h-screen bg-[var(--color-warm-white)] lg:grid lg:grid-cols-[0.9fr_1.1fr]"
+>
+  <!-- Left brand panel -->
+  <section
+    class="hidden min-h-screen bg-[var(--color-deep-graphite)] px-12 py-10 text-white lg:flex lg:flex-col lg:justify-between xl:px-16 xl:py-12"
+  >
+    <!-- Brand -->
+    <a
+      routerLink="/login"
+      class="inline-flex items-center gap-3 text-lg font-semibold tracking-[-0.02em]"
+    >
+      <span
+        class="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-primary)] text-sm font-bold text-white"
+        aria-hidden="true"
+      >
+        AI
+      </span>
+
+      <span>Auto Insurance</span>
+    </a>
+
+    <!-- Main content -->
+    <div class="max-w-lg">
+      <p
+        class="mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-blue-300"
+      >
+        Internal access
+      </p>
+
+      <h1
+        class="text-5xl font-semibold leading-[1.08] tracking-[-0.045em] xl:text-6xl"
+      >
+        Secure access follows your account status.
+      </h1>
+
+      <p
+        class="mt-6 max-w-md text-base leading-7 text-zinc-300"
+      >
+        Internal access is available only while an account
+        remains active and authorized for operational use.
+      </p>
+
+      <!-- Account journey -->
+      <div class="mt-12 border-t border-white/10 pt-8">
+        <div class="space-y-6">
+
+          <!-- Registration -->
+          <div class="flex items-center gap-4">
+            <div
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-success)] text-sm font-semibold text-white"
+              aria-hidden="true"
+            >
+              âœ“
+            </div>
+
+            <div>
+              <p class="text-sm font-semibold text-white">
+                Registration approved
+              </p>
+
+              <p class="mt-1 text-xs text-zinc-400">
+                Internal access was previously activated
+              </p>
+            </div>
+          </div>
+
+          <!-- Role -->
+          <div class="flex items-center gap-4">
+            <div
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-success)] text-sm font-semibold text-white"
+              aria-hidden="true"
+            >
+              âœ“
+            </div>
+
+            <div>
+              <p class="text-sm font-semibold text-white">
+                Operational role assigned
+              </p>
+
+              <p class="mt-1 text-xs text-zinc-400">
+                An operational role was assigned to the account
+              </p>
+            </div>
+          </div>
+
+          <!-- Current state -->
+          <div class="flex items-center gap-4">
+            <div
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-600 text-sm font-semibold text-white"
+              aria-hidden="true"
+            >
+              !
+            </div>
+
+            <div>
+              <p class="text-sm font-semibold text-white">
+                Account inactive
+              </p>
+
+              <p class="mt-1 text-xs text-zinc-400">
+                Operational access is currently unavailable
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="text-xs text-zinc-500">
+      Personal Auto Insurance
+    </p>
+  </section>
+
+  <!-- Right status panel -->
+  <section
+    class="flex min-h-screen items-center justify-center px-6 py-12 sm:px-10 lg:px-14 xl:px-20"
+  >
+    <div class="w-full max-w-lg">
+      <!-- Mobile brand -->
+      <a
+        routerLink="/login"
+        class="mb-12 inline-flex items-center gap-3 text-lg font-semibold tracking-[-0.02em] text-[var(--color-ink)] lg:hidden"
+      >
+        <span
+          class="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-primary)] text-sm font-bold text-white"
+          aria-hidden="true"
+        >
+          AI
+        </span>
+
+        <span>Auto Insurance</span>
+      </a>
+
+      <!-- Inactive indicator -->
+      <div
+        class="mb-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-200 text-xl font-semibold text-zinc-600"
+        aria-hidden="true"
+      >
+        !
+      </div>
+
+      <p
+        class="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500"
+      >
+        Account unavailable
+      </p>
+
+      <h2
+        class="max-w-lg text-4xl font-semibold leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[42px]"
+      >
+        Your internal account is currently inactive.
+      </h2>
+
+      <p
+        class="mt-5 max-w-md text-base leading-7 text-zinc-600"
+      >
+        This account cannot access the Auto Insurance
+        platform while the account remains inactive.
+      </p>
+
+      <!-- Information panel -->
+      <div
+        class="mt-8 rounded-2xl border border-[var(--color-border)] bg-white p-5"
+      >
+        <div class="flex items-start gap-4">
+          <div
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-sm font-semibold text-zinc-600"
+            aria-hidden="true"
+          >
+            i
+          </div>
+
+          <div>
+            <p
+              class="text-sm font-semibold text-[var(--color-ink)]"
+            >
+              Access is disabled
+            </p>
+
+            <p
+              class="mt-1 text-sm leading-6 text-zinc-600"
+            >
+              An inactive account cannot continue to
+              two-factor authentication or access an
+              operational workspace.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Primary action -->
+      <a
+        routerLink="/login"
+        class="mt-8 flex w-full items-center justify-center rounded-xl bg-[var(--color-primary)] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-dark)] focus:outline-none focus:ring-4 focus:ring-blue-200"
+      >
+        Back to Sign In
+      </a>
+    </div>
+  </section>
+</main>

@@ -1,0 +1,466 @@
+<main
+  class="min-h-screen bg-[var(--color-warm-white)]"
+>
+  <!-- ================================================= -->
+  <!-- HEADER -->
+  <!-- ================================================= -->
+
+  <header
+    class="border-b border-[var(--color-border)] bg-white"
+  >
+    <div
+      class="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5 sm:px-8"
+    >
+      <div class="flex items-center gap-3">
+        <span
+          class="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-primary)] text-xs font-bold text-white"
+          aria-hidden="true"
+        >
+          AI
+        </span>
+
+        <div>
+          <p
+            class="text-[13px] font-semibold text-[var(--color-ink)]"
+          >
+            Auto Insurance
+          </p>
+
+          <p
+            class="text-[10px] text-zinc-500"
+          >
+            Customer
+          </p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        (click)="backToProfile()"
+        class="text-xs font-semibold text-zinc-500 transition hover:text-[var(--color-primary)]"
+      >
+        Back to Profile
+      </button>
+    </div>
+  </header>
+
+  <!-- ================================================= -->
+  <!-- CONTENT -->
+  <!-- ================================================= -->
+
+  <div
+    class="mx-auto max-w-6xl px-5 py-7 sm:px-8 lg:py-9"
+  >
+    <!-- =============================================== -->
+    <!-- HEADING -->
+    <!-- =============================================== -->
+
+    <div
+      class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"
+    >
+      <div>
+        <p
+          class="text-[10px] font-semibold uppercase tracking-[0.13em] text-[var(--color-primary)]"
+        >
+          Customer / Garage
+        </p>
+
+        <h1
+          class="mt-1.5 text-2xl font-semibold tracking-[-0.03em] text-[var(--color-ink)]"
+        >
+          My Garage
+        </h1>
+
+        <p
+          class="mt-1.5 max-w-2xl text-xs leading-5 text-zinc-600"
+        >
+          Review Vehicles maintained for your current
+          insurance profile.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        (click)="viewDriver()"
+        class="w-fit rounded-lg border border-[var(--color-border)] bg-white px-4 py-2.5 text-xs font-semibold text-zinc-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-[var(--color-primary)]"
+      >
+        View Primary Driver
+      </button>
+    </div>
+
+    <!-- =============================================== -->
+    <!-- READ-ONLY NOTICE -->
+    <!-- =============================================== -->
+
+    <section
+      class="mt-5 flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3.5"
+    >
+      <span
+        class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-xs font-bold text-[var(--color-primary)]"
+        aria-hidden="true"
+      >
+        i
+      </span>
+
+      <div>
+        <p
+          class="text-xs font-semibold text-[var(--color-ink)]"
+        >
+          Vehicle information is read-only
+        </p>
+
+        <p
+          class="mt-1 max-w-3xl text-[11px] leading-5 text-zinc-600"
+        >
+          Your assigned Agent manages Vehicle and image
+          information. Contact your Agent if Vehicle
+          information needs to be updated.
+        </p>
+      </div>
+    </section>
+
+    <!-- =============================================== -->
+    <!-- LOADING -->
+    <!-- =============================================== -->
+
+    @if (isLoading()) {
+      <div
+        class="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3"
+      >
+        @for (
+          item of [1, 2, 3];
+          track item
+        ) {
+          <article
+            class="overflow-hidden rounded-xl border border-[var(--color-border)] bg-white shadow-sm"
+          >
+            <div
+              class="h-40 animate-pulse bg-zinc-100"
+            ></div>
+
+            <div class="p-5">
+              <div
+                class="h-5 w-36 animate-pulse rounded bg-zinc-200"
+              ></div>
+
+              <div
+                class="mt-3 h-3 w-44 animate-pulse rounded bg-zinc-100"
+              ></div>
+
+              <div
+                class="mt-5 grid grid-cols-2 gap-4"
+              >
+                @for (
+                  detail of [1, 2, 3, 4];
+                  track detail
+                ) {
+                  <div>
+                    <div
+                      class="h-2.5 w-16 animate-pulse rounded bg-zinc-100"
+                    ></div>
+
+                    <div
+                      class="mt-2 h-4 w-20 animate-pulse rounded bg-zinc-200"
+                    ></div>
+                  </div>
+                }
+              </div>
+
+              <div
+                class="mt-5 h-9 animate-pulse rounded-lg bg-zinc-100"
+              ></div>
+            </div>
+          </article>
+        }
+      </div>
+    }
+
+    <!-- =============================================== -->
+    <!-- ERROR -->
+    <!-- =============================================== -->
+
+    @if (
+      !isLoading() &&
+      errorMessage()
+    ) {
+      <section
+        class="mt-6 rounded-xl border border-red-200 bg-white px-6 py-10 text-center"
+      >
+        <div
+          class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-red-50 text-sm font-bold text-[var(--color-danger)]"
+          aria-hidden="true"
+        >
+          !
+        </div>
+
+        <h2
+          class="mt-4 text-base font-semibold text-[var(--color-ink)]"
+        >
+          Garage unavailable
+        </h2>
+
+        <p
+          class="mx-auto mt-2 max-w-lg text-[11px] leading-5 text-zinc-600"
+        >
+          {{ errorMessage() }}
+        </p>
+
+        <button
+          type="button"
+          (click)="retry()"
+          class="mt-4 rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[var(--color-primary-dark)]"
+        >
+          Retry
+        </button>
+      </section>
+    }
+
+    <!-- =============================================== -->
+    <!-- EMPTY GARAGE -->
+    <!-- =============================================== -->
+
+    @if (
+      !isLoading() &&
+      !errorMessage() &&
+      vehicles().length === 0
+    ) {
+      <section
+        class="mt-6 rounded-xl border border-[var(--color-border)] bg-white px-6 py-12 text-center shadow-sm"
+      >
+        <div
+          class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100 text-xs font-bold text-zinc-500"
+          aria-hidden="true"
+        >
+          0
+        </div>
+
+        <h2
+          class="mt-4 text-base font-semibold text-[var(--color-ink)]"
+        >
+          No Vehicles in your Garage
+        </h2>
+
+        <p
+          class="mx-auto mt-2 max-w-lg text-[11px] leading-5 text-zinc-500"
+        >
+          Your assigned Agent has not added Vehicle
+          information yet. No action is required from you.
+        </p>
+      </section>
+    }
+
+    <!-- =============================================== -->
+    <!-- VEHICLE GARAGE -->
+    <!-- =============================================== -->
+
+    @if (
+      !isLoading() &&
+      !errorMessage() &&
+      vehicles().length > 0
+    ) {
+      <!-- Garage summary -->
+      <div
+        class="mt-6 flex items-center justify-between"
+      >
+        <p
+          class="text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+        >
+          Vehicles
+        </p>
+
+        <span
+          class="rounded-full bg-zinc-100 px-2.5 py-1 text-[10px] font-semibold text-zinc-600"
+        >
+          {{ vehicles().length }}
+          total
+        </span>
+      </div>
+
+      <div
+        class="mt-3 grid gap-5 md:grid-cols-2 xl:grid-cols-3"
+      >
+        @for (
+          vehicle of vehicles();
+          track vehicle.id
+        ) {
+          <article
+            class="group overflow-hidden rounded-xl border border-[var(--color-border)] bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-md"
+          >
+            <!-- ======================================= -->
+            <!-- PROTECTED IMAGE -->
+            <!-- ======================================= -->
+
+            <div
+              class="relative flex h-40 items-center justify-center overflow-hidden bg-gradient-to-br from-zinc-100 to-zinc-50"
+            >
+              @if (
+                vehicleImageUrl(vehicle.id);
+                as imageUrl
+              ) {
+                <img
+                  [src]="imageUrl"
+                  alt="Vehicle"
+                  class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                />
+              } @else {
+                <div class="text-center">
+                  <div
+                    class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-white text-[10px] font-bold text-zinc-400 shadow-sm"
+                    aria-hidden="true"
+                  >
+                    AI
+                  </div>
+
+                  <p
+                    class="mt-2 text-[10px] text-zinc-400"
+                  >
+                    No image available
+                  </p>
+                </div>
+              }
+
+              <!-- Readiness overlay -->
+              <div
+                class="absolute right-3 top-3"
+              >
+                @if (vehicle.ready) {
+                  <span
+                    class="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[9px] font-bold text-green-700 shadow-sm"
+                  >
+                    <span
+                      class="h-1.5 w-1.5 rounded-full bg-green-500"
+                    ></span>
+
+                    Ready
+                  </span>
+                } @else {
+                  <span
+                    class="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[9px] font-bold text-amber-700 shadow-sm"
+                  >
+                    <span
+                      class="h-1.5 w-1.5 rounded-full bg-amber-500"
+                    ></span>
+
+                    Needs Attention
+                  </span>
+                }
+              </div>
+            </div>
+
+            <!-- ======================================= -->
+            <!-- INFORMATION -->
+            <!-- ======================================= -->
+
+            <div class="p-5">
+              <h2
+                class="truncate text-base font-semibold tracking-[-0.02em] text-[var(--color-ink)]"
+              >
+                {{ vehicle.make }}
+                {{ vehicle.model }}
+              </h2>
+
+              <p
+                class="mt-1 text-[10px] text-zinc-500"
+              >
+                {{ vehicle.manufacturingYear }}
+                Â·
+                {{ vehicle.vehicleType }}
+              </p>
+
+              <dl
+                class="mt-5 grid grid-cols-2 gap-x-5 gap-y-4"
+              >
+                <div>
+                  <dt
+                    class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                  >
+                    Registration
+                  </dt>
+
+                  <dd
+                    class="mt-1 text-[11px] font-semibold text-[var(--color-ink)]"
+                  >
+                    {{
+                      vehicle
+                        .registrationNumber
+                    }}
+                  </dd>
+                </div>
+
+                <div>
+                  <dt
+                    class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                  >
+                    Age
+                  </dt>
+
+                  <dd
+                    class="mt-1 text-[11px] font-semibold text-[var(--color-ink)]"
+                  >
+                    {{ vehicle.vehicleAge }}
+                    years
+                  </dd>
+                </div>
+
+                <div>
+                  <dt
+                    class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                  >
+                    Fuel
+                  </dt>
+
+                  <dd
+                    class="mt-1 text-[11px] font-semibold text-[var(--color-ink)]"
+                  >
+                    {{ vehicle.fuelType }}
+                  </dd>
+                </div>
+
+                <div>
+                  <dt
+                    class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                  >
+                    Ownership
+                  </dt>
+
+                  <dd
+                    class="mt-1 text-[11px] font-semibold text-[var(--color-ink)]"
+                  >
+                    {{ vehicle.ownershipType }}
+                  </dd>
+                </div>
+              </dl>
+
+              <!-- Readiness issue preview -->
+              @if (
+                !vehicle.ready &&
+                vehicle.readinessIssues.length > 0
+              ) {
+                <div
+                  class="mt-4 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2.5"
+                >
+                  <p
+                    class="text-[10px] leading-4 text-amber-800"
+                  >
+                    {{
+                      vehicle
+                        .readinessIssues[0]
+                    }}
+                  </p>
+                </div>
+              }
+
+              <button
+                type="button"
+                (click)="openVehicle(vehicle)"
+                class="mt-5 w-full rounded-lg border border-[var(--color-border)] bg-white px-4 py-2.5 text-xs font-semibold text-[var(--color-primary)] transition hover:border-blue-200 hover:bg-blue-50"
+              >
+                View Vehicle
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </div>
+</main>

@@ -1,0 +1,24 @@
+<main class="min-h-[calc(100vh-72px)] px-5 py-7 sm:px-8 sm:py-9">
+  <div class="mx-auto max-w-7xl">
+    <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--mg-orange-600)]">Underwriter</p>
+        <h1 class="mt-2 text-4xl font-semibold tracking-[-0.045em] text-[var(--mg-green-950)] sm:text-5xl">Your underwriting work</h1>
+        <p class="mt-3 max-w-2xl text-sm leading-6 text-[var(--mg-text-secondary)]">Applications that need your attention, shown as an operational briefing.</p>
+      </div>
+      <p class="text-xs text-[var(--mg-text-muted)]">{{ greeting }}</p>
+    </div>
+    <section class="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+<article class="rounded-2xl border border-[var(--mg-border-light)] bg-white p-5 shadow-[var(--mg-shadow-sm)]"><p class="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mg-text-muted)]">Awaiting review</p><p class="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[var(--mg-green-950)]">{{ awaitingReview() }}</p><p class="mt-2 text-xs leading-5 text-[var(--mg-text-secondary)]">Applications assigned and waiting to be reviewed.</p></article>
+<article class="rounded-2xl border border-[var(--mg-border-light)] bg-white p-5 shadow-[var(--mg-shadow-sm)]"><p class="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mg-text-muted)]">In review</p><p class="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[var(--mg-green-950)]">{{ inReview() }}</p><p class="mt-2 text-xs leading-5 text-[var(--mg-text-secondary)]">Applications currently being worked.</p></article>
+<article class="rounded-2xl border border-[var(--mg-border-light)] bg-white p-5 shadow-[var(--mg-shadow-sm)]"><p class="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mg-text-muted)]">Completed</p><p class="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[var(--mg-green-950)]">{{ completed() }}</p><p class="mt-2 text-xs leading-5 text-[var(--mg-text-secondary)]">Applications with a recorded decision.</p></article>
+<article class="rounded-2xl border border-[var(--mg-border-light)] bg-white p-5 shadow-[var(--mg-shadow-sm)]"><p class="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--mg-text-muted)]">Actionable</p><p class="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[var(--mg-green-950)]">{{ actionable() }}</p><p class="mt-2 text-xs leading-5 text-[var(--mg-text-secondary)]">Total applications currently assigned to you.</p></article>
+    </section>
+    <section class="mt-8 rounded-[1.5rem] border border-[var(--mg-border-light)] bg-[var(--mg-green-950)] p-6 text-white">
+      <p class="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--mg-orange-500)]">What to do next</p>
+      <h2 class="mt-2 text-xl font-semibold">{{ nextAction }}</h2>
+      <p class="mt-2 max-w-2xl text-sm leading-6 text-white/65">The dashboard deliberately focuses on work requiring attention instead of turning the role home into an analytics report.</p>
+    </section>
+    <div class="mt-7 flex flex-wrap gap-3"><button type="button" (click)="openApplications()" class="rounded-xl bg-[var(--mg-orange-500)] px-5 py-3 text-sm font-bold text-[var(--mg-green-950)] transition hover:translate-y-[-1px]">Open applications</button></div>
+  </div>
+</main>

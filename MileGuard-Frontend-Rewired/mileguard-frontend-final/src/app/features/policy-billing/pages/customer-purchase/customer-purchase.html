@@ -1,0 +1,1418 @@
+<main class="min-h-screen bg-[var(--color-warm-white)]">
+  <!-- ================================================= -->
+  <!-- HEADER -->
+  <!-- ================================================= -->
+
+  <header class="border-b border-[var(--color-border)] bg-white">
+    <div
+      class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8"
+    >
+      <div class="flex items-center gap-3">
+        <span
+          class="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-primary)] text-sm font-bold text-white"
+          aria-hidden="true"
+        >
+          AI
+        </span>
+
+        <div>
+          <p class="text-sm font-semibold text-[var(--color-ink)]">
+            Auto Insurance
+          </p>
+
+          <p class="text-xs text-zinc-500">
+            Customer Â· Policy Purchase
+          </p>
+        </div>
+      </div>
+
+      @if (currentStep() !== 'issued') {
+        <button
+          type="button"
+          (click)="backToUnderwriting()"
+          [disabled]="
+            isConfiguring() ||
+            isAccepting() ||
+            isPaying()
+          "
+          class="text-xs font-semibold text-zinc-500 transition hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Back to Approved Offer
+        </button>
+      }
+    </div>
+  </header>
+
+  <!-- ================================================= -->
+  <!-- PAGE -->
+  <!-- ================================================= -->
+
+  <div class="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-10">
+    <p
+      class="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400"
+    >
+      Customer / Approved Offer / Purchase
+    </p>
+
+    <div class="mt-3">
+      <p
+        class="text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+      >
+        Policy Purchase
+      </p>
+
+      <h1
+        class="mt-1 text-3xl font-semibold tracking-[-0.04em] text-[var(--color-ink)]"
+      >
+        @switch (currentStep()) {
+          @case ('configure') {
+            Configure your Policy
+          }
+
+          @case ('review') {
+            Review your purchase
+          }
+
+          @case ('payment') {
+            Complete first payment
+          }
+
+          @case ('issued') {
+            Policy issued
+          }
+        }
+      </h1>
+
+      <p class="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
+        Configure the Policy term and payment frequency,
+        review the contractual details, and complete the
+        first payment before the Policy is issued.
+      </p>
+    </div>
+
+    <!-- ================================================= -->
+    <!-- PROGRESS -->
+    <!-- ================================================= -->
+
+    <section class="mt-8" aria-label="Purchase progress">
+      <div class="grid grid-cols-4 gap-3">
+        <!-- Configure -->
+        <div>
+          <div
+            class="h-1 rounded-full bg-[var(--color-primary)]"
+          ></div>
+
+          <p
+            class="mt-2 text-[10px] font-semibold"
+            [class.text-[var(--color-primary)]]="
+              currentStep() === 'configure'
+            "
+            [class.text-zinc-500]="
+              currentStep() !== 'configure'
+            "
+          >
+            Configure
+          </p>
+        </div>
+
+        <!-- Review -->
+        <div>
+          <div
+            class="h-1 rounded-full"
+            [class.bg-[var(--color-primary)]]="
+              currentStep() === 'review' ||
+              currentStep() === 'payment' ||
+              currentStep() === 'issued'
+            "
+            [class.bg-zinc-200]="
+              currentStep() === 'configure'
+            "
+          ></div>
+
+          <p
+            class="mt-2 text-[10px] font-semibold"
+            [class.text-[var(--color-primary)]]="
+              currentStep() === 'review'
+            "
+            [class.text-zinc-500]="
+              currentStep() !== 'review'
+            "
+          >
+            Review
+          </p>
+        </div>
+
+        <!-- Payment -->
+        <div>
+          <div
+            class="h-1 rounded-full"
+            [class.bg-[var(--color-primary)]]="
+              currentStep() === 'payment' ||
+              currentStep() === 'issued'
+            "
+            [class.bg-zinc-200]="
+              currentStep() === 'configure' ||
+              currentStep() === 'review'
+            "
+          ></div>
+
+          <p
+            class="mt-2 text-[10px] font-semibold"
+            [class.text-[var(--color-primary)]]="
+              currentStep() === 'payment'
+            "
+            [class.text-zinc-500]="
+              currentStep() !== 'payment'
+            "
+          >
+            Payment
+          </p>
+        </div>
+
+        <!-- Issued -->
+        <div>
+          <div
+            class="h-1 rounded-full"
+            [class.bg-green-600]="
+              currentStep() === 'issued'
+            "
+            [class.bg-zinc-200]="
+              currentStep() !== 'issued'
+            "
+          ></div>
+
+          <p
+            class="mt-2 text-[10px] font-semibold"
+            [class.text-green-700]="
+              currentStep() === 'issued'
+            "
+            [class.text-zinc-500]="
+              currentStep() !== 'issued'
+            "
+          >
+            Policy Issued
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================= -->
+    <!-- GLOBAL ERROR -->
+    <!-- ================================================= -->
+
+    @if (errorMessage()) {
+      <div
+        role="alert"
+        class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3.5"
+      >
+        <div class="flex items-start gap-3">
+          <span
+            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-xs font-bold text-[var(--color-danger)]"
+            aria-hidden="true"
+          >
+            !
+          </span>
+
+          <div>
+            <p class="text-xs font-semibold text-red-800">
+              Action could not be completed
+            </p>
+
+            <p
+              class="mt-1 text-[11px] leading-5 text-[var(--color-danger)]"
+            >
+              {{ errorMessage() }}
+            </p>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ================================================= -->
+    <!-- GLOBAL SUCCESS -->
+    <!-- ================================================= -->
+
+    @if (successMessage()) {
+      <div
+        role="status"
+        class="mt-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3.5"
+      >
+        <div class="flex items-start gap-3">
+          <span
+            class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-xs font-bold text-green-700"
+            aria-hidden="true"
+          >
+            âœ“
+          </span>
+
+          <p class="pt-1 text-xs font-semibold text-green-800">
+            {{ successMessage() }}
+          </p>
+        </div>
+      </div>
+    }
+
+    <!-- ================================================= -->
+    <!-- CONFIGURE -->
+    <!-- ================================================= -->
+
+    @if (currentStep() === 'configure') {
+      <section class="mt-8">
+        <div
+          class="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]"
+        >
+          <!-- Configuration form -->
+          <article
+            class="rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-sm"
+          >
+            <p
+              class="text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+            >
+              Configuration
+            </p>
+
+            <h2
+              class="mt-1 text-lg font-semibold text-[var(--color-ink)]"
+            >
+              Policy term and billing
+            </h2>
+
+            <p
+              class="mt-2 text-xs leading-5 text-zinc-500"
+            >
+              Choose your Policy Effective Date and payment
+              frequency. PolicyBillingService validates the
+              configuration and generates the payment
+              schedule.
+            </p>
+
+            <form
+              [formGroup]="configureForm"
+              class="mt-6 space-y-5"
+            >
+              <!-- Effective Date -->
+              <div>
+                <label
+                  for="effectiveDate"
+                  class="mb-1.5 block text-xs font-semibold text-[var(--color-ink)]"
+                >
+                  Effective Date
+                </label>
+
+                <input
+                  id="effectiveDate"
+                  type="date"
+                  formControlName="effectiveDate"
+                  class="w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-3 text-sm text-[var(--color-ink)] outline-none transition focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+                />
+
+                <p
+                  class="mt-1.5 text-[10px] leading-4 text-zinc-500"
+                >
+                  The backend validates the date against the
+                  approved offer and existing Policy terms.
+                </p>
+
+                @if (
+                  configureForm.controls.effectiveDate.touched &&
+                  configureForm.controls.effectiveDate.invalid
+                ) {
+                  <p
+                    class="mt-1.5 text-[10px] font-medium text-[var(--color-danger)]"
+                  >
+                    Effective Date is required.
+                  </p>
+                }
+              </div>
+
+              <!-- Frequency -->
+              <div>
+                <label
+                  for="paymentFrequency"
+                  class="mb-1.5 block text-xs font-semibold text-[var(--color-ink)]"
+                >
+                  Payment Frequency
+                </label>
+
+                <select
+                  id="paymentFrequency"
+                  formControlName="paymentFrequency"
+                  class="w-full rounded-xl border border-[var(--color-border)] bg-white px-3 py-3 text-sm text-[var(--color-ink)] outline-none transition focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+                >
+                  <option
+                    [ngValue]="PaymentFrequency.Annual"
+                  >
+                    Annual
+                  </option>
+
+                  <option
+                    [ngValue]="PaymentFrequency.SemiAnnual"
+                  >
+                    Semi-Annual
+                  </option>
+
+                  <option
+                    [ngValue]="PaymentFrequency.Quarterly"
+                  >
+                    Quarterly
+                  </option>
+
+                  <option
+                    [ngValue]="PaymentFrequency.Monthly"
+                  >
+                    Monthly
+                  </option>
+                </select>
+
+                <p
+                  class="mt-1.5 text-[10px] leading-4 text-zinc-500"
+                >
+                  Payment frequency changes the installment
+                  schedule, not the approved Annual Premium.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                (click)="previewConfiguration()"
+                [disabled]="
+                  configureForm.invalid ||
+                  isConfiguring()
+                "
+                class="w-full rounded-xl bg-[var(--color-primary)] px-5 py-3 text-xs font-semibold text-white transition hover:bg-[var(--color-primary-dark)] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                @if (isConfiguring()) {
+                  Validating Configuration...
+                } @else {
+                  Preview Payment Schedule
+                }
+              </button>
+            </form>
+
+            <div
+              class="mt-6 border-t border-[var(--color-border)] pt-5"
+            >
+              <p
+                class="text-[10px] leading-5 text-zinc-500"
+              >
+                No purchase is accepted and no Policy is
+                issued during this step.
+              </p>
+            </div>
+          </article>
+
+          <!-- Preview -->
+          @if (
+            configuration();
+            as configuration
+          ) {
+            <article
+              class="rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-sm"
+            >
+              <div
+                class="flex flex-col justify-between gap-4 sm:flex-row sm:items-start"
+              >
+                <div>
+                  <p
+                    class="text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+                  >
+                    Schedule Preview
+                  </p>
+
+                  <h2
+                    class="mt-1 text-lg font-semibold text-[var(--color-ink)]"
+                  >
+                    {{ configuration.planName }}
+                  </h2>
+
+                  <p
+                    class="mt-1 text-[10px] text-zinc-500"
+                  >
+                    Backend-validated purchase configuration
+                  </p>
+                </div>
+
+                <div class="sm:text-right">
+                  <p
+                    class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                  >
+                    Annual Premium
+                  </p>
+
+                  <p
+                    class="mt-1 text-2xl font-semibold tracking-[-0.03em] text-[var(--color-ink)]"
+                  >
+                    â‚¹{{
+                      configuration.annualPremium
+                        | number: '1.0-0'
+                    }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Term summary -->
+              <div
+                class="mt-6 grid gap-3 sm:grid-cols-3"
+              >
+                <div
+                  class="rounded-xl bg-zinc-50 p-4"
+                >
+                  <p
+                    class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                  >
+                    Effective
+                  </p>
+
+                  <p
+                    class="mt-1 text-xs font-semibold text-[var(--color-ink)]"
+                  >
+                    {{
+                      configuration.effectiveDate
+                        | date: 'dd MMM yyyy'
+                    }}
+                  </p>
+                </div>
+
+                <div
+                  class="rounded-xl bg-zinc-50 p-4"
+                >
+                  <p
+                    class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                  >
+                    Expiration
+                  </p>
+
+                  <p
+                    class="mt-1 text-xs font-semibold text-[var(--color-ink)]"
+                  >
+                    {{
+                      configuration.expirationDate
+                        | date: 'dd MMM yyyy'
+                    }}
+                  </p>
+                </div>
+
+                <div
+                  class="rounded-xl bg-blue-50 p-4"
+                >
+                  <p
+                    class="text-[9px] font-semibold uppercase tracking-[0.08em] text-blue-600"
+                  >
+                    Amount Due Now
+                  </p>
+
+                  <p
+                    class="mt-1 text-lg font-semibold text-[var(--color-primary)]"
+                  >
+                    â‚¹{{
+                      configuration.paymentSchedule.amountDueNow
+                        | number: '1.0-0'
+                    }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Offer validity -->
+              <div
+                class="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3"
+              >
+                <p
+                  class="text-[9px] font-semibold uppercase tracking-[0.08em] text-amber-700"
+                >
+                  Approved Offer Valid Until
+                </p>
+
+                <p
+                  class="mt-1 text-xs font-semibold text-amber-800"
+                >
+                  {{
+                    configuration.offerValidUntilUtc
+                      | date: 'dd MMM yyyy, h:mm a'
+                  }}
+                </p>
+              </div>
+
+              <!-- Payment schedule -->
+              <div class="mt-6">
+                <div
+                  class="flex flex-col justify-between gap-2 sm:flex-row sm:items-center"
+                >
+                  <div>
+                    <h3
+                      class="text-sm font-semibold text-[var(--color-ink)]"
+                    >
+                      Payment schedule
+                    </h3>
+
+                    <p
+                      class="mt-1 text-[10px] text-zinc-500"
+                    >
+                      {{
+                        configuration.paymentSchedule.paymentFrequency
+                      }}
+                    </p>
+                  </div>
+
+                  <span
+                    class="w-fit rounded-full bg-zinc-100 px-3 py-1 text-[10px] font-semibold text-zinc-600"
+                  >
+                    {{
+                      configuration.paymentSchedule.installmentCount
+                    }}
+                    installment(s)
+                  </span>
+                </div>
+
+                <div
+                  class="mt-4 overflow-hidden rounded-xl border border-[var(--color-border)]"
+                >
+                  @for (
+                    installment of
+                      configuration.paymentSchedule.installments;
+                    track installment.installmentNumber
+                  ) {
+                    <div
+                      class="flex items-center justify-between gap-4 border-b border-[var(--color-border)] px-4 py-3.5 last:border-b-0"
+                    >
+                      <div class="flex items-center gap-3">
+                        <span
+                          class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-[10px] font-semibold text-zinc-600"
+                        >
+                          {{
+                            installment.installmentNumber
+                          }}
+                        </span>
+
+                        <div>
+                          <p
+                            class="text-xs font-semibold text-[var(--color-ink)]"
+                          >
+                            Installment
+                            {{
+                              installment.installmentNumber
+                            }}
+                          </p>
+
+                          <p
+                            class="mt-0.5 text-[10px] text-zinc-500"
+                          >
+                            Due
+                            {{
+                              installment.dueDate
+                                | date: 'dd MMM yyyy'
+                            }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <p
+                        class="text-xs font-semibold text-[var(--color-ink)]"
+                      >
+                        â‚¹{{
+                          installment.amount
+                            | number: '1.0-0'
+                        }}
+                      </p>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <button
+                type="button"
+                (click)="continueToReview()"
+                class="mt-6 w-full rounded-xl bg-[var(--color-primary)] px-5 py-3 text-xs font-semibold text-white transition hover:bg-[var(--color-primary-dark)]"
+              >
+                Continue to Review
+              </button>
+            </article>
+          } @else {
+            <div
+              class="flex min-h-[380px] items-center justify-center rounded-2xl border border-dashed border-[var(--color-border)] bg-white/50 p-8 text-center"
+            >
+              <div>
+                <div
+                  class="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-sm font-semibold text-zinc-500"
+                  aria-hidden="true"
+                >
+                  i
+                </div>
+
+                <p
+                  class="mt-4 text-sm font-semibold text-[var(--color-ink)]"
+                >
+                  Payment schedule not previewed
+                </p>
+
+                <p
+                  class="mx-auto mt-2 max-w-sm text-xs leading-5 text-zinc-500"
+                >
+                  Select an Effective Date and payment
+                  frequency, then ask PolicyBillingService
+                  to validate the configuration and return
+                  the authoritative installment schedule.
+                </p>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- ================================================= -->
+    <!-- REVIEW -->
+    <!-- ================================================= -->
+
+    @if (
+      currentStep() === 'review' &&
+      configuration();
+      as configuration
+    ) {
+      <section class="mt-8">
+        <article
+          class="rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-sm sm:p-8"
+        >
+          <p
+            class="text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+          >
+            Contractual Review
+          </p>
+
+          <h2
+            class="mt-1 text-2xl font-semibold tracking-[-0.03em] text-[var(--color-ink)]"
+          >
+            Review before accepting
+          </h2>
+
+          <p
+            class="mt-3 max-w-2xl text-sm leading-6 text-zinc-600"
+          >
+            Confirm the Policy term, Annual Premium and
+            payment schedule before accepting the purchase.
+          </p>
+
+          <!-- Policy summary -->
+          <div
+            class="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+          >
+            <div
+              class="rounded-xl bg-zinc-50 p-4"
+            >
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+              >
+                Plan
+              </p>
+
+              <p
+                class="mt-1 text-sm font-semibold text-[var(--color-ink)]"
+              >
+                {{ configuration.planName }}
+              </p>
+            </div>
+
+            <div
+              class="rounded-xl bg-zinc-50 p-4"
+            >
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+              >
+                Annual Premium
+              </p>
+
+              <p
+                class="mt-1 text-sm font-semibold text-[var(--color-ink)]"
+              >
+                â‚¹{{
+                  configuration.annualPremium
+                    | number: '1.0-0'
+                }}
+              </p>
+            </div>
+
+            <div
+              class="rounded-xl bg-zinc-50 p-4"
+            >
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+              >
+                Effective Date
+              </p>
+
+              <p
+                class="mt-1 text-sm font-semibold text-[var(--color-ink)]"
+              >
+                {{
+                  configuration.effectiveDate
+                    | date: 'dd MMM yyyy'
+                }}
+              </p>
+            </div>
+
+            <div
+              class="rounded-xl bg-zinc-50 p-4"
+            >
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+              >
+                Expiration Date
+              </p>
+
+              <p
+                class="mt-1 text-sm font-semibold text-[var(--color-ink)]"
+              >
+                {{
+                  configuration.expirationDate
+                    | date: 'dd MMM yyyy'
+                }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Billing -->
+          <div
+            class="mt-6 rounded-2xl border border-[var(--color-border)]"
+          >
+            <div
+              class="flex flex-col justify-between gap-3 border-b border-[var(--color-border)] px-5 py-4 sm:flex-row sm:items-center"
+            >
+              <div>
+                <p
+                  class="text-xs font-semibold text-[var(--color-ink)]"
+                >
+                  Payment schedule
+                </p>
+
+                <p
+                  class="mt-1 text-[10px] text-zinc-500"
+                >
+                  {{
+                    configuration.paymentSchedule.paymentFrequency
+                  }}
+                  Â·
+                  {{
+                    configuration.paymentSchedule.installmentCount
+                  }}
+                  installment(s)
+                </p>
+              </div>
+
+              <div class="sm:text-right">
+                <p
+                  class="text-[9px] font-semibold uppercase text-zinc-400"
+                >
+                  Due with Purchase
+                </p>
+
+                <p
+                  class="mt-1 text-lg font-semibold text-[var(--color-primary)]"
+                >
+                  â‚¹{{
+                    configuration.paymentSchedule.amountDueNow
+                      | number: '1.0-0'
+                  }}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              @for (
+                installment of
+                  configuration.paymentSchedule.installments;
+                track installment.installmentNumber
+              ) {
+                <div
+                  class="flex items-center justify-between gap-4 border-b border-[var(--color-border)] px-5 py-3.5 last:border-b-0"
+                >
+                  <div>
+                    <p
+                      class="text-xs font-semibold text-[var(--color-ink)]"
+                    >
+                      Installment
+                      {{
+                        installment.installmentNumber
+                      }}
+                    </p>
+
+                    <p
+                      class="mt-1 text-[10px] text-zinc-500"
+                    >
+                      {{
+                        installment.dueDate
+                          | date: 'dd MMM yyyy'
+                      }}
+                    </p>
+                  </div>
+
+                  <p
+                    class="text-xs font-semibold text-[var(--color-ink)]"
+                  >
+                    â‚¹{{
+                      installment.amount
+                        | number: '1.0-0'
+                    }}
+                  </p>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Acceptance explanation -->
+          <div
+            class="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-5"
+          >
+            <p
+              class="text-sm font-semibold text-[var(--color-ink)]"
+            >
+              Acceptance does not issue the Policy
+            </p>
+
+            <p
+              class="mt-2 max-w-3xl text-xs leading-5 text-zinc-600"
+            >
+              Selecting Accept & Continue to Payment
+              records this purchase configuration.
+              Your first payment must still succeed before
+              PolicyBillingService issues the Policy.
+            </p>
+          </div>
+
+          <div
+            class="mt-4 rounded-xl border border-amber-100 bg-amber-50 p-4"
+          >
+            <p
+              class="text-[10px] leading-5 text-amber-800"
+            >
+              The approved Underwriting offer and Policy
+              eligibility are revalidated by the backend
+              before acceptance and first payment.
+            </p>
+          </div>
+        </article>
+
+        <div
+          class="mt-6 flex flex-col-reverse justify-between gap-3 border-t border-[var(--color-border)] pt-6 sm:flex-row"
+        >
+          <button
+            type="button"
+            (click)="backToConfigure()"
+            [disabled]="isAccepting()"
+            class="rounded-xl border border-[var(--color-border)] bg-white px-5 py-3 text-xs font-semibold text-zinc-600 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Back to Configure
+          </button>
+
+          <button
+            type="button"
+            (click)="acceptAndContinue()"
+            [disabled]="isAccepting()"
+            class="rounded-xl bg-[var(--color-primary)] px-6 py-3 text-xs font-semibold text-white transition hover:bg-[var(--color-primary-dark)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            @if (isAccepting()) {
+              Accepting Purchase...
+            } @else {
+              Accept & Continue to Payment
+            }
+          </button>
+        </div>
+      </section>
+    }
+
+    <!-- ================================================= -->
+    <!-- FIRST PAYMENT -->
+    <!-- ================================================= -->
+
+    @if (
+      currentStep() === 'payment' &&
+      purchase();
+      as purchase
+    ) {
+      <section
+        class="mt-8 grid gap-6 lg:grid-cols-[1fr_0.75fr]"
+      >
+        <!-- Payment -->
+        <article
+          class="rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-sm"
+        >
+          <p
+            class="text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+          >
+            First Payment
+          </p>
+
+          <h2
+            class="mt-1 text-xl font-semibold text-[var(--color-ink)]"
+          >
+            Complete payment
+          </h2>
+
+          <p
+            class="mt-2 max-w-xl text-xs leading-5 text-zinc-500"
+          >
+            No Policy exists yet. The Policy will be issued
+            only after the first payment succeeds and the
+            backend completes issuance.
+          </p>
+
+          <form
+            [formGroup]="paymentForm"
+            class="mt-6"
+          >
+            <fieldset>
+              <legend
+                class="text-xs font-semibold text-[var(--color-ink)]"
+              >
+                Payment method
+              </legend>
+
+              <div
+                class="mt-3 grid gap-3 sm:grid-cols-2"
+              >
+                <label
+                  class="cursor-pointer rounded-xl border border-[var(--color-border)] bg-white p-4 transition hover:border-blue-200 hover:bg-blue-50/30"
+                >
+                  <div class="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      formControlName="method"
+                      [value]="PaymentMethod.Card"
+                      class="h-4 w-4 accent-[var(--color-primary)]"
+                    />
+
+                    <div>
+                      <p
+                        class="text-xs font-semibold text-[var(--color-ink)]"
+                      >
+                        Card
+                      </p>
+
+                      <p
+                        class="mt-1 text-[10px] text-zinc-500"
+                      >
+                        Simulated card payment
+                      </p>
+                    </div>
+                  </div>
+                </label>
+
+                <label
+                  class="cursor-pointer rounded-xl border border-[var(--color-border)] bg-white p-4 transition hover:border-blue-200 hover:bg-blue-50/30"
+                >
+                  <div class="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      formControlName="method"
+                      [value]="PaymentMethod.Upi"
+                      class="h-4 w-4 accent-[var(--color-primary)]"
+                    />
+
+                    <div>
+                      <p
+                        class="text-xs font-semibold text-[var(--color-ink)]"
+                      >
+                        UPI
+                      </p>
+
+                      <p
+                        class="mt-1 text-[10px] text-zinc-500"
+                      >
+                        Simulated UPI payment
+                      </p>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </fieldset>
+
+            <!-- Development simulation -->
+            <div
+              class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4"
+            >
+              <p
+                class="text-xs font-semibold text-amber-800"
+              >
+                Development payment simulation
+              </p>
+
+              <p
+                class="mt-1 text-[10px] leading-5 text-amber-700"
+              >
+                This project currently uses the deterministic
+                PolicyBilling payment simulator. No real
+                payment credentials are collected.
+              </p>
+
+              <label
+                for="testScenario"
+                class="mt-4 block text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-800"
+              >
+                Simulation outcome
+              </label>
+
+              <select
+                id="testScenario"
+                formControlName="testScenario"
+                class="mt-2 w-full rounded-lg border border-amber-200 bg-white px-3 py-2.5 text-xs text-[var(--color-ink)] outline-none focus:border-amber-400"
+              >
+                <option value="SUCCESS">
+                  Simulate successful payment
+                </option>
+
+                <option value="FAIL">
+                  Simulate declined payment
+                </option>
+              </select>
+            </div>
+
+            <button
+              type="button"
+              (click)="makePayment()"
+              [disabled]="
+                paymentForm.invalid ||
+                isPaying()
+              "
+              class="mt-6 w-full rounded-xl bg-[var(--color-primary)] px-5 py-3 text-xs font-semibold text-white transition hover:bg-[var(--color-primary-dark)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              @if (isPaying()) {
+                Processing Payment...
+              } @else {
+                Pay â‚¹{{
+                  purchase.amountDueNow
+                    | number: '1.0-0'
+                }}
+              }
+            </button>
+          </form>
+
+          <!-- Payment failure -->
+          @if (
+            payment();
+            as paymentResult
+          ) {
+            @if (
+              paymentResult.paymentResult
+                .trim()
+                .toLowerCase() !==
+              'succeeded'
+            ) {
+              <div
+                class="mt-5 rounded-xl border border-red-200 bg-red-50 p-4"
+              >
+                <div class="flex items-start gap-3">
+                  <span
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-xs font-bold text-red-700"
+                    aria-hidden="true"
+                  >
+                    !
+                  </span>
+
+                  <div class="min-w-0">
+                    <p
+                      class="text-xs font-semibold text-red-800"
+                    >
+                      Payment unsuccessful
+                    </p>
+
+                    <p
+                      class="mt-1 text-[11px] leading-5 text-zinc-600"
+                    >
+                      {{
+                        paymentResult.failureMessage ??
+                        'The simulated payment was declined.'
+                      }}
+                    </p>
+
+                    <div
+                      class="mt-3 rounded-lg bg-white/70 px-3 py-2"
+                    >
+                      <p
+                        class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                      >
+                        Payment Reference
+                      </p>
+
+                      <p
+                        class="mt-1 break-all text-[10px] font-semibold text-zinc-700"
+                      >
+                        {{
+                          paymentResult.paymentReference
+                        }}
+                      </p>
+                    </div>
+
+                    <p
+                      class="mt-3 text-[10px] font-semibold text-red-700"
+                    >
+                      No Policy was issued.
+                    </p>
+
+                    <button
+                      type="button"
+                      (click)="retryPayment()"
+                      class="mt-4 text-xs font-semibold text-[var(--color-primary)] transition hover:text-[var(--color-primary-dark)]"
+                    >
+                      Retry Payment
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          }
+        </article>
+
+        <!-- Purchase summary -->
+        
+      </section>
+    }
+
+    <!-- ================================================= -->
+    <!-- POLICY ISSUED -->
+    <!-- ================================================= -->
+
+    @if (
+      currentStep() === 'issued' &&
+      payment();
+      as successfulPayment
+    ) {
+      <section class="mt-8">
+        <article
+          class="overflow-hidden rounded-2xl border border-green-200 bg-white shadow-sm"
+        >
+          <div
+            class="border-b border-green-100 bg-green-50 px-6 py-7 sm:px-8"
+          >
+            <div
+              class="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-lg font-bold text-green-700 shadow-sm"
+              aria-hidden="true"
+            >
+              âœ“
+            </div>
+
+            <p
+              class="mt-5 text-[9px] font-semibold uppercase tracking-[0.12em] text-green-700"
+            >
+              Policy Issued
+            </p>
+
+            <h2
+              class="mt-1 text-3xl font-semibold tracking-[-0.04em] text-[var(--color-ink)]"
+            >
+              Your Policy has been issued
+            </h2>
+
+            <p
+              class="mt-3 max-w-2xl text-sm leading-6 text-zinc-600"
+            >
+              Your first payment was successful and
+              PolicyBillingService completed Policy
+              issuance.
+            </p>
+          </div>
+
+          <div class="p-6 sm:p-8">
+            <div
+              class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            >
+              <div
+                class="rounded-xl bg-zinc-50 p-4"
+              >
+                <p
+                  class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                >
+                  Policy Number
+                </p>
+
+                <p
+                  class="mt-1 break-all text-sm font-semibold text-[var(--color-ink)]"
+                >
+                  {{
+                    successfulPayment.policyNumber
+                  }}
+                </p>
+              </div>
+
+              <div
+                class="rounded-xl bg-zinc-50 p-4"
+              >
+                <p
+                  class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                >
+                  Payment Method
+                </p>
+
+                <p
+                  class="mt-1 text-sm font-semibold text-[var(--color-ink)]"
+                >
+                  {{
+                    successfulPayment.paymentMethod
+                  }}
+                </p>
+              </div>
+
+              <div
+                class="rounded-xl bg-green-50 p-4"
+              >
+                <p
+                  class="text-[9px] font-semibold uppercase tracking-[0.08em] text-green-600"
+                >
+                  First Payment
+                </p>
+
+                <p
+                  class="mt-1 text-sm font-semibold text-green-700"
+                >
+                  Paid Â· â‚¹{{
+                    successfulPayment.amount
+                      | number: '1.0-0'
+                  }}
+                </p>
+              </div>
+
+              <div
+                class="rounded-xl bg-zinc-50 p-4"
+              >
+                <p
+                  class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                >
+                  Payment Time
+                </p>
+
+                <p
+                  class="mt-1 text-xs font-semibold text-[var(--color-ink)]"
+                >
+                  {{
+                    successfulPayment.attemptedAtUtc
+                      | date:
+                        'dd MMM yyyy, h:mm a'
+                  }}
+                </p>
+              </div>
+            </div>
+
+            <div
+              class="mt-5 rounded-xl border border-[var(--color-border)] bg-[#FAF9F6] p-4"
+            >
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+              >
+                Payment Reference
+              </p>
+
+              <p
+                class="mt-1 break-all text-xs font-semibold text-zinc-700"
+              >
+                {{
+                  successfulPayment.paymentReference
+                }}
+              </p>
+            </div>
+
+            @if (
+              purchase();
+              as issuedPurchase
+            ) {
+              <div
+                class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+              >
+                <div>
+                  <p
+                    class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                  >
+                    Plan
+                  </p>
+
+                  <p
+                    class="mt-1 text-xs font-semibold text-[var(--color-ink)]"
+                  >
+                    {{ issuedPurchase.planName }}
+                  </p>
+                </div>
+
+                <div>
+                  <p
+                    class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                  >
+                    Annual Premium
+                  </p>
+
+                  <p
+                    class="mt-1 text-xs font-semibold text-[var(--color-ink)]"
+                  >
+                    â‚¹{{
+                      issuedPurchase.annualPremium
+                        | number: '1.0-0'
+                    }}
+                  </p>
+                </div>
+
+                <div>
+                  <p
+                    class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                  >
+                    Effective
+                  </p>
+
+                  <p
+                    class="mt-1 text-xs font-semibold text-[var(--color-ink)]"
+                  >
+                    {{
+                      issuedPurchase.effectiveDate
+                        | date: 'dd MMM yyyy'
+                    }}
+                  </p>
+                </div>
+
+                <div>
+                  <p
+                    class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                  >
+                    Expiration
+                  </p>
+
+                  <p
+                    class="mt-1 text-xs font-semibold text-[var(--color-ink)]"
+                  >
+                    {{
+                      issuedPurchase.expirationDate
+                        | date: 'dd MMM yyyy'
+                    }}
+                  </p>
+                </div>
+              </div>
+            }
+
+            <div
+              class="mt-7 rounded-xl border border-blue-100 bg-blue-50 p-5"
+            >
+              <p
+                class="text-sm font-semibold text-[var(--color-ink)]"
+              >
+                Your Policy is now available
+              </p>
+
+              <p
+                class="mt-1 max-w-2xl text-xs leading-5 text-zinc-600"
+              >
+                Policy details, coverage, billing schedule
+                and the immutable Policy document will be
+                available from your Policy workspace.
+              </p>
+            </div>
+
+            <div
+              class="mt-7 flex flex-wrap gap-3 border-t border-[var(--color-border)] pt-6"
+            >
+              <button
+                type="button"
+                (click)="viewPolicy()"
+                class="rounded-xl bg-[var(--color-primary)] px-6 py-3 text-xs font-semibold text-white transition hover:bg-[var(--color-primary-dark)]"
+              >
+                View Policy
+              </button>
+            </div>
+          </div>
+        </article>
+      </section>
+    }
+  </div>
+</main>

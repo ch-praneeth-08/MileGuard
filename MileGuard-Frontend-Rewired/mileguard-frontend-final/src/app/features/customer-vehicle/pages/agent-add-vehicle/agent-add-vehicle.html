@@ -1,0 +1,1069 @@
+<main
+  class="min-h-screen bg-[var(--color-warm-white)]"
+>
+  <!-- Header -->
+  <header
+    class="border-b border-[var(--color-border)] bg-white"
+  >
+    <div
+      class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8"
+    >
+      <div class="flex items-center gap-3">
+        <span
+          class="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-primary)] text-sm font-bold text-white"
+        >
+          AI
+        </span>
+
+        <div>
+          <p class="text-sm font-semibold">
+            Auto Insurance
+          </p>
+
+          <p class="text-xs text-zinc-500">
+            Add Vehicle
+          </p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        (click)="cancel()"
+        [disabled]="isSaving()"
+        class="text-sm font-semibold text-zinc-500"
+      >
+        Back to Customer
+      </button>
+    </div>
+  </header>
+
+  <div
+    class="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-12"
+  >
+    <p
+      class="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400"
+    >
+      Agent / Customer / Vehicles / Add
+    </p>
+
+    <h1
+      class="mt-3 text-4xl font-semibold tracking-[-0.04em] text-[var(--color-ink)]"
+    >
+      Add Vehicle
+    </h1>
+
+    <p
+      class="mt-3 max-w-2xl text-sm leading-6 text-zinc-600"
+    >
+      Add Vehicle, ownership, usage, and optional image
+      information for this Customer.
+    </p>
+
+    <!-- Progress -->
+    <div class="mt-9 overflow-x-auto">
+      <div
+        class="grid min-w-[760px] grid-cols-4"
+      >
+        @for (
+          step of [
+            {
+              number: 1,
+              label: 'Vehicle Details'
+            },
+            {
+              number: 2,
+              label: 'Ownership & Usage'
+            },
+            {
+              number: 3,
+              label: 'Vehicle Image'
+            },
+            {
+              number: 4,
+              label: 'Review'
+            }
+          ];
+          track step.number
+        ) {
+          <button
+            type="button"
+            (click)="goToStep($any(step.number))"
+            [disabled]="
+              step.number > currentStep() ||
+              isSaving()
+            "
+            class="relative flex flex-col items-start pr-5 text-left disabled:cursor-default"
+          >
+            <div
+              class="absolute left-9 right-0 top-4 h-0.5"
+              [class.bg-[var(--color-success)]]="
+                step.number <
+                currentStep()
+              "
+              [class.bg-zinc-200]="
+                step.number >=
+                currentStep()
+              "
+            ></div>
+
+            <span
+              class="relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold"
+              [class.bg-[var(--color-success)]]="
+                step.number <
+                currentStep()
+              "
+              [class.bg-[var(--color-primary)]]="
+                step.number ===
+                currentStep()
+              "
+              [class.bg-zinc-200]="
+                step.number >
+                currentStep()
+              "
+              [class.text-white]="
+                step.number <=
+                currentStep()
+              "
+              [class.text-zinc-500]="
+                step.number >
+                currentStep()
+              "
+            >
+              @if (
+                step.number <
+                currentStep()
+              ) {
+                âœ“
+              } @else {
+                {{ step.number }}
+              }
+            </span>
+
+            <span
+              class="mt-3 text-sm font-semibold"
+              [class.text-[var(--color-ink)]]="
+                step.number <=
+                currentStep()
+              "
+              [class.text-zinc-400]="
+                step.number >
+                currentStep()
+              "
+            >
+              {{ step.label }}
+            </span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- General Error -->
+    @if (errorMessage()) {
+      <div
+        class="mt-7 rounded-xl border border-red-200 bg-red-50 px-5 py-4"
+      >
+        <p
+          class="text-sm text-[var(--color-danger)]"
+        >
+          {{ errorMessage() }}
+        </p>
+      </div>
+    }
+
+    <section
+      class="mt-8 rounded-2xl border border-[var(--color-border)] bg-white p-6 sm:p-8"
+    >
+      <!-- ============================================= -->
+      <!-- STEP 1 -->
+      <!-- ============================================= -->
+
+      @if (currentStep() === 1) {
+        <div>
+          <p
+            class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+          >
+            Step 1 of 4
+          </p>
+
+          <h2
+            class="mt-2 text-2xl font-semibold tracking-[-0.03em]"
+          >
+            Vehicle Details
+          </h2>
+
+          <p
+            class="mt-2 text-sm text-zinc-600"
+          >
+            Enter identification and core Vehicle
+            information.
+          </p>
+
+          <form
+            [formGroup]="form"
+            class="mt-7"
+          >
+            <div
+              class="grid gap-6 sm:grid-cols-2"
+            >
+              <!-- VIN -->
+              <div>
+                <label
+                  for="vin"
+                  class="mb-2 block text-sm font-medium"
+                >
+                  VIN
+                </label>
+
+                <input
+                  id="vin"
+                  type="text"
+                  maxlength="17"
+                  formControlName="vin"
+                  class="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 uppercase outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+                />
+
+                @if (
+                  form.controls.vin.touched &&
+                  form.controls.vin.invalid
+                ) {
+                  <p
+                    class="mt-2 text-sm text-[var(--color-danger)]"
+                  >
+                    VIN must contain exactly 17 characters.
+                  </p>
+                }
+              </div>
+
+              <!-- Registration -->
+              <div>
+                <label
+                  for="registrationNumber"
+                  class="mb-2 block text-sm font-medium"
+                >
+                  Registration Number
+                </label>
+
+                <input
+                  id="registrationNumber"
+                  type="text"
+                  formControlName="registrationNumber"
+                  class="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 uppercase outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+                />
+              </div>
+
+              <!-- Make -->
+              <div>
+                <label
+                  for="make"
+                  class="mb-2 block text-sm font-medium"
+                >
+                  Make
+                </label>
+
+                <input
+                  id="make"
+                  type="text"
+                  formControlName="make"
+                  class="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+                />
+              </div>
+
+              <!-- Model -->
+              <div>
+                <label
+                  for="model"
+                  class="mb-2 block text-sm font-medium"
+                >
+                  Model
+                </label>
+
+                <input
+                  id="model"
+                  type="text"
+                  formControlName="model"
+                  class="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+                />
+              </div>
+
+              <!-- Manufacturing Year -->
+              <div>
+                <label
+                  for="manufacturingYear"
+                  class="mb-2 block text-sm font-medium"
+                >
+                  Manufacturing Year
+                </label>
+
+                <input
+                  id="manufacturingYear"
+                  type="number"
+                  formControlName="manufacturingYear"
+                  class="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+                />
+              </div>
+
+              <!-- Vehicle Type -->
+              <div>
+                <label
+                  for="vehicleType"
+                  class="mb-2 block text-sm font-medium"
+                >
+                  Vehicle Type
+                </label>
+
+                <select
+                  id="vehicleType"
+                  formControlName="vehicleType"
+                  class="w-full rounded-xl border border-[var(--color-border)] bg-white px-4 py-3 outline-none focus:border-[var(--color-primary)]"
+                >
+                  <option value="">
+                    Select Vehicle Type
+                  </option>
+
+                  <option value="1">
+                    Sedan
+                  </option>
+
+                  <option value="2">
+                    Hatchback
+                  </option>
+
+                  <option value="3">
+                    SUV
+                  </option>
+
+                  <option value="4">
+                    Coupe
+                  </option>
+
+                  <option value="5">
+                    Convertible
+                  </option>
+
+                  <option value="6">
+                    Pickup
+                  </option>
+
+                  <option value="7">
+                    Van
+                  </option>
+
+                  <option value="8">
+                    Other
+                  </option>
+                </select>
+              </div>
+
+              <!-- Fuel Type -->
+              <div
+                class="sm:col-span-2 sm:max-w-md"
+              >
+                <label
+                  for="fuelType"
+                  class="mb-2 block text-sm font-medium"
+                >
+                  Fuel Type
+                </label>
+
+                <select
+                  id="fuelType"
+                  formControlName="fuelType"
+                  class="w-full rounded-xl border border-[var(--color-border)] bg-white px-4 py-3 outline-none focus:border-[var(--color-primary)]"
+                >
+                  <option value="">
+                    Select Fuel Type
+                  </option>
+
+                  <option value="1">
+                    Petrol
+                  </option>
+
+                  <option value="2">
+                    Diesel
+                  </option>
+
+                  <option value="3">
+                    Electric
+                  </option>
+
+                  <option value="4">
+                    Hybrid
+                  </option>
+
+                  <option value="5">
+                    Other
+                  </option>
+                </select>
+              </div>
+            </div>
+          </form>
+        </div>
+      }
+
+      <!-- ============================================= -->
+      <!-- STEP 2 -->
+      <!-- ============================================= -->
+
+      @if (currentStep() === 2) {
+        <div>
+          <p
+            class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+          >
+            Step 2 of 4
+          </p>
+
+          <h2
+            class="mt-2 text-2xl font-semibold tracking-[-0.03em]"
+          >
+            Ownership & Usage
+          </h2>
+
+          <p
+            class="mt-2 text-sm text-zinc-600"
+          >
+            Add Vehicle value, usage, and ownership
+            information.
+          </p>
+
+          <form
+            [formGroup]="form"
+            class="mt-7"
+          >
+            <div
+              class="grid gap-6 sm:grid-cols-2"
+            >
+              <!-- Value -->
+              <div>
+                <label
+                  for="vehicleValue"
+                  class="mb-2 block text-sm font-medium"
+                >
+                  Vehicle Value
+                </label>
+
+                <input
+                  id="vehicleValue"
+                  type="number"
+                  min="0"
+                  formControlName="vehicleValue"
+                  class="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+                />
+              </div>
+
+              <!-- Odometer -->
+              <div>
+                <label
+                  for="currentOdometer"
+                  class="mb-2 block text-sm font-medium"
+                >
+                  Current Odometer
+                </label>
+
+                <input
+                  id="currentOdometer"
+                  type="number"
+                  min="0"
+                  formControlName="currentOdometer"
+                  class="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+                />
+              </div>
+
+              <!-- Annual Mileage -->
+              <div>
+                <label
+                  for="annualMileage"
+                  class="mb-2 block text-sm font-medium"
+                >
+                  Annual Mileage
+                </label>
+
+                <input
+                  id="annualMileage"
+                  type="number"
+                  min="1"
+                  formControlName="annualMileage"
+                  class="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+                />
+              </div>
+
+              <!-- Purchase Date -->
+              <div>
+                <label
+                  for="purchaseDate"
+                  class="mb-2 block text-sm font-medium"
+                >
+                  Purchase Date
+                </label>
+
+                <input
+                  id="purchaseDate"
+                  type="date"
+                  formControlName="purchaseDate"
+                  class="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+                />
+              </div>
+            </div>
+
+            <!-- Ownership -->
+            <div class="mt-7">
+              <p
+                class="text-sm font-medium"
+              >
+                Ownership Type
+              </p>
+
+              <div
+                class="mt-3 grid gap-4 sm:grid-cols-2"
+              >
+                <label
+                  class="cursor-pointer rounded-xl border p-4"
+                  [class.border-[var(--color-primary)]]="
+                    form.controls
+                      .ownershipType
+                      .value === '1'
+                  "
+                  [class.bg-blue-50]="
+                    form.controls
+                      .ownershipType
+                      .value === '1'
+                  "
+                  [class.border-[var(--color-border)]]="
+                    form.controls
+                      .ownershipType
+                      .value !== '1'
+                  "
+                >
+                  <input
+                    type="radio"
+                    formControlName="ownershipType"
+                    value="1"
+                    class="sr-only"
+                  />
+
+                  <p
+                    class="text-sm font-semibold"
+                  >
+                    Owned
+                  </p>
+
+                  <p
+                    class="mt-1 text-xs text-zinc-500"
+                  >
+                    Vehicle is owned outright.
+                  </p>
+                </label>
+
+                <label
+                  class="cursor-pointer rounded-xl border p-4"
+                  [class.border-[var(--color-primary)]]="
+                    form.controls
+                      .ownershipType
+                      .value === '2'
+                  "
+                  [class.bg-blue-50]="
+                    form.controls
+                      .ownershipType
+                      .value === '2'
+                  "
+                  [class.border-[var(--color-border)]]="
+                    form.controls
+                      .ownershipType
+                      .value !== '2'
+                  "
+                >
+                  <input
+                    type="radio"
+                    formControlName="ownershipType"
+                    value="2"
+                    class="sr-only"
+                  />
+
+                  <p
+                    class="text-sm font-semibold"
+                  >
+                    Financed
+                  </p>
+
+                  <p
+                    class="mt-1 text-xs text-zinc-500"
+                  >
+                    Vehicle is under active financing.
+                  </p>
+                </label>
+              </div>
+            </div>
+          </form>
+        </div>
+      }
+
+      <!-- ============================================= -->
+      <!-- STEP 3 IMAGE -->
+      <!-- ============================================= -->
+
+      @if (currentStep() === 3) {
+        <div>
+          <p
+            class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+          >
+            Step 3 of 4
+          </p>
+
+          <h2
+            class="mt-2 text-2xl font-semibold tracking-[-0.03em]"
+          >
+            Vehicle Image
+          </h2>
+
+          <p
+            class="mt-2 text-sm leading-6 text-zinc-600"
+          >
+            Add an optional Vehicle image. Images do not
+            affect insurance readiness.
+          </p>
+
+          <div
+            class="mt-7 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-6"
+          >
+            @if (
+              imagePreviewUrl();
+              as preview
+            ) {
+              <div>
+                <img
+                  [src]="preview"
+                  alt="Selected Vehicle preview"
+                  class="mx-auto max-h-[360px] w-full rounded-xl object-contain"
+                />
+
+                @if (
+                  selectedImage();
+                  as image
+                ) {
+                  <div
+                    class="mt-5 text-center"
+                  >
+                    <p
+                      class="text-sm font-semibold"
+                    >
+                      {{ image.name }}
+                    </p>
+
+                    <p
+                      class="mt-1 text-xs text-zinc-500"
+                    >
+                      {{
+                        image.size /
+                        1024 /
+                        1024
+                      }}
+                      MB
+                    </p>
+                  </div>
+                }
+
+                <div
+                  class="mt-5 flex justify-center gap-3"
+                >
+                  <label
+                    for="vehicleImageReplace"
+                    class="cursor-pointer rounded-xl border border-[var(--color-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-primary)]"
+                  >
+                    Replace Image
+                  </label>
+
+                  <input
+                    id="vehicleImageReplace"
+                    type="file"
+                    accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                    class="hidden"
+                    (change)="onImageSelected($event)"
+                  />
+
+                  <button
+                    type="button"
+                    (click)="removeImage()"
+                    class="rounded-xl border border-[var(--color-border)] bg-white px-4 py-2.5 text-sm font-semibold text-zinc-600"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <div class="py-8 text-center">
+                <div
+                  class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white text-lg font-semibold text-[var(--color-primary)]"
+                >
+                  +
+                </div>
+
+                <h3
+                  class="mt-4 text-lg font-semibold"
+                >
+                  Add Vehicle image
+                </h3>
+
+                <p
+                  class="mt-2 text-sm text-zinc-500"
+                >
+                  JPG, JPEG, or PNG. Maximum 5 MB.
+                </p>
+
+                <label
+                  for="vehicleImage"
+                  class="mt-6 inline-flex cursor-pointer rounded-xl bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-white"
+                >
+                  Choose Image
+                </label>
+
+                <input
+                  id="vehicleImage"
+                  type="file"
+                  accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                  class="hidden"
+                  (change)="onImageSelected($event)"
+                />
+
+                <p
+                  class="mt-4 text-xs text-zinc-400"
+                >
+                  You can continue without an image.
+                </p>
+              </div>
+            }
+          </div>
+
+          @if (imageErrorMessage()) {
+            <div
+              class="mt-5 rounded-xl border border-red-200 bg-red-50 p-4"
+            >
+              <p
+                class="text-sm text-[var(--color-danger)]"
+              >
+                {{ imageErrorMessage() }}
+              </p>
+
+              @if (vehicleCreated()) {
+                <button
+                  type="button"
+                  (click)="continueWithoutImage()"
+                  class="mt-4 rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-[var(--color-danger)]"
+                >
+                  Continue Without Image
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ============================================= -->
+      <!-- STEP 4 REVIEW -->
+      <!-- ============================================= -->
+
+      @if (currentStep() === 4) {
+        <div>
+          <p
+            class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+          >
+            Step 4 of 4
+          </p>
+
+          <h2
+            class="mt-2 text-2xl font-semibold tracking-[-0.03em]"
+          >
+            Review Vehicle
+          </h2>
+
+          <p
+            class="mt-2 text-sm text-zinc-600"
+          >
+            Review the Vehicle information before saving.
+          </p>
+
+          <div
+            class="mt-7 grid gap-5 lg:grid-cols-2"
+          >
+            <!-- Details -->
+            <div
+              class="rounded-xl border border-[var(--color-border)] p-5"
+            >
+              <p
+                class="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+              >
+                Vehicle Details
+              </p>
+
+              <h3
+                class="mt-3 text-lg font-semibold"
+              >
+                {{ form.controls.make.value }}
+                {{ form.controls.model.value }}
+              </h3>
+
+              <dl
+                class="mt-5 space-y-3 text-sm"
+              >
+                <div
+                  class="flex justify-between gap-5"
+                >
+                  <dt class="text-zinc-500">
+                    VIN
+                  </dt>
+
+                  <dd class="font-semibold">
+                    {{ form.controls.vin.value }}
+                  </dd>
+                </div>
+
+                <div
+                  class="flex justify-between gap-5"
+                >
+                  <dt class="text-zinc-500">
+                    Registration
+                  </dt>
+
+                  <dd class="font-semibold">
+                    {{
+                      form.controls
+                        .registrationNumber
+                        .value
+                    }}
+                  </dd>
+                </div>
+
+                <div
+                  class="flex justify-between gap-5"
+                >
+                  <dt class="text-zinc-500">
+                    Year
+                  </dt>
+
+                  <dd class="font-semibold">
+                    {{
+                      form.controls
+                        .manufacturingYear
+                        .value
+                    }}
+                  </dd>
+                </div>
+
+                <div
+                  class="flex justify-between gap-5"
+                >
+                  <dt class="text-zinc-500">
+                    Type
+                  </dt>
+
+                  <dd class="font-semibold">
+                    {{ vehicleTypeLabel() }}
+                  </dd>
+                </div>
+
+                <div
+                  class="flex justify-between gap-5"
+                >
+                  <dt class="text-zinc-500">
+                    Fuel
+                  </dt>
+
+                  <dd class="font-semibold">
+                    {{ fuelTypeLabel() }}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            <!-- Ownership -->
+            <div
+              class="rounded-xl border border-[var(--color-border)] p-5"
+            >
+              <p
+                class="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+              >
+                Ownership & Usage
+              </p>
+
+              <dl
+                class="mt-5 space-y-3 text-sm"
+              >
+                <div
+                  class="flex justify-between gap-5"
+                >
+                  <dt class="text-zinc-500">
+                    Vehicle Value
+                  </dt>
+
+                  <dd class="font-semibold">
+                    {{
+                      form.controls
+                        .vehicleValue
+                        .value
+                    }}
+                  </dd>
+                </div>
+
+                <div
+                  class="flex justify-between gap-5"
+                >
+                  <dt class="text-zinc-500">
+                    Odometer
+                  </dt>
+
+                  <dd class="font-semibold">
+                    {{
+                      form.controls
+                        .currentOdometer
+                        .value
+                    }}
+                  </dd>
+                </div>
+
+                <div
+                  class="flex justify-between gap-5"
+                >
+                  <dt class="text-zinc-500">
+                    Annual Mileage
+                  </dt>
+
+                  <dd class="font-semibold">
+                    {{
+                      form.controls
+                        .annualMileage
+                        .value
+                    }}
+                  </dd>
+                </div>
+
+                <div
+                  class="flex justify-between gap-5"
+                >
+                  <dt class="text-zinc-500">
+                    Ownership
+                  </dt>
+
+                  <dd class="font-semibold">
+                    {{ ownershipTypeLabel() }}
+                  </dd>
+                </div>
+
+                <div
+                  class="flex justify-between gap-5"
+                >
+                  <dt class="text-zinc-500">
+                    Purchase Date
+                  </dt>
+
+                  <dd class="font-semibold">
+                    {{
+                      form.controls
+                        .purchaseDate
+                        .value
+                    }}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            <!-- Image -->
+            <div
+              class="rounded-xl border border-[var(--color-border)] p-5 lg:col-span-2"
+            >
+              <p
+                class="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+              >
+                Vehicle Image
+              </p>
+
+              @if (
+                imagePreviewUrl();
+                as preview
+              ) {
+                <div
+                  class="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center"
+                >
+                  <img
+                    [src]="preview"
+                    alt="Vehicle preview"
+                    class="h-28 w-44 rounded-xl object-cover"
+                  />
+
+                  @if (
+                    selectedImage();
+                    as image
+                  ) {
+                    <div>
+                      <p
+                        class="text-sm font-semibold"
+                      >
+                        {{ image.name }}
+                      </p>
+
+                      <p
+                        class="mt-1 text-xs text-zinc-500"
+                      >
+                        Optional image will be uploaded
+                        after Vehicle creation.
+                      </p>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p
+                  class="mt-3 text-sm text-zinc-500"
+                >
+                  No image selected. The Vehicle can be
+                  saved without an image.
+                </p>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Navigation -->
+      <div
+        class="mt-8 flex items-center justify-between border-t border-[var(--color-border)] pt-6"
+      >
+        <button
+          type="button"
+          (click)="previous()"
+          [disabled]="
+            currentStep() === 1 ||
+            isSaving()
+          "
+          class="rounded-xl border border-[var(--color-border)] px-5 py-3 text-sm font-semibold text-zinc-600 disabled:invisible"
+        >
+          Back
+        </button>
+
+        @if (currentStep() < 4) {
+          <button
+            type="button"
+            (click)="next()"
+            [disabled]="isSaving()"
+            class="rounded-xl bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            Continue
+          </button>
+        } @else {
+          <button
+            type="button"
+            (click)="saveVehicle()"
+            [disabled]="
+              form.invalid ||
+              isSaving() ||
+              vehicleCreated()
+            "
+            class="rounded-xl bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            @if (isSaving()) {
+              Saving Vehicle...
+            } @else {
+              Save Vehicle
+            }
+          </button>
+        }
+      </div>
+    </section>
+  </div>
+</main>

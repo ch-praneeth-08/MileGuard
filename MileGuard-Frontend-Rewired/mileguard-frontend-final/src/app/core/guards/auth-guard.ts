@@ -1,0 +1,50 @@
+import { inject } from '@angular/core';
+import {
+  CanActivateFn,
+  Router
+} from '@angular/router';
+import { map } from 'rxjs';
+
+import { AuthSession } from '../auth/auth-session';
+import { AuthSessionRestorer } from '../auth/auth-session-restorer';
+
+export const authGuard:
+  CanActivateFn = (
+    _route,
+    state
+  ) => {
+    const authSession =
+      inject(AuthSession);
+
+    const authSessionRestorer =
+      inject(AuthSessionRestorer);
+
+    const router =
+      inject(Router);
+
+    if (
+      authSession.isAuthenticated()
+    ) {
+      return true;
+    }
+
+    return authSessionRestorer
+      .restore()
+      .pipe(
+        map(restored => {
+          if (restored) {
+            return true;
+          }
+
+          return router.createUrlTree(
+            ['/login'],
+            {
+              queryParams: {
+                returnUrl:
+                  state.url
+              }
+            }
+          );
+        })
+      );
+  };

@@ -1,0 +1,731 @@
+<div class="min-h-screen bg-[var(--color-warm-white)]">
+  <div class="min-h-screen block">
+    <!-- ================================================= -->
+    <!-- SIDEBAR -->
+    <!-- ================================================= -->
+
+    
+
+    <!-- ================================================= -->
+    <!-- MAIN -->
+    <!-- ================================================= -->
+
+    <main>
+      
+
+      <div class="mx-auto max-w-[1150px] px-5 py-8 sm:px-8 lg:px-10 lg:py-10 xl:px-14">
+        <button
+          type="button"
+          (click)="returnToApplications()"
+          class="text-xs font-semibold text-[var(--color-primary)] transition hover:text-[var(--color-primary-dark)]"
+        >
+          â† Back to Underwriting Status
+        </button>
+
+        <!-- ================================================= -->
+        <!-- LOADING -->
+        <!-- ================================================= -->
+
+        @if (isLoading()) {
+          <section class="mt-8 space-y-5" aria-label="Loading Underwriting application">
+            <div
+              class="h-48 animate-pulse rounded-2xl border border-[var(--color-border)] bg-white"
+            ></div>
+
+            <div
+              class="h-60 animate-pulse rounded-2xl border border-[var(--color-border)] bg-white"
+            ></div>
+          </section>
+        }
+
+        <!-- ================================================= -->
+        <!-- ERROR -->
+        <!-- ================================================= -->
+
+        @if (!isLoading() && errorMessage()) {
+          <section
+            role="alert"
+            class="mt-8 rounded-2xl border border-red-200 bg-white p-6 shadow-sm"
+          >
+            <div
+              class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-sm font-bold text-[var(--color-danger)]"
+              aria-hidden="true"
+            >
+              !
+            </div>
+
+            <h1 class="mt-4 text-xl font-semibold text-[var(--color-ink)]">
+              Application unavailable
+            </h1>
+
+            <p class="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
+              {{ errorMessage() }}
+            </p>
+
+            <div class="mt-5 flex flex-wrap gap-3">
+              <button
+                type="button"
+                (click)="retry()"
+                class="rounded-xl bg-[var(--color-primary)] px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-[var(--color-primary-dark)]"
+              >
+                Retry
+              </button>
+
+              <button
+                type="button"
+                (click)="returnToApplications()"
+                class="rounded-xl border border-[var(--color-border)] bg-white px-5 py-2.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50"
+              >
+                Back
+              </button>
+            </div>
+          </section>
+        }
+
+        <!-- ================================================= -->
+        <!-- APPLICATION -->
+        <!-- ================================================= -->
+
+        @if (!isLoading() && !errorMessage() && application(); as application) {
+          <section class="mt-7">
+            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400">
+              Customer / Underwriting / Application
+            </p>
+
+            <div class="mt-3 flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
+              <div>
+                <p
+                  class="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+                >
+                  Insurance Application
+                </p>
+
+                <h1 class="mt-1 text-4xl font-semibold tracking-[-0.04em] text-[var(--color-ink)]">
+                  {{ pageTitle() }}
+                </h1>
+
+                <p class="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
+                  Review the latest status and contractual information available for this insurance
+                  application.
+                </p>
+              </div>
+
+              <span
+                class="w-fit rounded-full px-3 py-1.5 text-xs font-semibold"
+                [class]="statusClasses()"
+              >
+                {{ customerStatusLabel() }}
+              </span>
+            </div>
+          </section>
+
+          @if (actionError()) {
+            <section role="alert" class="mt-6 rounded-xl border border-red-200 bg-red-50 p-4">
+              <p class="text-xs leading-5 text-red-700">
+                {{ actionError() }}
+              </p>
+
+              <button
+                type="button"
+                (click)="retry()"
+                class="mt-3 text-xs font-semibold text-red-700 underline"
+              >
+                Reload application
+              </button>
+            </section>
+          }
+
+          @if (successMessage()) {
+            <section role="status" class="mt-6 rounded-xl border border-green-200 bg-green-50 p-4">
+              <p class="text-xs font-medium text-green-700">
+                {{ successMessage() }}
+              </p>
+            </section>
+          }
+
+          <!-- ================================================= -->
+          <!-- APPLICATION SUMMARY -->
+          <!-- ================================================= -->
+
+          <section
+            class="mt-7 rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-sm"
+          >
+            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <p class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+                  Plan
+                </p>
+
+                <p class="mt-2 text-lg font-semibold text-[var(--color-ink)]">
+                  {{ application.planName }}
+                </p>
+              </div>
+
+              <div>
+                <p class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+                  Annual Premium
+                </p>
+
+                <p class="mt-2 text-lg font-semibold text-[var(--color-ink)]">
+                  â‚¹{{ application.annualPremium | number: '1.0-0' }}
+                </p>
+              </div>
+
+              <div>
+                <p class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+                  Application
+                </p>
+
+                <p class="mt-2 break-all text-xs font-semibold text-zinc-700">
+                  {{ application.applicationId }}
+                </p>
+              </div>
+
+              <div>
+                <p class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+                  Vehicle
+                </p>
+
+                <p class="mt-2 break-all text-xs font-semibold text-zinc-700">
+                  {{ application.vehicleId }}
+                </p>
+              </div>
+            </div>
+
+            <div
+              class="mt-6 grid gap-5 border-t border-[var(--color-border)] pt-5 sm:grid-cols-2 lg:grid-cols-3"
+            >
+              <div>
+                <p class="text-[9px] uppercase tracking-[0.1em] text-zinc-400">Quote Finalized</p>
+
+                <p class="mt-1 text-xs font-medium text-zinc-700">
+                  {{ application.quoteFinalizedAtUtc | date: 'dd MMM yyyy, h:mm a' }}
+                </p>
+              </div>
+
+              <div>
+                <p class="text-[9px] uppercase tracking-[0.1em] text-zinc-400">Quote Valid Until</p>
+
+                <p class="mt-1 text-xs font-medium text-zinc-700">
+                  {{ application.quoteValidUntilUtc | date: 'dd MMM yyyy, h:mm a' }}
+                </p>
+              </div>
+
+              @if (application.decidedAtUtc) {
+                <div>
+                  <p class="text-[9px] uppercase tracking-[0.1em] text-zinc-400">Decision Date</p>
+
+                  <p class="mt-1 text-xs font-medium text-zinc-700">
+                    {{ application.decidedAtUtc | date: 'dd MMM yyyy, h:mm a' }}
+                  </p>
+                </div>
+              }
+            </div>
+          </section>
+
+          <!-- ================================================= -->
+          <!-- UNDER REVIEW -->
+          <!-- ================================================= -->
+
+          @if (isUnderReview()) {
+            <section class="mt-6 rounded-2xl border border-blue-100 bg-blue-50 p-6">
+              <div class="flex items-start gap-4">
+                <div
+                  class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-lg font-semibold text-[var(--color-primary)]"
+                  aria-hidden="true"
+                >
+                  i
+                </div>
+
+                <div>
+                  <h2 class="text-lg font-semibold text-[var(--color-ink)]">
+                    Your application is under review
+                  </h2>
+
+                  <p class="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
+                    No action is required from you right now. The Underwriting review is being
+                    completed using the information submitted with your finalized Quote.
+                  </p>
+
+                  <p class="mt-4 text-xs font-semibold text-blue-700">No action required</p>
+                </div>
+              </div>
+            </section>
+          }
+
+          <!-- ================================================= -->
+          <!-- APPROVED OFFER -->
+          <!-- ================================================= -->
+
+          @if (isApproved() && !isDeclined()) {
+            <section
+              class="mt-6 overflow-hidden rounded-2xl border border-green-200 bg-white shadow-sm"
+            >
+              <div class="bg-green-50 px-6 py-5">
+                <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                  <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-green-700">
+                      @if (hasIssuedPolicy()) {
+                        Policy Issued
+                      } @else if (hasExistingPurchase()) {
+                        Purchase In Progress
+                      } @else if (isAccepted()) {
+                        Offer Accepted
+                      } @else {
+                        Approved
+                      }
+                    </p>
+
+                    <h2
+                      class="mt-1 text-2xl font-semibold tracking-[-0.03em] text-[var(--color-ink)]"
+                    >
+                      Your approved insurance offer
+                    </h2>
+
+                    <p class="mt-2 max-w-2xl text-xs leading-5 text-zinc-600">
+                      @if (hasIssuedPolicy()) {
+                        This offer has already completed the Policy purchase process.
+                      } @else if (hasExistingPurchase()) {
+                        This offer already has an active purchase lifecycle.
+                      } @else {
+                        Review the contractual coverage and offer deadline before continuing to
+                        Policy purchase.
+                      }
+                    </p>
+                  </div>
+
+                  @if (application.offerValidUntilUtc) {
+                    <div class="rounded-xl bg-white px-4 py-3">
+                      <p class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+                        Offer Valid Until
+                      </p>
+
+                      <p class="mt-1 text-sm font-semibold text-amber-700">
+                        {{ application.offerValidUntilUtc | date: 'dd MMM yyyy, h:mm a' }}
+                      </p>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <div class="p-6">
+                <!-- Plan / Premium -->
+
+                <div class="grid gap-4 sm:grid-cols-2">
+                  <div class="rounded-xl bg-[#FAF9F6] p-5">
+                    <p class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+                      Plan
+                    </p>
+
+                    <p class="mt-2 text-xl font-semibold text-[var(--color-ink)]">
+                      {{ application.planName }}
+                    </p>
+                  </div>
+
+                  <div class="rounded-xl bg-[#FAF9F6] p-5">
+                    <p class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-400">
+                      Annual Premium
+                    </p>
+
+                    <p class="mt-2 text-xl font-semibold text-[var(--color-ink)]">
+                      â‚¹{{ application.annualPremium | number: '1.0-0' }}
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Coverages -->
+
+                <div class="mt-7">
+                  <h3 class="text-sm font-semibold text-[var(--color-ink)]">Coverages</h3>
+
+                  @if (application.coverages.length === 0) {
+                    <p class="mt-3 text-xs text-zinc-500">No coverage details are available.</p>
+                  } @else {
+                    <div
+                      class="mt-4 overflow-x-auto rounded-xl border border-[var(--color-border)]"
+                    >
+                      <table class="w-full min-w-[650px] border-collapse text-left">
+                        <thead>
+                          <tr class="border-b border-[var(--color-border)] bg-[#FAF9F6]">
+                            <th
+                              class="px-4 py-3 text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                            >
+                              Coverage
+                            </th>
+
+                            <th
+                              class="px-4 py-3 text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                            >
+                              Limit
+                            </th>
+
+                            <th
+                              class="px-4 py-3 text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                            >
+                              Deductible
+                            </th>
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          @for (coverage of application.coverages; track coverage.coverageName) {
+                            <tr class="border-b border-[var(--color-border)] last:border-b-0">
+                              <td class="px-4 py-3 text-xs font-semibold text-[var(--color-ink)]">
+                                {{ coverage.coverageName }}
+                              </td>
+
+                              <td class="px-4 py-3 text-xs text-zinc-600">
+                                â‚¹{{ coverage.resolvedLimitAmount | number: '1.0-0' }}
+                              </td>
+
+                              <td class="px-4 py-3 text-xs text-zinc-600">
+                                @if (coverage.deductibleAmount !== null) {
+                                  â‚¹{{ coverage.deductibleAmount | number: '1.0-0' }}
+                                } @else {
+                                  Not applicable
+                                }
+                              </td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  }
+                </div>
+
+                <!-- Add-ons -->
+
+                <div class="mt-7">
+                  <h3 class="text-sm font-semibold text-[var(--color-ink)]">Add-ons</h3>
+
+                  @if (application.addOns.length === 0) {
+                    <p class="mt-3 text-xs text-zinc-500">No add-ons are included in this offer.</p>
+                  } @else {
+                    <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                      @for (addOn of application.addOns; track addOn.addOnName) {
+                        <div class="rounded-xl border border-[var(--color-border)] p-4">
+                          <p class="text-xs font-semibold text-[var(--color-ink)]">
+                            {{ addOn.addOnName }}
+                          </p>
+
+                          <p class="mt-1 text-[11px] text-zinc-500">
+                            â‚¹{{ addOn.annualPrice | number: '1.0-0' }}
+                            / year
+                          </p>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <!-- ================================================= -->
+                <!-- PURCHASE LIFECYCLE LOADING -->
+                <!-- ================================================= -->
+
+                @if (isLoadingPurchaseLifecycle()) {
+                  <div class="mt-8 rounded-xl border border-[var(--color-border)] bg-zinc-50 p-5">
+                    <div class="h-4 w-40 animate-pulse rounded bg-zinc-200"></div>
+
+                    <div class="mt-3 h-3 w-full max-w-xl animate-pulse rounded bg-zinc-200"></div>
+                  </div>
+                }
+
+                <!-- ================================================= -->
+                <!-- POLICY ALREADY ISSUED -->
+                <!-- ================================================= -->
+
+                @if (!isLoadingPurchaseLifecycle() && hasIssuedPolicy()) {
+                  <div class="mt-8 rounded-xl border border-green-200 bg-green-50 p-5">
+                    <div class="flex items-start gap-4">
+                      <div
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-sm font-bold text-green-700"
+                        aria-hidden="true"
+                      >
+                        âœ“
+                      </div>
+
+                      <div>
+                        <p class="text-sm font-semibold text-green-800">Policy issued</p>
+
+                        <p class="mt-1 max-w-2xl text-xs leading-5 text-zinc-600">
+                          This approved offer has already completed the purchase process and
+                          resulted in an issued Policy. No further purchase action is required for
+                          this application.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="mt-6">
+                    <button
+                      type="button"
+                      (click)="viewIssuedPolicy()"
+                      class="rounded-xl bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-dark)]"
+                    >
+                      View Policy
+                    </button>
+                  </div>
+                }
+
+                <!-- ================================================= -->
+                <!-- PURCHASE IN PROGRESS -->
+                <!-- ================================================= -->
+
+                @if (!isLoadingPurchaseLifecycle() && hasExistingPurchase() && !hasIssuedPolicy()) {
+                  <div class="mt-8 rounded-xl border border-blue-200 bg-blue-50 p-5">
+                    <p class="text-sm font-semibold text-[var(--color-ink)]">
+                      Purchase in progress
+                    </p>
+
+                    <p class="mt-1 max-w-2xl text-xs leading-5 text-zinc-600">
+                      This approved offer has already been accepted and has an existing purchase.
+                      Continue that purchase to complete any remaining payment and Policy issuance
+                      steps.
+                    </p>
+
+                    @if (application.customerRespondedAtUtc) {
+                      <p class="mt-3 text-[10px] font-medium text-blue-700">
+                        Accepted
+                        {{ application.customerRespondedAtUtc | date: 'dd MMM yyyy, h:mm a' }}
+                      </p>
+                    }
+                  </div>
+
+                  <div class="mt-6">
+                    <button
+                      type="button"
+                      (click)="continueWithApprovedOffer()"
+                      [disabled]="!canContinueToPurchase()"
+                      class="rounded-xl bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-dark)] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Continue Purchase
+                    </button>
+                  </div>
+                }
+
+                <!-- ================================================= -->
+                <!-- NO PURCHASE YET -->
+                <!-- ================================================= -->
+
+                @if (
+                  !isLoadingPurchaseLifecycle() &&
+                  !hasExistingPurchase() &&
+                  !hasIssuedPolicy() &&
+                  !hasCustomerResponded()
+                ) {
+                  <div class="mt-8 rounded-xl border border-blue-100 bg-blue-50 p-5">
+                    <p class="text-sm font-semibold text-[var(--color-ink)]">Ready to continue?</p>
+
+                    <p class="mt-1 max-w-2xl text-xs leading-5 text-zinc-600">
+                      Continuing will take you to Policy purchase where effective date, payment
+                      frequency, contractual acceptance and payment are handled.
+                    </p>
+                  </div>
+
+                  <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+                    <button
+                      type="button"
+                      (click)="continueWithApprovedOffer()"
+                      [disabled]="!canContinueToPurchase()"
+                      class="rounded-xl bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-dark)] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Continue with Approved Offer
+                    </button>
+
+                    <button
+                      type="button"
+                      (click)="openDeclineConfirmation()"
+                      [disabled]="!canDecline()"
+                      class="rounded-xl border border-[var(--color-border)] bg-white px-6 py-3 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Decline Offer
+                    </button>
+                  </div>
+                }
+
+                <!-- ================================================= -->
+                <!-- ACCEPTED BUT LIFECYCLE NOT AVAILABLE -->
+                <!-- ================================================= -->
+
+                @if (
+                  !isLoadingPurchaseLifecycle() &&
+                  isAccepted() &&
+                  !hasExistingPurchase() &&
+                  !hasIssuedPolicy()
+                ) {
+                  <div class="mt-8 rounded-xl border border-blue-200 bg-blue-50 p-5">
+                    <p class="text-sm font-semibold text-[var(--color-ink)]">Offer accepted</p>
+
+                    <p class="mt-1 max-w-2xl text-xs leading-5 text-zinc-600">
+                      This offer has already been accepted and can no longer be declined.
+                    </p>
+                  </div>
+                }
+              </div>
+            </section>
+          }
+
+          <!-- ================================================= -->
+          <!-- REJECTED -->
+          <!-- ================================================= -->
+
+          @if (isRejected()) {
+            <section class="mt-6 rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
+              <div
+                class="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-lg font-bold text-red-700"
+                aria-hidden="true"
+              >
+                !
+              </div>
+
+              <h2 class="mt-4 text-xl font-semibold text-[var(--color-ink)]">
+                Application not approved
+              </h2>
+
+              <p class="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
+                This Underwriting application was not approved.
+              </p>
+
+              @if (application.rejectionReason) {
+                <div class="mt-5 rounded-xl bg-red-50 p-5">
+                  <p class="text-[9px] font-semibold uppercase tracking-[0.1em] text-red-600">
+                    Reason
+                  </p>
+
+                  <p class="mt-2 text-sm leading-6 text-red-800">
+                    {{ application.rejectionReason }}
+                  </p>
+                </div>
+              }
+            </section>
+          }
+
+          <!-- ================================================= -->
+          <!-- DECLINED -->
+          <!-- ================================================= -->
+
+          @if (isDeclined()) {
+            <section class="mt-6 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+              <div
+                class="flex h-11 w-11 items-center justify-center rounded-xl bg-zinc-100 text-lg font-semibold text-zinc-600"
+                aria-hidden="true"
+              >
+                âœ“
+              </div>
+
+              <h2 class="mt-4 text-xl font-semibold text-[var(--color-ink)]">Offer declined</h2>
+
+              <p class="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
+                You declined this approved offer. This action is final and the offer is no longer
+                available for purchase.
+              </p>
+
+              @if (application.customerRespondedAtUtc) {
+                <p class="mt-4 text-xs text-zinc-500">
+                  Responded
+                  {{ application.customerRespondedAtUtc | date: 'dd MMM yyyy, h:mm a' }}
+                </p>
+              }
+            </section>
+          }
+
+          <!-- ================================================= -->
+          <!-- LAPSED -->
+          <!-- ================================================= -->
+
+          @if (isLapsed() && !isDeclined()) {
+            <section class="mt-6 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+              <div
+                class="flex h-11 w-11 items-center justify-center rounded-xl bg-zinc-100 text-lg font-semibold text-zinc-600"
+                aria-hidden="true"
+              >
+                !
+              </div>
+
+              <h2 class="mt-4 text-xl font-semibold text-[var(--color-ink)]">Offer expired</h2>
+
+              <p class="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
+                The approved offer is no longer available. Contact your assigned Agent about
+                preparing a fresh Quote when eligible.
+              </p>
+
+              @if (application.offerValidUntilUtc) {
+                <p class="mt-4 text-xs text-zinc-500">
+                  Offer expired after
+                  {{ application.offerValidUntilUtc | date: 'dd MMM yyyy, h:mm a' }}
+                </p>
+              }
+            </section>
+          }
+        }
+      </div>
+    </main>
+  </div>
+
+  <!-- ================================================= -->
+  <!-- DECLINE CONFIRMATION -->
+  <!-- ================================================= -->
+
+  @if (showDeclineConfirmation()) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+      role="presentation"
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="decline-offer-title"
+        class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+      >
+        <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-amber-700">
+          Irreversible Action
+        </p>
+
+        <h2
+          id="decline-offer-title"
+          class="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[var(--color-ink)]"
+        >
+          Decline this approved offer?
+        </h2>
+
+        <p class="mt-3 text-sm leading-6 text-zinc-600">
+          Declining the offer is permanent. You will not be able to continue to Policy purchase
+          using this Underwriting approval.
+        </p>
+
+        <div class="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p class="text-xs font-semibold text-amber-800">No decline reason is required</p>
+
+          <p class="mt-1 text-[11px] leading-5 text-amber-700">
+            If you need insurance later, a fresh Quote may be required subject to backend
+            eligibility.
+          </p>
+        </div>
+
+        <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            (click)="closeDeclineConfirmation()"
+            [disabled]="isResponding()"
+            class="rounded-xl border border-[var(--color-border)] px-5 py-3 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
+          >
+            Keep Offer
+          </button>
+
+          <button
+            type="button"
+            (click)="confirmDecline()"
+            [disabled]="isResponding()"
+            class="rounded-xl bg-[var(--color-ink)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:opacity-50"
+          >
+            @if (isResponding()) {
+              Declining...
+            } @else {
+              Decline Offer
+            }
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</div>

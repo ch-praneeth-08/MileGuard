@@ -1,0 +1,1192 @@
+<div class="min-h-screen bg-[var(--color-warm-white)]">
+  <div
+    class="min-h-screen block"
+  >
+    
+
+    <main>
+      
+
+      <div
+        class="mx-auto max-w-[1400px] px-5 py-8 sm:px-8 lg:px-10 lg:py-10 xl:px-14"
+      >
+        <p
+          class="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400"
+        >
+          Admin / Pricing
+        </p>
+
+        <div class="mt-3">
+          <p
+            class="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+          >
+            Quote Rating
+          </p>
+
+          <h1
+            class="mt-1 text-4xl font-semibold tracking-[-0.04em] text-[var(--color-ink)]"
+          >
+            Pricing Configuration
+          </h1>
+
+          <p
+            class="mt-3 max-w-3xl text-sm leading-6 text-zinc-600"
+          >
+            Manage the controlled pricing values used by
+            Quote calculations. Product identities,
+            coverage membership, rating boundaries,
+            contractual options, and add-on eligibility
+            remain fixed.
+          </p>
+        </div>
+
+        <section
+          class="mt-7 rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4"
+        >
+          <div class="flex items-start gap-4">
+            <div
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-sm font-semibold text-[var(--color-primary)]"
+              aria-hidden="true"
+            >
+              i
+            </div>
+
+            <div>
+              <p
+                class="text-sm font-semibold text-[var(--color-ink)]"
+              >
+                Immediate pricing effect
+              </p>
+
+              <p
+                class="mt-1 max-w-3xl text-xs leading-5 text-zinc-600"
+              >
+                Saved pricing becomes authoritative
+                immediately for new Quote calculations and
+                future recalculations. Existing Finalized
+                Quotes remain unchanged.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        @if (successMessage()) {
+          <div
+            role="status"
+            class="mt-6 rounded-xl border border-green-200 bg-green-50 px-5 py-4"
+          >
+            <p
+              class="text-sm font-semibold text-green-800"
+            >
+              {{ successMessage() }}
+            </p>
+          </div>
+        }
+
+        @if (errorMessage()) {
+          <div
+            role="alert"
+            class="mt-6 flex flex-col justify-between gap-4 rounded-xl border border-red-200 bg-red-50 px-5 py-4 sm:flex-row sm:items-center"
+          >
+            <p
+              class="text-sm leading-6 text-[var(--color-danger)]"
+            >
+              {{ errorMessage() }}
+            </p>
+
+            @if (!configuration()) {
+              <button
+                type="button"
+                (click)="retry()"
+                class="shrink-0 text-sm font-semibold text-[var(--color-danger)] underline underline-offset-4"
+              >
+                Retry
+              </button>
+            }
+          </div>
+        }
+
+        @if (isLoading()) {
+          <section class="mt-8">
+            <div
+              class="h-12 animate-pulse rounded-xl bg-zinc-100"
+            ></div>
+
+            <div class="mt-6 space-y-4">
+              @for (
+                item of [1, 2, 3, 4];
+                track item
+              ) {
+                <div
+                  class="h-32 animate-pulse rounded-2xl border border-[var(--color-border)] bg-white"
+                ></div>
+              }
+            </div>
+          </section>
+        }
+
+        @if (
+          !isLoading() &&
+          configuration();
+          as pricing
+        ) {
+          <nav
+            class="mt-9 overflow-x-auto border-b border-[var(--color-border)]"
+            aria-label="Pricing configuration sections"
+          >
+            <div
+              class="flex min-w-max gap-8"
+              role="tablist"
+            >
+              <button
+                type="button"
+                role="tab"
+                [attr.aria-selected]="
+                  activeSection() === 'plans'
+                "
+                (click)="selectSection('plans')"
+                class="relative pb-4 text-sm font-semibold transition"
+                [class.text-[var(--color-primary)]]="
+                  activeSection() === 'plans'
+                "
+                [class.text-zinc-500]="
+                  activeSection() !== 'plans'
+                "
+              >
+                Plan Pricing
+
+                @if (
+                  activeSection() === 'plans'
+                ) {
+                  <span
+                    class="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-[var(--color-primary)]"
+                    aria-hidden="true"
+                  ></span>
+                }
+              </button>
+
+              <button
+                type="button"
+                role="tab"
+                [attr.aria-selected]="
+                  activeSection() === 'rating'
+                "
+                (click)="selectSection('rating')"
+                class="relative pb-4 text-sm font-semibold transition"
+                [class.text-[var(--color-primary)]]="
+                  activeSection() === 'rating'
+                "
+                [class.text-zinc-500]="
+                  activeSection() !== 'rating'
+                "
+              >
+                Rating Adjustments
+
+                @if (
+                  activeSection() === 'rating'
+                ) {
+                  <span
+                    class="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-[var(--color-primary)]"
+                    aria-hidden="true"
+                  ></span>
+                }
+              </button>
+
+              <button
+                type="button"
+                role="tab"
+                [attr.aria-selected]="
+                  activeSection() === 'coverage'
+                "
+                (click)="selectSection('coverage')"
+                class="relative pb-4 text-sm font-semibold transition"
+                [class.text-[var(--color-primary)]]="
+                  activeSection() === 'coverage'
+                "
+                [class.text-zinc-500]="
+                  activeSection() !== 'coverage'
+                "
+              >
+                Coverage Pricing
+
+                @if (
+                  activeSection() === 'coverage'
+                ) {
+                  <span
+                    class="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-[var(--color-primary)]"
+                    aria-hidden="true"
+                  ></span>
+                }
+              </button>
+
+              <button
+                type="button"
+                role="tab"
+                [attr.aria-selected]="
+                  activeSection() === 'addons'
+                "
+                (click)="selectSection('addons')"
+                class="relative pb-4 text-sm font-semibold transition"
+                [class.text-[var(--color-primary)]]="
+                  activeSection() === 'addons'
+                "
+                [class.text-zinc-500]="
+                  activeSection() !== 'addons'
+                "
+              >
+                Add-ons
+
+                @if (
+                  activeSection() === 'addons'
+                ) {
+                  <span
+                    class="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-[var(--color-primary)]"
+                    aria-hidden="true"
+                  ></span>
+                }
+              </button>
+            </div>
+          </nav>
+
+          @if (
+            activeSection() === 'plans'
+          ) {
+            <section class="mt-7">
+              <div>
+                <p
+                  class="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+                >
+                  Plan Pricing
+                </p>
+
+                <h2
+                  class="mt-1 text-xl font-semibold text-[var(--color-ink)]"
+                >
+                  Base premiums
+                </h2>
+
+                <p
+                  class="mt-1 max-w-2xl text-xs leading-5 text-zinc-500"
+                >
+                  Plan identity and mandatory coverage
+                  membership are read-only. Only the base
+                  premium may be changed.
+                </p>
+              </div>
+
+              @if (pricing.plans.length === 0) {
+                <div
+                  class="mt-5 rounded-2xl border border-[var(--color-border)] bg-white px-6 py-12 text-center"
+                >
+                  <h3
+                    class="text-base font-semibold text-[var(--color-ink)]"
+                  >
+                    No Plan pricing available
+                  </h3>
+
+                  <p
+                    class="mt-2 text-xs text-zinc-500"
+                  >
+                    Plan pricing configuration has not been
+                    returned by the service.
+                  </p>
+                </div>
+              } @else {
+                <div
+                  class="mt-5 grid gap-5 xl:grid-cols-3"
+                >
+                  @for (
+                    plan of pricing.plans;
+                    track plan.planId
+                  ) {
+                    <article
+                      class="rounded-2xl border border-[var(--color-border)] bg-white p-5 shadow-sm"
+                    >
+                      <div
+                        class="flex items-start justify-between gap-3"
+                      >
+                        <div>
+                          <p
+                            class="text-[9px] font-semibold uppercase tracking-[0.1em] text-[var(--color-primary)]"
+                          >
+                            {{ plan.planCode }}
+                          </p>
+
+                          <h3
+                            class="mt-1 text-lg font-semibold text-[var(--color-ink)]"
+                          >
+                            {{ plan.planName }}
+                          </h3>
+                        </div>
+
+                        <span
+                          class="rounded-full bg-zinc-100 px-2.5 py-1 text-[9px] font-semibold text-zinc-600"
+                        >
+                          Fixed Plan
+                        </span>
+                      </div>
+
+                      <div
+                        class="mt-5 border-t border-[var(--color-border)] pt-4"
+                      >
+                        <p
+                          class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                        >
+                          Mandatory Coverage
+                        </p>
+
+                        <ul class="mt-3 space-y-2">
+                          @for (
+                            coverage of plan.mandatoryCoverages;
+                            track coverage
+                          ) {
+                            <li
+                              class="flex items-start gap-2 text-xs leading-5 text-zinc-600"
+                            >
+                              <span
+                                class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-400"
+                                aria-hidden="true"
+                              ></span>
+
+                              <span>
+                                {{ coverage }}
+                              </span>
+                            </li>
+                          }
+                        </ul>
+                      </div>
+
+                      <div
+                        class="mt-5 border-t border-[var(--color-border)] pt-4"
+                      >
+                        <label
+                          [for]="'plan-' + plan.planId"
+                          class="text-xs font-semibold text-[var(--color-ink)]"
+                        >
+                          Base Premium
+                        </label>
+
+                        <div
+                          class="mt-2 flex gap-2"
+                        >
+                          <div
+                            class="relative flex-1"
+                          >
+                            <span
+                              class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400"
+                              aria-hidden="true"
+                            >
+                              â‚¹
+                            </span>
+
+                            <input
+                              [id]="'plan-' + plan.planId"
+                              type="number"
+                              min="0"
+                              step="1"
+                              [(ngModel)]="
+                                plan.basePremium
+                              "
+                              [disabled]="isSaving()"
+                              class="w-full rounded-xl border border-[var(--color-border)] bg-white py-2.5 pl-7 pr-3 text-sm outline-none transition focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100 disabled:bg-zinc-50"
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            (click)="
+                              requestPlanSave(plan)
+                            "
+                            [disabled]="isSaving()"
+                            class="rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[var(--color-primary-dark)] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            @if (
+                              savingItemId() ===
+                              plan.planId
+                            ) {
+                              Saving...
+                            } @else {
+                              Save
+                            }
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  }
+                </div>
+              }
+            </section>
+          }
+
+          @if (
+            activeSection() === 'rating'
+          ) {
+            <section class="mt-7">
+              <div>
+                <p
+                  class="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+                >
+                  Rating Adjustments
+                </p>
+
+                <h2
+                  class="mt-1 text-xl font-semibold text-[var(--color-ink)]"
+                >
+                  Existing rating bands
+                </h2>
+
+                <p
+                  class="mt-1 max-w-3xl text-xs leading-5 text-zinc-500"
+                >
+                  Factor identities and band boundaries are
+                  fixed. Only the non-negative surcharge
+                  percentage attached to an existing band
+                  may be changed.
+                </p>
+              </div>
+
+              @if (
+                pricing.ratingAdjustments.length === 0
+              ) {
+                <div
+                  class="mt-5 rounded-2xl border border-[var(--color-border)] bg-white px-6 py-12 text-center"
+                >
+                  <h3
+                    class="text-base font-semibold text-[var(--color-ink)]"
+                  >
+                    No rating adjustments available
+                  </h3>
+                </div>
+              } @else {
+                <div
+                  class="mt-5 overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-white"
+                >
+                  <table
+                    class="w-full min-w-[900px] border-collapse text-left"
+                  >
+                    <thead>
+                      <tr
+                        class="border-b border-[var(--color-border)] bg-[#FAF9F6]"
+                      >
+                        <th
+                          class="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                        >
+                          Factor
+                        </th>
+
+                        <th
+                          class="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                        >
+                          Band
+                        </th>
+
+                        <th
+                          class="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                        >
+                          Code
+                        </th>
+
+                        <th
+                          class="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                        >
+                          Surcharge
+                        </th>
+
+                        <th
+                          class="px-5 py-4 text-right text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                        >
+                          Action
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      @for (
+                        adjustment of pricing.ratingAdjustments;
+                        track adjustment.ratingRuleId
+                      ) {
+                        <tr
+                          class="border-b border-[var(--color-border)] last:border-b-0"
+                        >
+                          <td
+                            class="px-5 py-4 text-xs font-semibold text-[var(--color-ink)]"
+                          >
+                            {{ adjustment.factor }}
+                          </td>
+
+                          <td
+                            class="px-5 py-4 text-xs text-zinc-600"
+                          >
+                            {{ adjustment.bandLabel }}
+                          </td>
+
+                          <td
+                            class="px-5 py-4 text-xs text-zinc-500"
+                          >
+                            {{ adjustment.bandCode }}
+                          </td>
+
+                          <td class="px-5 py-4">
+                            <div
+                              class="relative w-32"
+                            >
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                [(ngModel)]="
+                                  adjustment.surchargePercent
+                                "
+                                [disabled]="isSaving()"
+                                class="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 pr-7 text-xs outline-none transition focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100 disabled:bg-zinc-50"
+                              />
+
+                              <span
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400"
+                                aria-hidden="true"
+                              >
+                                %
+                              </span>
+                            </div>
+                          </td>
+
+                          <td
+                            class="px-5 py-4 text-right"
+                          >
+                            <button
+                              type="button"
+                              (click)="
+                                requestRatingSave(
+                                  adjustment
+                                )
+                              "
+                              [disabled]="isSaving()"
+                              class="rounded-lg border border-blue-200 bg-white px-4 py-2 text-xs font-semibold text-[var(--color-primary)] transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              @if (
+                                savingItemId() ===
+                                adjustment.ratingRuleId
+                              ) {
+                                Saving...
+                              } @else {
+                                Save
+                              }
+                            </button>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </section>
+          }
+
+          @if (
+            activeSection() === 'coverage'
+          ) {
+            <section class="mt-7">
+              <div>
+                <p
+                  class="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+                >
+                  Coverage Pricing
+                </p>
+
+                <h2
+                  class="mt-1 text-xl font-semibold text-[var(--color-ink)]"
+                >
+                  Coverage limits and deductibles
+                </h2>
+
+                <p
+                  class="mt-1 max-w-3xl text-xs leading-5 text-zinc-500"
+                >
+                  Contractual option values are fixed.
+                  Only their annual pricing adjustments may
+                  be edited.
+                </p>
+              </div>
+
+              <section
+                class="mt-6 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white"
+              >
+                <div
+                  class="border-b border-[var(--color-border)] px-5 py-4"
+                >
+                  <p
+                    class="text-[9px] font-semibold uppercase tracking-[0.1em] text-[var(--color-primary)]"
+                  >
+                    Coverage Limits
+                  </p>
+
+                  <h3
+                    class="mt-1 text-sm font-semibold text-[var(--color-ink)]"
+                  >
+                    Coverage limit options
+                  </h3>
+                </div>
+
+                @if (
+                  pricing.coverageOptions.length === 0
+                ) {
+                  <div
+                    class="px-6 py-12 text-center"
+                  >
+                    <p
+                      class="text-sm font-semibold text-[var(--color-ink)]"
+                    >
+                      No coverage options available
+                    </p>
+                  </div>
+                } @else {
+                  <div class="overflow-x-auto">
+                    <table
+                      class="w-full min-w-[900px] border-collapse text-left"
+                    >
+                      <thead>
+                        <tr
+                          class="border-b border-[var(--color-border)] bg-[#FAF9F6]"
+                        >
+                          <th
+                            class="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                          >
+                            Coverage
+                          </th>
+
+                          <th
+                            class="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                          >
+                            Tier
+                          </th>
+
+                          <th
+                            class="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                          >
+                            Contract Limit
+                          </th>
+
+                          <th
+                            class="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                          >
+                            Default
+                          </th>
+
+                          <th
+                            class="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                          >
+                            Annual Charge
+                          </th>
+
+                          <th
+                            class="px-5 py-4 text-right text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                          >
+                            Action
+                          </th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        @for (
+                          option of pricing.coverageOptions;
+                          track option.coverageLimitOptionId
+                        ) {
+                          <tr
+                            class="border-b border-[var(--color-border)] last:border-b-0"
+                          >
+                            <td
+                              class="px-5 py-4 text-xs font-semibold text-[var(--color-ink)]"
+                            >
+                              {{ option.coverageName }}
+                            </td>
+
+                            <td
+                              class="px-5 py-4 text-xs text-zinc-600"
+                            >
+                              {{ option.tier }}
+                            </td>
+
+                            <td
+                              class="px-5 py-4 text-xs text-zinc-600"
+                            >
+                              {{ limitLabel(option) }}
+                            </td>
+
+                            <td class="px-5 py-4">
+                              @if (option.isDefault) {
+                                <span
+                                  class="rounded-full bg-blue-50 px-2.5 py-1 text-[9px] font-semibold text-blue-700"
+                                >
+                                  Default
+                                </span>
+                              } @else {
+                                <span
+                                  class="text-xs text-zinc-400"
+                                >
+                                  No
+                                </span>
+                              }
+                            </td>
+
+                            <td class="px-5 py-4">
+                              <div
+                                class="relative w-36"
+                              >
+                                <span
+                                  class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400"
+                                  aria-hidden="true"
+                                >
+                                  â‚¹
+                                </span>
+
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  [(ngModel)]="
+                                    option.annualCharge
+                                  "
+                                  [disabled]="isSaving()"
+                                  class="w-full rounded-lg border border-[var(--color-border)] bg-white py-2 pl-7 pr-3 text-xs outline-none transition focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100 disabled:bg-zinc-50"
+                                />
+                              </div>
+                            </td>
+
+                            <td
+                              class="px-5 py-4 text-right"
+                            >
+                              <button
+                                type="button"
+                                (click)="
+                                  requestCoverageSave(
+                                    option
+                                  )
+                                "
+                                [disabled]="isSaving()"
+                                class="rounded-lg border border-blue-200 bg-white px-4 py-2 text-xs font-semibold text-[var(--color-primary)] transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                @if (
+                                  savingItemId() ===
+                                  option.coverageLimitOptionId
+                                ) {
+                                  Saving...
+                                } @else {
+                                  Save
+                                }
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              </section>
+
+              <section
+                class="mt-6 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white"
+              >
+                <div
+                  class="border-b border-[var(--color-border)] px-5 py-4"
+                >
+                  <p
+                    class="text-[9px] font-semibold uppercase tracking-[0.1em] text-[var(--color-primary)]"
+                  >
+                    Deductibles
+                  </p>
+
+                  <h3
+                    class="mt-1 text-sm font-semibold text-[var(--color-ink)]"
+                  >
+                    Deductible options
+                  </h3>
+                </div>
+
+                @if (
+                  pricing.deductibles.length === 0
+                ) {
+                  <div
+                    class="px-6 py-12 text-center"
+                  >
+                    <p
+                      class="text-sm font-semibold text-[var(--color-ink)]"
+                    >
+                      No deductible options available
+                    </p>
+                  </div>
+                } @else {
+                  <div class="overflow-x-auto">
+                    <table
+                      class="w-full min-w-[760px] border-collapse text-left"
+                    >
+                      <thead>
+                        <tr
+                          class="border-b border-[var(--color-border)] bg-[#FAF9F6]"
+                        >
+                          <th
+                            class="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                          >
+                            Coverage
+                          </th>
+
+                          <th
+                            class="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                          >
+                            Deductible
+                          </th>
+
+                          <th
+                            class="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                          >
+                            Default
+                          </th>
+
+                          <th
+                            class="px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                          >
+                            Annual Charge
+                          </th>
+
+                          <th
+                            class="px-5 py-4 text-right text-[10px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                          >
+                            Action
+                          </th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        @for (
+                          option of pricing.deductibles;
+                          track option.deductibleOptionId
+                        ) {
+                          <tr
+                            class="border-b border-[var(--color-border)] last:border-b-0"
+                          >
+                            <td
+                              class="px-5 py-4 text-xs font-semibold text-[var(--color-ink)]"
+                            >
+                              {{ option.coverageName }}
+                            </td>
+
+                            <td
+                              class="px-5 py-4 text-xs text-zinc-600"
+                            >
+                              {{
+                                formatCurrency(
+                                  option.deductibleAmount
+                                )
+                              }}
+                            </td>
+
+                            <td class="px-5 py-4">
+                              @if (option.isDefault) {
+                                <span
+                                  class="rounded-full bg-blue-50 px-2.5 py-1 text-[9px] font-semibold text-blue-700"
+                                >
+                                  Default
+                                </span>
+                              } @else {
+                                <span
+                                  class="text-xs text-zinc-400"
+                                >
+                                  No
+                                </span>
+                              }
+                            </td>
+
+                            <td class="px-5 py-4">
+                              <div
+                                class="relative w-36"
+                              >
+                                <span
+                                  class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400"
+                                  aria-hidden="true"
+                                >
+                                  â‚¹
+                                </span>
+
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  [(ngModel)]="
+                                    option.annualCharge
+                                  "
+                                  [disabled]="isSaving()"
+                                  class="w-full rounded-lg border border-[var(--color-border)] bg-white py-2 pl-7 pr-3 text-xs outline-none transition focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100 disabled:bg-zinc-50"
+                                />
+                              </div>
+                            </td>
+
+                            <td
+                              class="px-5 py-4 text-right"
+                            >
+                              <button
+                                type="button"
+                                (click)="
+                                  requestDeductibleSave(
+                                    option
+                                  )
+                                "
+                                [disabled]="isSaving()"
+                                class="rounded-lg border border-blue-200 bg-white px-4 py-2 text-xs font-semibold text-[var(--color-primary)] transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                @if (
+                                  savingItemId() ===
+                                  option.deductibleOptionId
+                                ) {
+                                  Saving...
+                                } @else {
+                                  Save
+                                }
+                              </button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              </section>
+            </section>
+          }
+
+          @if (
+            activeSection() === 'addons'
+          ) {
+            <section class="mt-7">
+              <div>
+                <p
+                  class="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+                >
+                  Add-ons
+                </p>
+
+                <h2
+                  class="mt-1 text-xl font-semibold text-[var(--color-ink)]"
+                >
+                  Optional protection pricing
+                </h2>
+
+                <p
+                  class="mt-1 max-w-3xl text-xs leading-5 text-zinc-500"
+                >
+                  Add-on identities and eligible plans are
+                  fixed. Only the annual price may be
+                  changed.
+                </p>
+              </div>
+
+              @if (pricing.addOns.length === 0) {
+                <div
+                  class="mt-5 rounded-2xl border border-[var(--color-border)] bg-white px-6 py-12 text-center"
+                >
+                  <h3
+                    class="text-base font-semibold text-[var(--color-ink)]"
+                  >
+                    No add-ons available
+                  </h3>
+                </div>
+              } @else {
+                <div
+                  class="mt-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-3"
+                >
+                  @for (
+                    addOn of pricing.addOns;
+                    track addOn.addOnId
+                  ) {
+                    <article
+                      class="rounded-2xl border border-[var(--color-border)] bg-white p-5 shadow-sm"
+                    >
+                      <div>
+                        <p
+                          class="text-[9px] font-semibold uppercase tracking-[0.1em] text-[var(--color-primary)]"
+                        >
+                          {{ addOn.addOnCode }}
+                        </p>
+
+                        <h3
+                          class="mt-1 text-lg font-semibold text-[var(--color-ink)]"
+                        >
+                          {{ addOn.addOnName }}
+                        </h3>
+                      </div>
+
+                      <div
+                        class="mt-5 border-t border-[var(--color-border)] pt-4"
+                      >
+                        <p
+                          class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                        >
+                          Eligible Plans
+                        </p>
+
+                        <div
+                          class="mt-3 flex flex-wrap gap-2"
+                        >
+                          @for (
+                            plan of addOn.eligiblePlans;
+                            track plan
+                          ) {
+                            <span
+                              class="rounded-full bg-zinc-100 px-2.5 py-1 text-[9px] font-semibold text-zinc-600"
+                            >
+                              {{ plan }}
+                            </span>
+                          }
+                        </div>
+                      </div>
+
+                      <div
+                        class="mt-5 border-t border-[var(--color-border)] pt-4"
+                      >
+                        <label
+                          [for]="
+                            'addon-' +
+                            addOn.addOnId
+                          "
+                          class="text-xs font-semibold text-[var(--color-ink)]"
+                        >
+                          Annual Price
+                        </label>
+
+                        <div
+                          class="mt-2 flex gap-2"
+                        >
+                          <div
+                            class="relative flex-1"
+                          >
+                            <span
+                              class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400"
+                              aria-hidden="true"
+                            >
+                              â‚¹
+                            </span>
+
+                            <input
+                              [id]="
+                                'addon-' +
+                                addOn.addOnId
+                              "
+                              type="number"
+                              min="0"
+                              step="1"
+                              [(ngModel)]="
+                                addOn.annualPrice
+                              "
+                              [disabled]="isSaving()"
+                              class="w-full rounded-xl border border-[var(--color-border)] bg-white py-2.5 pl-7 pr-3 text-sm outline-none transition focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100 disabled:bg-zinc-50"
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            (click)="
+                              requestAddOnSave(
+                                addOn
+                              )
+                            "
+                            [disabled]="isSaving()"
+                            class="rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[var(--color-primary-dark)] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            @if (
+                              savingItemId() ===
+                              addOn.addOnId
+                            ) {
+                              Saving...
+                            } @else {
+                              Save
+                            }
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  }
+                </div>
+              }
+            </section>
+          }
+        }
+      </div>
+    </main>
+  </div>
+</div>
+
+@if (confirmationOpen()) {
+  <div
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="pricing-confirmation-title"
+  >
+    <section
+      class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
+    >
+      <div
+        class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-sm font-bold text-amber-700"
+        aria-hidden="true"
+      >
+        !
+      </div>
+
+      <h2
+        id="pricing-confirmation-title"
+        class="mt-4 text-xl font-semibold tracking-[-0.025em] text-[var(--color-ink)]"
+      >
+        Save pricing change?
+      </h2>
+
+      <p
+        class="mt-3 text-sm leading-6 text-zinc-600"
+      >
+        Updated pricing becomes effective immediately for
+        new Quote calculations and future recalculations.
+        Existing Finalized Quotes will not change.
+      </p>
+
+      <div
+        class="mt-5 rounded-xl border border-blue-100 bg-blue-50 p-4"
+      >
+        <p
+          class="text-xs font-semibold text-[var(--color-ink)]"
+        >
+          Historical protection
+        </p>
+
+        <p
+          class="mt-1 text-[11px] leading-5 text-zinc-600"
+        >
+          Finalized Quotes use immutable snapshots and are
+          not repriced when this configuration changes.
+        </p>
+      </div>
+
+      <div
+        class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
+      >
+        <button
+          type="button"
+          (click)="cancelConfirmation()"
+          [disabled]="isSaving()"
+          class="rounded-xl border border-[var(--color-border)] bg-white px-5 py-3 text-xs font-semibold text-zinc-600 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          (click)="confirmSave()"
+          [disabled]="isSaving()"
+          class="rounded-xl bg-[var(--color-primary)] px-5 py-3 text-xs font-semibold text-white transition hover:bg-[var(--color-primary-dark)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          @if (isSaving()) {
+            Saving...
+          } @else {
+            Confirm Save
+          }
+        </button>
+      </div>
+    </section>
+  </div>
+}

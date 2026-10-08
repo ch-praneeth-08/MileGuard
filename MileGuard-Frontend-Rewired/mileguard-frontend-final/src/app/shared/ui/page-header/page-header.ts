@@ -1,0 +1,4 @@
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+
+@Component({ selector:'mg-page-header', standalone:true, template:'<header><p class="eyebrow">{{ eyebrow }}</p><h1>{{ title }}</h1><p class="description">{{ description }}</p><ng-content /></header>', styles:[`header{margin-bottom:2rem}.eyebrow{margin:0 0 .45rem;color:var(--mg-orange-600);font-size:.65rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase}h1{margin:0;color:var(--mg-green-950);font-size:clamp(2rem,4vw,3.1rem);line-height:1.05;letter-spacing:-.045em;font-weight:700}.description{margin:.8rem 0 0;max-width:42rem;color:var(--mg-text-secondary);font-size:.9rem;line-height:1.6}`], changeDetection:ChangeDetectionStrategy.OnPush })
+export class PageHeader { @Input() eyebrow='MileGuard'; @Input() title=''; @Input() description=''; }

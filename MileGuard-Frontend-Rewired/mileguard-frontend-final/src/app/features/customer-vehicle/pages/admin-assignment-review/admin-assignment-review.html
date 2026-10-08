@@ -1,0 +1,791 @@
+<main
+  class="min-h-screen bg-[var(--color-warm-white)]"
+>
+  <!-- Header -->
+  <header
+    class="border-b border-[var(--color-border)] bg-white"
+  >
+    <div
+      class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8"
+    >
+      <div class="flex items-center gap-3">
+        <span
+          class="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-primary)] text-sm font-bold text-white"
+          aria-hidden="true"
+        >
+          AI
+        </span>
+
+        <div>
+          <p
+            class="text-sm font-semibold text-[var(--color-ink)]"
+          >
+            Auto Insurance
+          </p>
+
+          <p class="text-xs text-zinc-500">
+            Admin
+          </p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        (click)="back()"
+        class="text-sm font-semibold text-zinc-500 transition hover:text-[var(--color-ink)]"
+      >
+        Back to Unassigned
+      </button>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <div
+    class="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-12"
+  >
+    <!-- Breadcrumb -->
+    <p
+      class="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400"
+    >
+      Admin / Customer Assignment / Review
+    </p>
+
+    <!-- Page heading -->
+    <div class="mt-3 max-w-3xl">
+      <h1
+        class="text-4xl font-semibold tracking-[-0.04em] text-[var(--color-ink)]"
+      >
+        Assign an Agent
+      </h1>
+
+      <p
+        class="mt-3 text-sm leading-6 text-zinc-600"
+      >
+        Review the completed customer profile and select one
+        eligible Agent for permanent assignment.
+      </p>
+    </div>
+
+    <!-- Assignment error -->
+    @if (assignmentErrorMessage()) {
+      <div
+        role="alert"
+        class="mt-7 rounded-xl border border-red-200 bg-red-50 px-5 py-4"
+      >
+        <p
+          class="text-sm leading-6 text-[var(--color-danger)]"
+        >
+          {{ assignmentErrorMessage() }}
+        </p>
+      </div>
+    }
+
+    <!-- Success -->
+    @if (successMessage()) {
+      <div
+        role="status"
+        class="mt-7 rounded-xl border border-green-200 bg-green-50 px-5 py-4"
+      >
+        <div class="flex items-start gap-3">
+          <div
+            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-100 text-sm font-semibold text-[var(--color-success)]"
+            aria-hidden="true"
+          >
+            âœ“
+          </div>
+
+          <div>
+            <p
+              class="text-sm font-semibold text-[var(--color-success)]"
+            >
+              {{ successMessage() }}
+            </p>
+
+            <p
+              class="mt-1 text-xs text-zinc-500"
+            >
+              Returning to the unassigned customer queue.
+            </p>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Main layout -->
+    <div
+      class="mt-8 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]"
+    >
+      <!-- ================================================= -->
+      <!-- CUSTOMER PANEL -->
+      <!-- ================================================= -->
+
+      <div>
+        <!-- Customer loading -->
+        @if (isLoadingCustomer()) {
+          <section
+            class="rounded-2xl border border-[var(--color-border)] bg-white p-6 sm:p-7"
+          >
+            <div
+              class="h-4 w-24 animate-pulse rounded bg-zinc-100"
+            ></div>
+
+            <div
+              class="mt-3 h-7 w-60 animate-pulse rounded bg-zinc-200"
+            ></div>
+
+            <div class="mt-7 space-y-6">
+              @for (
+                row of [1, 2, 3, 4, 5];
+                track row
+              ) {
+                <div>
+                  <div
+                    class="h-3 w-24 animate-pulse rounded bg-zinc-100"
+                  ></div>
+
+                  <div
+                    class="mt-2 h-5 w-44 animate-pulse rounded bg-zinc-200"
+                  ></div>
+                </div>
+              }
+            </div>
+          </section>
+        }
+
+        <!-- Customer error -->
+        @if (
+          !isLoadingCustomer() &&
+          customerErrorMessage()
+        ) {
+          <section
+            class="rounded-2xl border border-red-200 bg-white p-6 sm:p-7"
+          >
+            <div
+              class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-sm font-semibold text-[var(--color-danger)]"
+              aria-hidden="true"
+            >
+              !
+            </div>
+
+            <h2
+              class="mt-5 text-lg font-semibold text-[var(--color-ink)]"
+            >
+              Customer unavailable
+            </h2>
+
+            <p
+              class="mt-2 text-sm leading-6 text-zinc-600"
+            >
+              {{ customerErrorMessage() }}
+            </p>
+
+            <button
+              type="button"
+              (click)="retryCustomer()"
+              class="mt-5 rounded-xl border border-[var(--color-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-primary)] transition hover:border-blue-200 hover:bg-blue-50"
+            >
+              Retry Customer
+            </button>
+          </section>
+        }
+
+        <!-- Customer data -->
+        @if (
+          !isLoadingCustomer() &&
+          customer();
+          as reviewCustomer
+        ) {
+          <section
+            class="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white"
+          >
+            <!-- Customer card heading -->
+            <div
+              class="border-b border-[var(--color-border)] px-6 py-6 sm:px-7"
+            >
+              <div
+                class="flex items-start justify-between gap-5"
+              >
+                <div>
+                  <p
+                    class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+                  >
+                    Customer
+                  </p>
+
+                  <h2
+                    class="mt-2 text-xl font-semibold tracking-[-0.025em] text-[var(--color-ink)]"
+                  >
+                    Completed customer profile
+                  </h2>
+
+                  <p
+                    class="mt-2 text-sm leading-6 text-zinc-500"
+                  >
+                    Review the customer's current profile
+                    before creating the permanent assignment.
+                  </p>
+                </div>
+
+                <span
+                  class="inline-flex shrink-0 items-center gap-2 rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-[var(--color-success)]"
+                >
+                  <span
+                    class="h-1.5 w-1.5 rounded-full bg-[var(--color-success)]"
+                    aria-hidden="true"
+                  ></span>
+
+                  {{ reviewCustomer.profileStatus }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Customer information -->
+            <div
+              class="grid gap-x-8 gap-y-6 px-6 py-6 sm:grid-cols-2 sm:px-7"
+            >
+              <!-- Date of birth -->
+              <div>
+                <p
+                  class="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                >
+                  Date of Birth
+                </p>
+
+                @if (reviewCustomer.dateOfBirth) {
+                  <p
+                    class="mt-2 text-sm font-semibold text-[var(--color-ink)]"
+                  >
+                    {{
+                      reviewCustomer.dateOfBirth
+                        | date: 'dd MMM yyyy'
+                    }}
+                  </p>
+                } @else {
+                  <p
+                    class="mt-2 text-sm text-zinc-400"
+                  >
+                    Not available
+                  </p>
+                }
+              </div>
+
+              <!-- Phone -->
+              <div>
+                <p
+                  class="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                >
+                  Phone
+                </p>
+
+                <p
+                  class="mt-2 text-sm font-semibold text-[var(--color-ink)]"
+                >
+                  {{ reviewCustomer.phone }}
+                </p>
+              </div>
+
+              <!-- City -->
+              <div>
+                <p
+                  class="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                >
+                  City
+                </p>
+
+                <p
+                  class="mt-2 text-sm font-semibold text-[var(--color-ink)]"
+                >
+                  {{ reviewCustomer.city }}
+                </p>
+              </div>
+
+              <!-- State -->
+              <div>
+                <p
+                  class="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                >
+                  State
+                </p>
+
+                <p
+                  class="mt-2 text-sm font-semibold text-[var(--color-ink)]"
+                >
+                  {{ reviewCustomer.state }}
+                </p>
+              </div>
+
+              <!-- Postal -->
+              <div>
+                <p
+                  class="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                >
+                  Postal Code
+                </p>
+
+                <p
+                  class="mt-2 text-sm font-semibold text-[var(--color-ink)]"
+                >
+                  {{ reviewCustomer.postalCode }}
+                </p>
+              </div>
+
+              <!-- Area -->
+              <div>
+                <p
+                  class="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                >
+                  Area Type
+                </p>
+
+                <p
+                  class="mt-2 text-sm font-semibold text-[var(--color-ink)]"
+                >
+                  {{ reviewCustomer.areaType }}
+                </p>
+              </div>
+
+              <!-- Completion -->
+              <div class="sm:col-span-2">
+                <p
+                  class="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                >
+                  Profile Completed
+                </p>
+
+                @if (reviewCustomer.completedAtUtc) {
+                  <p
+                    class="mt-2 text-sm font-semibold text-[var(--color-ink)]"
+                  >
+                    {{
+                      reviewCustomer.completedAtUtc
+                        | date: 'dd MMM yyyy, h:mm a'
+                    }}
+                  </p>
+                } @else {
+                  <p
+                    class="mt-2 text-sm text-zinc-400"
+                  >
+                    Completion date unavailable
+                  </p>
+                }
+              </div>
+            </div>
+          </section>
+        }
+      </div>
+
+      <!-- ================================================= -->
+      <!-- AGENT PANEL -->
+      <!-- ================================================= -->
+
+      <div>
+        <!-- Agents loading -->
+        @if (isLoadingAgents()) {
+          <section
+            class="rounded-2xl border border-[var(--color-border)] bg-white p-6 sm:p-7"
+          >
+            <div
+              class="h-4 w-28 animate-pulse rounded bg-zinc-100"
+            ></div>
+
+            <div
+              class="mt-3 h-7 w-44 animate-pulse rounded bg-zinc-200"
+            ></div>
+
+            <div class="mt-7 space-y-3">
+              @for (
+                item of [1, 2, 3];
+                track item
+              ) {
+                <div
+                  class="h-20 animate-pulse rounded-xl bg-zinc-100"
+                ></div>
+              }
+            </div>
+          </section>
+        }
+
+        <!-- Agents loading error -->
+        @if (
+          !isLoadingAgents() &&
+          agentsErrorMessage()
+        ) {
+          <section
+            class="rounded-2xl border border-amber-200 bg-white p-6 sm:p-7"
+          >
+            <div
+              class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-sm font-semibold text-[var(--color-warning)]"
+              aria-hidden="true"
+            >
+              !
+            </div>
+
+            <h2
+              class="mt-5 text-lg font-semibold text-[var(--color-ink)]"
+            >
+              Eligible Agents unavailable
+            </h2>
+
+            <p
+              class="mt-2 text-sm leading-6 text-zinc-600"
+            >
+              {{ agentsErrorMessage() }}
+            </p>
+
+            <p
+              class="mt-2 text-xs leading-5 text-zinc-400"
+            >
+              No assignment can be created until Agent
+              eligibility has been confirmed.
+            </p>
+
+            <button
+              type="button"
+              (click)="retryAgents()"
+              class="mt-5 rounded-xl border border-[var(--color-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-primary)] transition hover:border-blue-200 hover:bg-blue-50"
+            >
+              Retry Agents
+            </button>
+          </section>
+        }
+
+        <!-- Agent data -->
+        @if (
+          !isLoadingAgents() &&
+          !agentsErrorMessage()
+        ) {
+          <section
+            class="rounded-2xl border border-[var(--color-border)] bg-white p-6 sm:p-7"
+          >
+            <div>
+              <p
+                class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+              >
+                Eligible Agents
+              </p>
+
+              <h2
+                class="mt-2 text-xl font-semibold tracking-[-0.025em] text-[var(--color-ink)]"
+              >
+                Select an Agent
+              </h2>
+
+              <p
+                class="mt-2 text-sm leading-6 text-zinc-600"
+              >
+                Only Active Agents with completed
+                two-factor authentication are available for
+                assignment.
+              </p>
+            </div>
+
+            <!-- Empty eligible Agent state -->
+            @if (agents().length === 0) {
+              <div
+                class="mt-7 rounded-xl border border-amber-200 bg-amber-50 p-5"
+              >
+                <div class="flex items-start gap-3">
+                  <div
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-sm font-semibold text-[var(--color-warning)]"
+                    aria-hidden="true"
+                  >
+                    i
+                  </div>
+
+                  <div>
+                    <p
+                      class="text-sm font-semibold text-[var(--color-ink)]"
+                    >
+                      No eligible Agents available
+                    </p>
+
+                    <p
+                      class="mt-1 text-sm leading-6 text-zinc-600"
+                    >
+                      Assignment cannot continue until an
+                      Active, two-factor-enabled Agent is
+                      available.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            } @else {
+              <!-- Agent selection -->
+              <form
+                [formGroup]="form"
+                class="mt-6"
+              >
+                <div class="space-y-3">
+                  @for (
+                    agent of agents();
+                    track agent.id
+                  ) {
+                    <button
+                      type="button"
+                      (click)="selectAgent(agent)"
+                      class="w-full rounded-xl border p-4 text-left transition"
+                      [class.border-[var(--color-primary)]]="
+                        form.controls.agentIdentityUserId
+                          .value === agent.id
+                      "
+                      [class.bg-blue-50]="
+                        form.controls.agentIdentityUserId
+                          .value === agent.id
+                      "
+                      [class.border-[var(--color-border)]]="
+                        form.controls.agentIdentityUserId
+                          .value !== agent.id
+                      "
+                      [class.hover:border-blue-200]="
+                        form.controls.agentIdentityUserId
+                          .value !== agent.id
+                      "
+                    >
+                      <div
+                        class="flex items-center justify-between gap-4"
+                      >
+                        <div class="min-w-0">
+                          <p
+                            class="truncate text-sm font-semibold text-[var(--color-ink)]"
+                          >
+                            {{ agent.firstName }}
+                            {{ agent.lastName }}
+                          </p>
+
+                          <p
+                            class="mt-1 truncate text-xs text-zinc-500"
+                          >
+                            {{ agent.email }}
+                          </p>
+                        </div>
+
+                        <span
+                          class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border"
+                          [class.border-[var(--color-primary)]]="
+                            form.controls
+                              .agentIdentityUserId
+                              .value === agent.id
+                          "
+                          [class.border-zinc-300]="
+                            form.controls
+                              .agentIdentityUserId
+                              .value !== agent.id
+                          "
+                        >
+                          @if (
+                            form.controls
+                              .agentIdentityUserId
+                              .value === agent.id
+                          ) {
+                            <span
+                              class="h-2.5 w-2.5 rounded-full bg-[var(--color-primary)]"
+                              aria-hidden="true"
+                            ></span>
+                          }
+                        </span>
+                      </div>
+                    </button>
+                  }
+                </div>
+
+                @if (
+                  form.controls.agentIdentityUserId.touched &&
+                  form.controls.agentIdentityUserId.invalid
+                ) {
+                  <p
+                    class="mt-3 text-sm text-[var(--color-danger)]"
+                  >
+                    Select an Agent before continuing.
+                  </p>
+                }
+              </form>
+
+              <!-- Assignment warning -->
+              <div
+                class="mt-7 rounded-xl border border-amber-200 bg-amber-50 p-5"
+              >
+                <div class="flex items-start gap-3">
+                  <div
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-sm font-semibold text-[var(--color-warning)]"
+                    aria-hidden="true"
+                  >
+                    !
+                  </div>
+
+                  <div>
+                    <p
+                      class="text-sm font-semibold text-[var(--color-ink)]"
+                    >
+                      Permanent assignment
+                    </p>
+
+                    <p
+                      class="mt-1 text-sm leading-6 text-zinc-600"
+                    >
+                      After confirmation, this Customer
+                      cannot be transferred to another Agent
+                      or returned to the unassigned queue.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Selected Agent summary -->
+              @if (selectedAgent(); as selected) {
+                <div
+                  class="mt-5 rounded-xl border border-blue-100 bg-blue-50 p-4"
+                >
+                  <p
+                    class="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-primary)]"
+                  >
+                    Selected Agent
+                  </p>
+
+                  <p
+                    class="mt-2 text-sm font-semibold text-[var(--color-ink)]"
+                  >
+                    {{ selected.firstName }}
+                    {{ selected.lastName }}
+                  </p>
+
+                  <p
+                    class="mt-1 text-xs text-zinc-500"
+                  >
+                    {{ selected.email }}
+                  </p>
+                </div>
+              }
+
+              <!-- Assignment button -->
+              <button
+                type="button"
+                (click)="openConfirmation()"
+                [disabled]="
+                  form.invalid ||
+                  isAssigning() ||
+                  !!customerErrorMessage() ||
+                  !customer()
+                "
+                class="mt-7 flex w-full items-center justify-center rounded-xl bg-[var(--color-primary)] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-dark)] focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                @if (isAssigning()) {
+                  Assigning Agent...
+                } @else {
+                  Assign Agent
+                }
+              </button>
+            }
+          </section>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================= -->
+  <!-- CONFIRMATION DIALOG -->
+  <!-- ================================================= -->
+
+  @if (
+    showConfirmation() &&
+    selectedAgent();
+    as agent
+  ) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-5"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="assignment-title"
+    >
+      <section
+        class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl sm:p-7"
+      >
+        <div
+          class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 font-semibold text-[var(--color-warning)]"
+          aria-hidden="true"
+        >
+          !
+        </div>
+
+        <p
+          class="mt-5 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-warning)]"
+        >
+          Permanent assignment
+        </p>
+
+        <h2
+          id="assignment-title"
+          class="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[var(--color-ink)]"
+        >
+          Confirm Agent assignment
+        </h2>
+
+        <p
+          class="mt-3 text-sm leading-6 text-zinc-600"
+        >
+          This Customer will be permanently assigned to:
+        </p>
+
+        <!-- Selected Agent -->
+        <div
+          class="mt-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-warm-white)] p-4"
+        >
+          <p
+            class="text-sm font-semibold text-[var(--color-ink)]"
+          >
+            {{ agent.firstName }} {{ agent.lastName }}
+          </p>
+
+          <p
+            class="mt-1 text-xs text-zinc-500"
+          >
+            {{ agent.email }}
+          </p>
+        </div>
+
+        <div
+          class="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4"
+        >
+          <p
+            class="text-sm font-semibold text-[var(--color-ink)]"
+          >
+            This action cannot be undone
+          </p>
+
+          <p
+            class="mt-1 text-sm leading-6 text-zinc-600"
+          >
+            The assignment cannot be reassigned,
+            transferred, removed, or returned to the
+            unassigned queue in the current workflow.
+          </p>
+        </div>
+
+        <div
+          class="mt-7 flex justify-end gap-3"
+        >
+          <button
+            type="button"
+            (click)="cancelConfirmation()"
+            [disabled]="isAssigning()"
+            class="rounded-xl border border-[var(--color-border)] bg-white px-4 py-2.5 text-sm font-semibold text-zinc-600 transition hover:bg-zinc-50 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            (click)="confirmAssignment()"
+            [disabled]="isAssigning()"
+            class="rounded-xl bg-[var(--color-primary)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-dark)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            @if (isAssigning()) {
+              Assigning...
+            } @else {
+              Confirm Assignment
+            }
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</main>

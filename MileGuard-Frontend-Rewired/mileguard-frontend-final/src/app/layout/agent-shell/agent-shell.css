@@ -1,0 +1,12 @@
+
+:host { display: block; min-height: 100%; }
+.role-shell { min-height: 100%; background: var(--mg-bg); color: var(--mg-green-950); }
+.role-shell__grid { min-height: calc(100vh - 72px); }
+.role-shell__sidebar { background: var(--mg-green-950); color: white; }
+.role-shell__link { transition: background .16s ease, color .16s ease, transform .16s ease; }
+.role-shell__link:hover { background: rgba(255,255,255,.07); color: white; }
+.role-shell__link.active { background: var(--mg-orange-500); color: var(--mg-green-950); }
+.role-shell__content { min-width: 0; }
+@media (max-width: 1023px) {
+  .role-shell__grid { min-height: calc(100vh - 60px); }
+}

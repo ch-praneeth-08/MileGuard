@@ -1,0 +1,372 @@
+<div class="min-h-screen bg-[var(--color-warm-white)]">
+  <!-- Desktop application shell -->
+  <div class="min-h-screen block">
+    <!-- Sidebar -->
+    
+
+    <!-- Main content -->
+    <main>
+      <!-- Mobile top bar -->
+      <div
+        class="flex items-center justify-between border-b border-[var(--color-border)] bg-white px-5 py-4 lg:hidden"
+      >
+        <div class="flex items-center gap-3">
+          <span
+            class="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-primary)] text-sm font-bold text-white"
+            aria-hidden="true"
+          >
+            AI
+          </span>
+
+          <div>
+            <p class="text-sm font-semibold text-[var(--color-ink)]">Auto Insurance</p>
+
+            <p class="text-xs text-zinc-500">Admin</p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          (click)="logout()"
+          [disabled]="isLoggingOut()"
+          class="text-sm font-semibold text-zinc-600 disabled:opacity-50"
+        >
+          @if (isLoggingOut()) {
+            Signing out...
+          } @else {
+            Sign Out
+          }
+        </button>
+      </div>
+
+      <div class="mx-auto max-w-[1400px] px-5 py-8 sm:px-8 lg:px-10 lg:py-10 xl:px-14">
+        <!-- Breadcrumb -->
+        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400">
+          Admin / Internal Users
+        </p>
+
+        <!-- Header -->
+        <div class="mt-3 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+          <div>
+            <h1 class="text-4xl font-semibold tracking-[-0.04em] text-[var(--color-ink)]">
+              Internal Users
+            </h1>
+
+            <p class="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
+              Review internal access requests and manage established operational accounts.
+            </p>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="mt-9 border-b border-[var(--color-border)]">
+          <div class="flex gap-8" role="tablist" aria-label="Internal users">
+            <!-- Pending tab -->
+            <button
+              type="button"
+              role="tab"
+              [attr.aria-selected]="activeTab() === 'pending'"
+              (click)="selectPending()"
+              class="relative pb-4 text-sm font-semibold transition"
+              [class.text-[var(--color-primary)]]="activeTab() === 'pending'"
+              [class.text-zinc-500]="activeTab() !== 'pending'"
+            >
+              Pending Registrations
+
+              @if (activeTab() === 'pending') {
+                <span
+                  class="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-[var(--color-primary)]"
+                  aria-hidden="true"
+                ></span>
+              }
+            </button>
+
+            <!-- Users tab -->
+            <button
+              type="button"
+              role="tab"
+              [attr.aria-selected]="activeTab() === 'users'"
+              (click)="selectUsers()"
+              class="relative pb-4 text-sm font-semibold transition"
+              [class.text-[var(--color-primary)]]="activeTab() === 'users'"
+              [class.text-zinc-500]="activeTab() !== 'users'"
+            >
+              Users
+
+              @if (activeTab() === 'users') {
+                <span
+                  class="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-[var(--color-primary)]"
+                  aria-hidden="true"
+                ></span>
+              }
+            </button>
+          </div>
+        </div>
+
+        <!-- Error -->
+        @if (errorMessage()) {
+          <div
+            role="alert"
+            class="mt-6 flex items-start justify-between gap-5 rounded-xl border border-red-200 bg-red-50 px-5 py-4"
+          >
+            <p class="text-sm leading-6 text-[var(--color-danger)]">
+              {{ errorMessage() }}
+            </p>
+
+            <button
+              type="button"
+              (click)="retry()"
+              class="shrink-0 text-sm font-semibold text-[var(--color-danger)] underline underline-offset-4"
+            >
+              Retry
+            </button>
+          </div>
+        }
+
+        <!-- Loading -->
+        @if (isLoading()) {
+          <div
+            class="mt-7 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white"
+          >
+            @for (row of [1, 2, 3, 4]; track row) {
+              <div
+                class="grid grid-cols-[1.2fr_1.5fr_1fr_90px] gap-5 border-b border-[var(--color-border)] px-6 py-5 last:border-b-0"
+              >
+                <div class="h-4 animate-pulse rounded bg-zinc-200"></div>
+
+                <div class="h-4 animate-pulse rounded bg-zinc-100"></div>
+
+                <div class="h-4 animate-pulse rounded bg-zinc-100"></div>
+
+                <div class="h-4 animate-pulse rounded bg-zinc-100"></div>
+              </div>
+            }
+          </div>
+        } @else {
+          <!-- Pending Registrations -->
+          @if (activeTab() === 'pending') {
+            @if (pendingRegistrations().length === 0) {
+              <section
+                class="mt-7 rounded-2xl border border-[var(--color-border)] bg-white px-6 py-14 text-center"
+              >
+                <div
+                  class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-100 text-zinc-500"
+                  aria-hidden="true"
+                >
+                  âœ“
+                </div>
+
+                <h2 class="mt-5 text-lg font-semibold text-[var(--color-ink)]">
+                  No pending registrations
+                </h2>
+
+                <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">
+                  New internal access requests will appear here when they are submitted.
+                </p>
+              </section>
+            } @else {
+              <section
+                class="mt-7 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white"
+              >
+                <div class="overflow-x-auto">
+                  <table class="w-full min-w-[720px] border-collapse text-left">
+                    <thead>
+                      <tr class="border-b border-[var(--color-border)] bg-[#FAF9F6]">
+                        <th
+                          class="px-6 py-4 text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                        >
+                          Name
+                        </th>
+
+                        <th
+                          class="px-6 py-4 text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                        >
+                          Email
+                        </th>
+
+                        <th
+                          class="px-6 py-4 text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                        >
+                          Registered On
+                        </th>
+
+                        <th
+                          class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                        >
+                          Action
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      @for (registration of pendingRegistrations(); track registration.id) {
+                        <tr class="border-b border-[var(--color-border)] last:border-b-0">
+                          <td class="px-6 py-5">
+                            <p class="text-sm font-semibold text-[var(--color-ink)]">
+                              {{ registration.firstName }}
+                              {{ registration.lastName }}
+                            </p>
+                          </td>
+
+                          <td class="px-6 py-5 text-sm text-zinc-600">
+                            {{ registration.email }}
+                          </td>
+
+                          <td class="px-6 py-5 text-sm text-zinc-600">
+                            {{ registration.registeredAtUtc | date: 'dd MMM yyyy, h:mm a' }}
+                          </td>
+
+                          <td class="px-6 py-5 text-right">
+                            <button
+                              type="button"
+                              (click)="reviewRegistration(registration)"
+                              class="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-primary)] transition hover:border-blue-200 hover:bg-blue-50"
+                            >
+                              Review
+                            </button>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            }
+          }
+
+          <!-- Users -->
+          @if (activeTab() === 'users') {
+            @if (users().length === 0) {
+              <section
+                class="mt-7 rounded-2xl border border-[var(--color-border)] bg-white px-6 py-14 text-center"
+              >
+                <h2 class="text-lg font-semibold text-[var(--color-ink)]">No internal users</h2>
+
+                <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">
+                  Approved internal accounts will appear here.
+                </p>
+              </section>
+            } @else {
+              <section
+                class="mt-7 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white"
+              >
+                <div class="overflow-x-auto">
+                  <table class="w-full min-w-[850px] border-collapse text-left">
+                    <thead>
+                      <tr class="border-b border-[var(--color-border)] bg-[#FAF9F6]">
+                        <th
+                          class="px-6 py-4 text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                        >
+                          Name
+                        </th>
+
+                        <th
+                          class="px-6 py-4 text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                        >
+                          Role
+                        </th>
+
+                        <th
+                          class="px-6 py-4 text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                        >
+                          Status
+                        </th>
+
+                        <th
+                          class="px-6 py-4 text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                        >
+                          2FA Status
+                        </th>
+
+                        <th
+                          class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                        >
+                          Action
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      @for (user of users(); track user.id) {
+                        <tr class="border-b border-[var(--color-border)] last:border-b-0">
+                          <td class="px-6 py-5">
+                            <p class="text-sm font-semibold text-[var(--color-ink)]">
+                              {{ user.firstName }}
+                              {{ user.lastName }}
+                            </p>
+
+                            <p class="mt-1 text-xs text-zinc-500">
+                              {{ user.email }}
+                            </p>
+                          </td>
+
+                          <td class="px-6 py-5 text-sm text-zinc-600">
+                            {{ user.role }}
+                          </td>
+
+                          <td class="px-6 py-5">
+                            <span
+                              class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+                              [class.bg-green-50]="user.status === 'Active'"
+                              [class.text-[var(--color-success)]]="user.status === 'Active'"
+                              [class.bg-zinc-100]="user.status !== 'Active'"
+                              [class.text-zinc-600]="user.status !== 'Active'"
+                            >
+                              <span
+                                class="h-1.5 w-1.5 rounded-full"
+                                [class.bg-[var(--color-success)]]="user.status === 'Active'"
+                                [class.bg-zinc-400]="user.status !== 'Active'"
+                                aria-hidden="true"
+                              ></span>
+
+                              {{ user.status }}
+                            </span>
+                          </td>
+
+                          <td class="px-6 py-5">
+                            <span
+                              class="inline-flex items-center gap-2 text-sm"
+                              [class.text-[var(--color-success)]]="
+                                user.twoFactorStatus === 'Enabled'
+                              "
+                              [class.text-[var(--color-warning)]]="
+                                user.twoFactorStatus !== 'Enabled'
+                              "
+                            >
+                              <span
+                                class="h-1.5 w-1.5 rounded-full"
+                                [class.bg-[var(--color-success)]]="
+                                  user.twoFactorStatus === 'Enabled'
+                                "
+                                [class.bg-[var(--color-warning)]]="
+                                  user.twoFactorStatus !== 'Enabled'
+                                "
+                                aria-hidden="true"
+                              ></span>
+
+                              {{ user.twoFactorStatus }}
+                            </span>
+                          </td>
+
+                          <td class="px-6 py-5 text-right">
+                            <button
+                              type="button"
+                              (click)="viewUser(user)"
+                              class="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-primary)] transition hover:border-blue-200 hover:bg-blue-50"
+                            >
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            }
+          }
+        }
+      </div>
+    </main>
+  </div>
+</div>

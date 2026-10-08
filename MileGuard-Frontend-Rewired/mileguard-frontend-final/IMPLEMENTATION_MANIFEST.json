@@ -1,0 +1,57 @@
+{
+  "name": "MileGuard Frontend Final Rewire",
+  "scope": "Frontend only; backend source intentionally excluded.",
+  "source_preserved": true,
+  "angular_install_performed": false,
+  "architecture_target": "MileGuard Frontend Architecture & Rewiring Blueprint",
+  "completed_role_shells": [
+    "PublicShell",
+    "AuthenticatedShell",
+    "CustomerShell",
+    "AgentShell",
+    "UnderwriterShell",
+    "ClaimsOfficerShell",
+    "AdminShell"
+  ],
+  "completed_route_trees": [
+    "public",
+    "customer",
+    "agent",
+    "underwriter",
+    "claims-officer",
+    "admin",
+    "account"
+  ],
+  "new_shared_architecture": [
+    "role-navigation",
+    "role-shell-base",
+    "MileGuard design tokens",
+    "shared mg-icon",
+    "dashboard shells",
+    "feature facades for underwriting/claims/admin"
+  ],
+  "notes": [
+    "This is an overlayable frontend source tree. The original Angular workspace metadata/package manifest was not supplied and was therefore not invented."
+  ],
+  "shared_components_added": [
+    "mg-button",
+    "mg-card",
+    "status-badge",
+    "loading-state",
+    "error-state",
+    "empty-state",
+    "page-header",
+    "section-header",
+    "progress-journey",
+    "confirmation-dialog",
+    "action-card"
+  ],
+  "workspace_metadata_excluded": [
+    "package.json",
+    "angular.json",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "node_modules"
+  ]
+}

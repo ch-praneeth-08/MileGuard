@@ -1,0 +1,623 @@
+<main
+  class="min-h-screen bg-[var(--color-warm-white)]"
+>
+  <!-- Header -->
+  <header
+    class="border-b border-[var(--color-border)] bg-white"
+  >
+    <div
+      class="mx-auto flex max-w-5xl items-center gap-3 px-5 py-4 sm:px-8"
+    >
+      <span
+        class="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-primary)] text-sm font-bold text-white"
+        aria-hidden="true"
+      >
+        AI
+      </span>
+
+      <div>
+        <p
+          class="text-sm font-semibold text-[var(--color-ink)]"
+        >
+          Auto Insurance
+        </p>
+
+        <p class="text-xs text-zinc-500">
+          Customer Profile Setup
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <div
+    class="mx-auto max-w-5xl px-5 py-8 sm:px-8 lg:py-12"
+  >
+    <!-- Heading -->
+    <div class="max-w-2xl">
+      <p
+        class="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]"
+      >
+        Getting started
+      </p>
+
+      <h1
+        class="mt-3 text-4xl font-semibold tracking-[-0.04em] text-[var(--color-ink)]"
+      >
+        Complete your profile
+      </h1>
+
+      <p
+        class="mt-3 text-sm leading-6 text-zinc-600"
+      >
+        Provide the information needed to prepare your
+        insurance profile for the next stage.
+      </p>
+    </div>
+
+    <!-- Progress -->
+    <div
+      class="mt-9 overflow-x-auto"
+    >
+      <div
+        class="grid min-w-[680px] grid-cols-4"
+      >
+        @for (
+          step of [
+            { number: 1, label: 'Account' },
+            { number: 2, label: 'Personal Details' },
+            { number: 3, label: 'Address & Area' },
+            { number: 4, label: 'Review & Complete' }
+          ];
+          track step.number
+        ) {
+          <button
+            type="button"
+            (click)="goToStep($any(step.number))"
+            [disabled]="step.number > currentStep()"
+            class="group relative flex flex-col items-start pr-5 text-left disabled:cursor-default"
+          >
+            <div
+              class="absolute left-9 right-0 top-4 h-0.5"
+              [class.bg-[var(--color-success)]]="
+                step.number < currentStep()
+              "
+              [class.bg-zinc-200]="
+                step.number >= currentStep()
+              "
+            ></div>
+
+            <span
+              class="relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold"
+              [class.bg-[var(--color-success)]]="
+                step.number < currentStep()
+              "
+              [class.bg-[var(--color-primary)]]="
+                step.number === currentStep()
+              "
+              [class.bg-zinc-200]="
+                step.number > currentStep()
+              "
+              [class.text-white]="
+                step.number <= currentStep()
+              "
+              [class.text-zinc-500]="
+                step.number > currentStep()
+              "
+            >
+              @if (step.number < currentStep()) {
+                âœ“
+              } @else {
+                {{ step.number }}
+              }
+            </span>
+
+            <span
+              class="mt-3 text-sm font-semibold"
+              [class.text-[var(--color-ink)]]="
+                step.number <= currentStep()
+              "
+              [class.text-zinc-400]="
+                step.number > currentStep()
+              "
+            >
+              {{ step.label }}
+            </span>
+          </button>
+        }
+      </div>
+    </div>
+
+    @if (errorMessage()) {
+      <div
+        role="alert"
+        class="mt-7 rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-[var(--color-danger)]"
+      >
+        {{ errorMessage() }}
+      </div>
+    }
+
+    <section
+      class="mt-8 rounded-2xl border border-[var(--color-border)] bg-white p-6 sm:p-8"
+    >
+      <!-- Step 1 -->
+      @if (currentStep() === 1) {
+        <div>
+          <p
+            class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+          >
+            Step 1 of 4
+          </p>
+
+          <h2
+            class="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[var(--color-ink)]"
+          >
+            Account
+          </h2>
+
+          <p
+            class="mt-2 text-sm leading-6 text-zinc-600"
+          >
+            These details come from your secure Identity
+            account and cannot be edited here.
+          </p>
+
+          @if (currentUser(); as user) {
+            <div
+              class="mt-7 grid gap-5 sm:grid-cols-2"
+            >
+              <div>
+                <label
+                  class="mb-2 block text-sm font-medium text-zinc-500"
+                >
+                  First Name
+                </label>
+
+                <input
+                  [value]="user.firstName"
+                  readonly
+                  class="w-full rounded-xl border border-[var(--color-border)] bg-zinc-50 px-4 py-3 text-sm text-zinc-600"
+                />
+              </div>
+
+              <div>
+                <label
+                  class="mb-2 block text-sm font-medium text-zinc-500"
+                >
+                  Last Name
+                </label>
+
+                <input
+                  [value]="user.lastName"
+                  readonly
+                  class="w-full rounded-xl border border-[var(--color-border)] bg-zinc-50 px-4 py-3 text-sm text-zinc-600"
+                />
+              </div>
+
+              <div class="sm:col-span-2">
+                <label
+                  class="mb-2 block text-sm font-medium text-zinc-500"
+                >
+                  Email
+                </label>
+
+                <input
+                  [value]="user.email"
+                  readonly
+                  class="w-full rounded-xl border border-[var(--color-border)] bg-zinc-50 px-4 py-3 text-sm text-zinc-600"
+                />
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Step 2 -->
+      @if (currentStep() === 2) {
+        <form
+          [formGroup]="form"
+          class="space-y-6"
+        >
+          <div>
+            <p
+              class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+            >
+              Step 2 of 4
+            </p>
+
+            <h2
+              class="mt-2 text-2xl font-semibold tracking-[-0.03em]"
+            >
+              Personal Details
+            </h2>
+          </div>
+
+          <div>
+            <label
+              for="dateOfBirth"
+              class="mb-2 block text-sm font-medium"
+            >
+              Date of Birth
+            </label>
+
+            <input
+              id="dateOfBirth"
+              type="date"
+              formControlName="dateOfBirth"
+              class="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+            />
+
+            @if (
+              form.controls.dateOfBirth.touched &&
+              form.controls.dateOfBirth.invalid
+            ) {
+              <p class="mt-2 text-sm text-[var(--color-danger)]">
+                Date of birth is required.
+              </p>
+            }
+
+            <p class="mt-2 text-xs leading-5 text-zinc-500">
+              Date of birth cannot be changed after your
+              profile is completed.
+            </p>
+          </div>
+
+          <div>
+            <label
+              for="phone"
+              class="mb-2 block text-sm font-medium"
+            >
+              Phone
+            </label>
+
+            <input
+              id="phone"
+              type="tel"
+              formControlName="phone"
+              autocomplete="tel"
+              class="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+            />
+
+            @if (
+              form.controls.phone.touched &&
+              form.controls.phone.invalid
+            ) {
+              <p class="mt-2 text-sm text-[var(--color-danger)]">
+                Phone is required.
+              </p>
+            }
+          </div>
+        </form>
+      }
+
+      <!-- Step 3 -->
+      @if (currentStep() === 3) {
+        <form
+          [formGroup]="form"
+          class="space-y-5"
+        >
+          <div>
+            <p
+              class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+            >
+              Step 3 of 4
+            </p>
+
+            <h2
+              class="mt-2 text-2xl font-semibold tracking-[-0.03em]"
+            >
+              Address & Area
+            </h2>
+          </div>
+
+          <div>
+            <label
+              for="addressLine1"
+              class="mb-2 block text-sm font-medium"
+            >
+              Address Line 1
+            </label>
+
+            <input
+              id="addressLine1"
+              formControlName="addressLine1"
+              class="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+            />
+          </div>
+
+          <div>
+            <label
+              for="addressLine2"
+              class="mb-2 block text-sm font-medium"
+            >
+              Address Line 2
+              <span class="font-normal text-zinc-400">
+                (optional)
+              </span>
+            </label>
+
+            <input
+              id="addressLine2"
+              formControlName="addressLine2"
+              class="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+            />
+          </div>
+
+          <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label
+                for="city"
+                class="mb-2 block text-sm font-medium"
+              >
+                City
+              </label>
+
+              <input
+                id="city"
+                formControlName="city"
+                class="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+              />
+            </div>
+
+            <div>
+              <label
+                for="state"
+                class="mb-2 block text-sm font-medium"
+              >
+                State
+              </label>
+
+              <input
+                id="state"
+                formControlName="state"
+                class="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label
+              for="postalCode"
+              class="mb-2 block text-sm font-medium"
+            >
+              Postal Code
+            </label>
+
+            <input
+              id="postalCode"
+              formControlName="postalCode"
+              class="w-full rounded-xl border border-[var(--color-border)] px-4 py-3 outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100 sm:max-w-xs"
+            />
+          </div>
+
+          <!-- Area -->
+          <div>
+            <p class="mb-3 text-sm font-medium">
+              Area Type
+            </p>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label
+                class="cursor-pointer rounded-xl border p-4 transition"
+                [class.border-[var(--color-primary)]]="
+                  form.controls.areaType.value === '1'
+                "
+                [class.bg-blue-50]="
+                  form.controls.areaType.value === '1'
+                "
+                [class.border-[var(--color-border)]]="
+                  form.controls.areaType.value !== '1'
+                "
+              >
+                <input
+                  type="radio"
+                  formControlName="areaType"
+                  value="1"
+                  class="sr-only"
+                />
+
+                <p class="text-sm font-semibold">
+                  Urban
+                </p>
+
+                <p class="mt-1 text-xs leading-5 text-zinc-500">
+                  Urban area classification
+                </p>
+              </label>
+
+              <label
+                class="cursor-pointer rounded-xl border p-4 transition"
+                [class.border-[var(--color-primary)]]="
+                  form.controls.areaType.value === '2'
+                "
+                [class.bg-blue-50]="
+                  form.controls.areaType.value === '2'
+                "
+                [class.border-[var(--color-border)]]="
+                  form.controls.areaType.value !== '2'
+                "
+              >
+                <input
+                  type="radio"
+                  formControlName="areaType"
+                  value="2"
+                  class="sr-only"
+                />
+
+                <p class="text-sm font-semibold">
+                  Rural
+                </p>
+
+                <p class="mt-1 text-xs leading-5 text-zinc-500">
+                  Rural area classification
+                </p>
+              </label>
+            </div>
+
+            <p class="mt-3 text-xs leading-5 text-zinc-500">
+              Area Type cannot be changed after profile
+              completion.
+            </p>
+          </div>
+        </form>
+      }
+
+      <!-- Step 4 -->
+      @if (currentStep() === 4) {
+        <div>
+          <p
+            class="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+          >
+            Step 4 of 4
+          </p>
+
+          <h2
+            class="mt-2 text-2xl font-semibold tracking-[-0.03em]"
+          >
+            Review & Complete
+          </h2>
+
+          <p class="mt-2 text-sm text-zinc-600">
+            Review your profile carefully before completion.
+          </p>
+
+          <div class="mt-7 grid gap-5 sm:grid-cols-2">
+            @if (currentUser(); as user) {
+              <div
+                class="rounded-xl border border-[var(--color-border)] p-5"
+              >
+                <p
+                  class="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+                >
+                  Account
+                </p>
+
+                <p class="mt-3 text-sm font-semibold">
+                  {{ user.firstName }} {{ user.lastName }}
+                </p>
+
+                <p class="mt-1 text-sm text-zinc-500">
+                  {{ user.email }}
+                </p>
+              </div>
+            }
+
+            <div
+              class="rounded-xl border border-[var(--color-border)] p-5"
+            >
+              <p
+                class="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+              >
+                Personal
+              </p>
+
+              <p class="mt-3 text-sm">
+                DOB:
+                <span class="font-semibold">
+                  {{ form.controls.dateOfBirth.value }}
+                </span>
+              </p>
+
+              <p class="mt-2 text-sm">
+                Phone:
+                <span class="font-semibold">
+                  {{ form.controls.phone.value }}
+                </span>
+              </p>
+            </div>
+
+            <div
+              class="rounded-xl border border-[var(--color-border)] p-5 sm:col-span-2"
+            >
+              <p
+                class="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400"
+              >
+                Address & Area
+              </p>
+
+              <p class="mt-3 text-sm font-semibold">
+                {{ form.controls.addressLine1.value }}
+              </p>
+
+              @if (form.controls.addressLine2.value) {
+                <p class="mt-1 text-sm text-zinc-600">
+                  {{ form.controls.addressLine2.value }}
+                </p>
+              }
+
+              <p class="mt-1 text-sm text-zinc-600">
+                {{ form.controls.city.value }},
+                {{ form.controls.state.value }}
+                {{ form.controls.postalCode.value }}
+              </p>
+
+              <p class="mt-3 text-sm">
+                Area:
+                <span class="font-semibold">
+                  {{
+                    form.controls.areaType.value === '1'
+                      ? 'Urban'
+                      : 'Rural'
+                  }}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div
+            class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5"
+          >
+            <p
+              class="text-sm font-semibold text-[var(--color-ink)]"
+            >
+              Review immutable information carefully
+            </p>
+
+            <p class="mt-2 text-sm leading-6 text-zinc-600">
+              Date of Birth and Urban/Rural Area Type cannot
+              be changed after the profile is completed.
+              Contact and address information can be updated
+              later.
+            </p>
+          </div>
+        </div>
+      }
+
+      <!-- Navigation -->
+      <div
+        class="mt-8 flex items-center justify-between border-t border-[var(--color-border)] pt-6"
+      >
+        <button
+          type="button"
+          (click)="previous()"
+          [disabled]="currentStep() === 1"
+          class="rounded-xl border border-[var(--color-border)] px-5 py-3 text-sm font-semibold text-zinc-600 transition hover:bg-zinc-50 disabled:invisible"
+        >
+          Back
+        </button>
+
+        @if (currentStep() < 4) {
+          <button
+            type="button"
+            (click)="next()"
+            class="rounded-xl bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-dark)]"
+          >
+            Continue
+          </button>
+        } @else {
+          <button
+            type="button"
+            (click)="completeProfile()"
+            [disabled]="isSubmitting()"
+            class="rounded-xl bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            @if (isSubmitting()) {
+              Completing profile...
+            } @else {
+              Complete Profile
+            }
+          </button>
+        }
+      </div>
+    </section>
+  </div>
+</main>

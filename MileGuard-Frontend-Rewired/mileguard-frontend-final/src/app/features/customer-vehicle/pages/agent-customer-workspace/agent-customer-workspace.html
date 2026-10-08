@@ -1,0 +1,1572 @@
+<div class="min-h-screen bg-[var(--color-warm-white)]">
+  <div class="min-h-screen block">
+    <!-- ================================================= -->
+    <!-- SIDEBAR -->
+    <!-- ================================================= -->
+
+    
+
+    <!-- ================================================= -->
+    <!-- MAIN -->
+    <!-- ================================================= -->
+
+    <main class="min-w-0">
+      <!-- Mobile Header -->
+      
+
+      <div class="mx-auto max-w-[1240px] px-5 py-7 sm:px-8 lg:px-9 lg:py-8">
+        <!-- ============================================= -->
+        <!-- WORKSPACE LOADING -->
+        <!-- ============================================= -->
+
+        @if (isLoading()) {
+          <div>
+            <div class="h-3 w-48 animate-pulse rounded bg-zinc-200"></div>
+
+            <div class="mt-4 h-40 animate-pulse rounded-2xl bg-white"></div>
+
+            <div class="mt-5 h-10 animate-pulse rounded bg-zinc-100"></div>
+
+            <div class="mt-6 h-60 animate-pulse rounded-2xl bg-white"></div>
+          </div>
+        }
+
+        <!-- ============================================= -->
+        <!-- WORKSPACE ERROR -->
+        <!-- ============================================= -->
+
+        @if (!isLoading() && errorMessage()) {
+          <section class="rounded-2xl border border-red-200 bg-white p-6">
+            <div
+              class="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-sm font-bold text-[var(--color-danger)]"
+              aria-hidden="true"
+            >
+              !
+            </div>
+
+            <h1 class="mt-4 text-lg font-semibold text-[var(--color-ink)]">
+              Customer workspace unavailable
+            </h1>
+
+            <p class="mt-2 max-w-xl text-xs leading-5 text-zinc-600">
+              {{ errorMessage() }}
+            </p>
+
+            <div class="mt-5 flex flex-wrap gap-2.5">
+              <button
+                type="button"
+                (click)="backToCustomers()"
+                class="rounded-lg border border-[var(--color-border)] bg-white px-4 py-2.5 text-xs font-semibold text-zinc-600 transition hover:bg-zinc-50"
+              >
+                My Customers
+              </button>
+
+              <button
+                type="button"
+                (click)="retryWorkspace()"
+                class="rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[var(--color-primary-dark)]"
+              >
+                Retry
+              </button>
+            </div>
+          </section>
+        }
+
+        <!-- ============================================= -->
+        <!-- WORKSPACE CONTENT -->
+        <!-- ============================================= -->
+
+        @if (!isLoading() && customer(); as currentCustomer) {
+          <!-- Breadcrumb -->
+          <p class="text-[9px] font-semibold uppercase tracking-[0.13em] text-zinc-400">
+            Agent / My Customers / Customer Workspace
+          </p>
+
+          <!-- =========================================== -->
+          <!-- CUSTOMER SUMMARY -->
+          <!-- =========================================== -->
+
+          <section
+            class="mt-3 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-sm"
+          >
+            <div
+              class="flex flex-col gap-5 px-5 py-5 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div class="flex min-w-0 items-center gap-4">
+                <div
+                  class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-bold text-[var(--color-primary)]"
+                  aria-hidden="true"
+                >
+                  {{ customerInitials() }}
+                </div>
+
+                <div class="min-w-0">
+                  <p
+                    class="text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+                  >
+                    Customer Workspace
+                  </p>
+
+                  <div class="mt-1 flex flex-wrap items-center gap-2">
+                    <h1 class="text-xl font-semibold tracking-[-0.025em] text-[var(--color-ink)]">
+                      {{ customerDisplayName() }}
+                    </h1>
+
+                    <span
+                      class="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-[9px] font-semibold text-green-700"
+                    >
+                      <span class="h-1.5 w-1.5 rounded-full bg-green-500" aria-hidden="true"></span>
+
+                      Profile Complete
+                    </span>
+
+                    <span
+                      class="rounded-full bg-blue-50 px-2.5 py-1 text-[9px] font-semibold text-blue-700"
+                    >
+                      Assigned
+                    </span>
+                  </div>
+
+                  @if (currentCustomer.email) {
+                    <p class="mt-1 text-xs text-zinc-500">
+                      {{ currentCustomer.email }}
+                    </p>
+                  }
+
+                  <p class="mt-1 truncate text-[9px] text-zinc-400">
+                    Customer Profile ID:
+                    {{ currentCustomer.customerProfileId }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="grid border-t border-[var(--color-border)] bg-zinc-50/50 sm:grid-cols-4">
+              <div
+                class="border-b border-[var(--color-border)] px-5 py-3.5 sm:border-b-0 sm:border-r"
+              >
+                <p class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400">
+                  Profile
+                </p>
+
+                <p class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                  {{ currentCustomer.profileStatus }}
+                </p>
+              </div>
+
+              <div
+                class="border-b border-[var(--color-border)] px-5 py-3.5 sm:border-b-0 sm:border-r"
+              >
+                <p class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400">
+                  Area
+                </p>
+
+                <p class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                  {{ currentCustomer.areaType }}
+                </p>
+              </div>
+
+              <div
+                class="border-b border-[var(--color-border)] px-5 py-3.5 sm:border-b-0 sm:border-r"
+              >
+                <p class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400">
+                  Phone
+                </p>
+
+                <p class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                  {{ currentCustomer.phone }}
+                </p>
+              </div>
+
+              <div class="px-5 py-3.5">
+                <p class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400">
+                  Assigned
+                </p>
+
+                <p class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                  {{ currentCustomer.assignedAtUtc | date: 'dd MMM yyyy' }}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- =========================================== -->
+          <!-- TABS -->
+          <!-- =========================================== -->
+
+          <nav
+  class="mt-8 space-y-1"
+  aria-label="Agent navigation"
+>
+  <button
+    type="button"
+    (click)="backToCustomers()"
+    class="flex w-full items-center gap-3 rounded-lg bg-white/10 px-3 py-2.5 text-left text-xs font-semibold text-white"
+  >
+    <span
+      class="h-2 w-2 rounded-full bg-[var(--color-primary)]"
+      aria-hidden="true"
+    ></span>
+
+    My Customers
+  </button>
+
+  <button
+    type="button"
+    (click)="openQuotes()"
+    class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs font-medium text-zinc-400 transition hover:bg-white/5 hover:text-white"
+  >
+    <span
+      class="h-2 w-2 rounded-full bg-zinc-600"
+      aria-hidden="true"
+    ></span>
+
+    Quotes
+  </button>
+
+  <button
+    type="button"
+    (click)="openPolicies()"
+    class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs font-medium text-zinc-400 transition hover:bg-white/5 hover:text-white"
+  >
+    <span
+      class="h-2 w-2 rounded-full bg-zinc-600"
+      aria-hidden="true"
+    ></span>
+
+    Policies
+  </button>
+<button
+  type="button"
+  (click)="openClaims()"
+  class="rounded-xl border border-[var(--color-border)] bg-white px-5 py-3 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
+>
+  Claims
+</button>
+  <div
+    class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-xs font-medium text-zinc-500"
+  >
+    <span
+      class="h-2 w-2 rounded-full bg-zinc-700"
+      aria-hidden="true"
+    ></span>
+
+    Applications
+  </div>
+</nav>
+
+          <!-- =========================================== -->
+          <!-- OVERVIEW -->
+          <!-- =========================================== -->
+
+          @if (activeTab() === 'overview') {
+            <section class="mt-6">
+              <div class="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+                <div>
+                  <p
+                    class="text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+                  >
+                    Insurance Preparation
+                  </p>
+
+                  <h2 class="mt-1 text-lg font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                    Readiness journey
+                  </h2>
+
+                  <p class="mt-1 max-w-2xl text-[11px] leading-5 text-zinc-600">
+                    Current preparation status calculated by the backend from Customer, Driver, and
+                    Vehicle information.
+                  </p>
+                </div>
+
+                @if (readinessLoaded() && readiness()) {
+                  @if (readyForQuote()) {
+                    <span
+                      class="inline-flex w-fit items-center gap-1.5 rounded-full bg-green-50 px-3 py-1.5 text-[9px] font-semibold text-green-700"
+                    >
+                      <span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
+
+                      Ready for Quote Evaluation
+                    </span>
+                  } @else {
+                    <span
+                      class="inline-flex w-fit items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-[9px] font-semibold text-amber-700"
+                    >
+                      <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+
+                      Needs Attention
+                    </span>
+                  }
+                }
+              </div>
+
+              <!-- Readiness loading -->
+              @if (isLoadingReadiness()) {
+                <div
+                  class="mt-5 rounded-2xl border border-[var(--color-border)] bg-white px-6 py-7 shadow-sm"
+                >
+                  <div class="grid gap-6 md:grid-cols-4">
+                    @for (item of [1, 2, 3, 4]; track item) {
+                      <div>
+                        <div class="h-8 w-8 animate-pulse rounded-full bg-zinc-200"></div>
+
+                        <div class="mt-4 h-3 w-16 animate-pulse rounded bg-zinc-100"></div>
+
+                        <div class="mt-2 h-4 w-24 animate-pulse rounded bg-zinc-200"></div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Readiness error -->
+              @if (!isLoadingReadiness() && readinessErrorMessage()) {
+                <div
+                  role="alert"
+                  class="mt-5 flex flex-col justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3.5 sm:flex-row sm:items-center"
+                >
+                  <p class="text-xs leading-5 text-[var(--color-danger)]">
+                    {{ readinessErrorMessage() }}
+                  </p>
+
+                  <button
+                    type="button"
+                    (click)="retryReadiness()"
+                    class="w-fit text-xs font-semibold text-[var(--color-danger)] underline underline-offset-4"
+                  >
+                    Retry
+                  </button>
+                </div>
+              }
+
+              @if (!isLoadingReadiness() && readiness(); as currentReadiness) {
+                <!-- Connected process -->
+                <div
+                  class="mt-5 rounded-2xl border border-[var(--color-border)] bg-white px-5 py-6 shadow-sm sm:px-7"
+                >
+                  <!-- Desktop -->
+                  <div class="hidden grid-cols-4 md:grid">
+                    <!-- Profile -->
+                    <div class="relative pr-5">
+                      <div
+                        class="absolute left-8 right-0 top-[15px] h-0.5"
+                        [class.bg-green-500]="currentReadiness.profile.complete"
+                        [class.bg-zinc-200]="!currentReadiness.profile.complete"
+                      ></div>
+
+                      <div
+                        class="relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold"
+                        [class.bg-green-600]="currentReadiness.profile.complete"
+                        [class.text-white]="currentReadiness.profile.complete"
+                        [class.border-2]="!currentReadiness.profile.complete"
+                        [class.border-amber-400]="!currentReadiness.profile.complete"
+                        [class.bg-amber-50]="!currentReadiness.profile.complete"
+                        [class.text-amber-700]="!currentReadiness.profile.complete"
+                      >
+                        @if (currentReadiness.profile.complete) {
+                          âœ“
+                        } @else {
+                          !
+                        }
+                      </div>
+
+                      <p
+                        class="mt-3 text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-500"
+                      >
+                        Profile
+                      </p>
+
+                      <p class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                        @if (currentReadiness.profile.complete) {
+                          Complete
+                        } @else {
+                          Needs Attention
+                        }
+                      </p>
+
+                      @if (currentReadiness.profile.issues.length > 0) {
+                        <p class="mt-1 max-w-[170px] text-[10px] leading-4 text-zinc-500">
+                          {{ currentReadiness.profile.issues[0] }}
+                        </p>
+                      } @else {
+                        <p class="mt-1 text-[10px] text-zinc-400">Profile requirements met</p>
+                      }
+                    </div>
+
+                    <!-- Agent -->
+                    <div class="relative pr-5">
+                      <div
+                        class="absolute left-8 right-0 top-[15px] h-0.5"
+                        [class.bg-green-500]="currentReadiness.agent.complete"
+                        [class.bg-zinc-200]="!currentReadiness.agent.complete"
+                      ></div>
+
+                      <div
+                        class="relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold"
+                        [class.bg-green-600]="currentReadiness.agent.complete"
+                        [class.text-white]="currentReadiness.agent.complete"
+                        [class.border-2]="!currentReadiness.agent.complete"
+                        [class.border-amber-400]="!currentReadiness.agent.complete"
+                        [class.bg-amber-50]="!currentReadiness.agent.complete"
+                        [class.text-amber-700]="!currentReadiness.agent.complete"
+                      >
+                        @if (currentReadiness.agent.complete) {
+                          âœ“
+                        } @else {
+                          !
+                        }
+                      </div>
+
+                      <p
+                        class="mt-3 text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-500"
+                      >
+                        Agent
+                      </p>
+
+                      <p class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                        @if (currentReadiness.agent.complete) {
+                          Assigned
+                        } @else {
+                          Required
+                        }
+                      </p>
+
+                      @if (currentReadiness.agent.issues.length > 0) {
+                        <p class="mt-1 max-w-[170px] text-[10px] leading-4 text-zinc-500">
+                          {{ currentReadiness.agent.issues[0] }}
+                        </p>
+                      } @else {
+                        <p class="mt-1 text-[10px] text-zinc-400">Permanent assignment exists</p>
+                      }
+                    </div>
+
+                    <!-- Driver -->
+                    <div class="relative pr-5">
+                      <div
+                        class="absolute left-8 right-0 top-[15px] h-0.5"
+                        [class.bg-green-500]="currentReadiness.driver.complete"
+                        [class.bg-zinc-200]="!currentReadiness.driver.complete"
+                      ></div>
+
+                      <div
+                        class="relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold"
+                        [class.bg-green-600]="currentReadiness.driver.complete"
+                        [class.text-white]="currentReadiness.driver.complete"
+                        [class.border-2]="!currentReadiness.driver.complete"
+                        [class.border-amber-400]="!currentReadiness.driver.complete"
+                        [class.bg-amber-50]="!currentReadiness.driver.complete"
+                        [class.text-amber-700]="!currentReadiness.driver.complete"
+                      >
+                        @if (currentReadiness.driver.complete) {
+                          âœ“
+                        } @else {
+                          !
+                        }
+                      </div>
+
+                      <p
+                        class="mt-3 text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-500"
+                      >
+                        Driver
+                      </p>
+
+                      <p class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                        @if (currentReadiness.driver.complete) {
+                          Ready
+                        } @else {
+                          Needs Attention
+                        }
+                      </p>
+
+                      @if (currentReadiness.driver.issues.length > 0) {
+                        <p class="mt-1 max-w-[170px] text-[10px] leading-4 text-zinc-500">
+                          {{ currentReadiness.driver.issues[0] }}
+                        </p>
+                      } @else {
+                        <p class="mt-1 text-[10px] text-zinc-400">Driver requirements met</p>
+                      }
+                    </div>
+
+                    <!-- Vehicle -->
+                    <div class="relative">
+                      <div
+                        class="relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold"
+                        [class.bg-green-600]="currentReadiness.vehicle.complete"
+                        [class.text-white]="currentReadiness.vehicle.complete"
+                        [class.border-2]="!currentReadiness.vehicle.complete"
+                        [class.border-amber-400]="!currentReadiness.vehicle.complete"
+                        [class.bg-amber-50]="!currentReadiness.vehicle.complete"
+                        [class.text-amber-700]="!currentReadiness.vehicle.complete"
+                      >
+                        @if (currentReadiness.vehicle.complete) {
+                          âœ“
+                        } @else {
+                          !
+                        }
+                      </div>
+
+                      <p
+                        class="mt-3 text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-500"
+                      >
+                        Vehicle
+                      </p>
+
+                      <p class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                        @if (currentReadiness.vehicle.complete) {
+                          Ready
+                        } @else {
+                          Needs Attention
+                        }
+                      </p>
+
+                      @if (currentReadiness.vehicle.issues.length > 0) {
+                        <p class="mt-1 max-w-[170px] text-[10px] leading-4 text-zinc-500">
+                          {{ currentReadiness.vehicle.issues[0] }}
+                        </p>
+                      } @else {
+                        <p class="mt-1 text-[10px] text-zinc-400">Vehicle requirements met</p>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Mobile -->
+                  <div class="space-y-5 md:hidden">
+                    <!-- Profile -->
+                    <div class="flex gap-3">
+                      <div
+                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                        [class.bg-green-600]="currentReadiness.profile.complete"
+                        [class.text-white]="currentReadiness.profile.complete"
+                        [class.border-2]="!currentReadiness.profile.complete"
+                        [class.border-amber-400]="!currentReadiness.profile.complete"
+                        [class.bg-amber-50]="!currentReadiness.profile.complete"
+                        [class.text-amber-700]="!currentReadiness.profile.complete"
+                      >
+                        @if (currentReadiness.profile.complete) {
+                          âœ“
+                        } @else {
+                          !
+                        }
+                      </div>
+
+                      <div>
+                        <p
+                          class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-500"
+                        >
+                          Profile
+                        </p>
+
+                        <p class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                          @if (currentReadiness.profile.complete) {
+                            Complete
+                          } @else {
+                            Needs Attention
+                          }
+                        </p>
+                      </div>
+                    </div>
+
+                    <!-- Agent -->
+                    <div class="flex gap-3">
+                      <div
+                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                        [class.bg-green-600]="currentReadiness.agent.complete"
+                        [class.text-white]="currentReadiness.agent.complete"
+                        [class.border-2]="!currentReadiness.agent.complete"
+                        [class.border-amber-400]="!currentReadiness.agent.complete"
+                        [class.bg-amber-50]="!currentReadiness.agent.complete"
+                        [class.text-amber-700]="!currentReadiness.agent.complete"
+                      >
+                        @if (currentReadiness.agent.complete) {
+                          âœ“
+                        } @else {
+                          !
+                        }
+                      </div>
+
+                      <div>
+                        <p
+                          class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-500"
+                        >
+                          Agent
+                        </p>
+
+                        <p class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                          @if (currentReadiness.agent.complete) {
+                            Assigned
+                          } @else {
+                            Required
+                          }
+                        </p>
+                      </div>
+                    </div>
+
+                    <!-- Driver -->
+                    <div class="flex gap-3">
+                      <div
+                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                        [class.bg-green-600]="currentReadiness.driver.complete"
+                        [class.text-white]="currentReadiness.driver.complete"
+                        [class.border-2]="!currentReadiness.driver.complete"
+                        [class.border-amber-400]="!currentReadiness.driver.complete"
+                        [class.bg-amber-50]="!currentReadiness.driver.complete"
+                        [class.text-amber-700]="!currentReadiness.driver.complete"
+                      >
+                        @if (currentReadiness.driver.complete) {
+                          âœ“
+                        } @else {
+                          !
+                        }
+                      </div>
+
+                      <div>
+                        <p
+                          class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-500"
+                        >
+                          Driver
+                        </p>
+
+                        <p class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                          @if (currentReadiness.driver.complete) {
+                            Ready
+                          } @else {
+                            Needs Attention
+                          }
+                        </p>
+                      </div>
+                    </div>
+
+                    <!-- Vehicle -->
+                    <div class="flex gap-3">
+                      <div
+                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                        [class.bg-green-600]="currentReadiness.vehicle.complete"
+                        [class.text-white]="currentReadiness.vehicle.complete"
+                        [class.border-2]="!currentReadiness.vehicle.complete"
+                        [class.border-amber-400]="!currentReadiness.vehicle.complete"
+                        [class.bg-amber-50]="!currentReadiness.vehicle.complete"
+                        [class.text-amber-700]="!currentReadiness.vehicle.complete"
+                      >
+                        @if (currentReadiness.vehicle.complete) {
+                          âœ“
+                        } @else {
+                          !
+                        }
+                      </div>
+
+                      <div>
+                        <p
+                          class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-500"
+                        >
+                          Vehicle
+                        </p>
+
+                        <p class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                          @if (currentReadiness.vehicle.complete) {
+                            Ready
+                          } @else {
+                            Needs Attention
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Structured readiness issues -->
+                @if (
+                  !currentReadiness.readyForQuote && currentReadiness.readinessIssues.length > 0
+                ) {
+                  <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5">
+                    <p class="text-xs font-semibold text-amber-800">Needs attention</p>
+
+                    <ul class="mt-2 space-y-1.5">
+                      @for (issue of currentReadiness.readinessIssues; track issue) {
+                        <li class="flex items-start gap-2 text-[11px] leading-5 text-zinc-600">
+                          <span
+                            class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500"
+                            aria-hidden="true"
+                          ></span>
+
+                          <span>
+                            {{ issue }}
+                          </span>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                }
+
+                <!-- Next Action -->
+                <div
+                  class="mt-4 flex flex-col justify-between gap-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-4 sm:flex-row sm:items-center"
+                >
+                  <div>
+                    <p
+                      class="text-[9px] font-semibold uppercase tracking-[0.11em] text-[var(--color-primary)]"
+                    >
+                      Next Action
+                    </p>
+
+                    @switch (blockingStage()) {
+                      @case ('profile') {
+                        <h3 class="mt-1 text-sm font-semibold text-[var(--color-ink)]">
+                          Customer Profile needs attention
+                        </h3>
+
+                        <p class="mt-1 text-[11px] leading-5 text-zinc-600">
+                          Profile requirements must be completed before quote evaluation.
+                        </p>
+                      }
+
+                      @case ('agent') {
+                        <h3 class="mt-1 text-sm font-semibold text-[var(--color-ink)]">
+                          Agent assignment required
+                        </h3>
+
+                        <p class="mt-1 text-[11px] leading-5 text-zinc-600">
+                          A permanent Agent assignment is required.
+                        </p>
+                      }
+
+                      @case ('driver') {
+                        <h3 class="mt-1 text-sm font-semibold text-[var(--color-ink)]">
+                          Review Primary Driver
+                        </h3>
+
+                        <p class="mt-1 text-[11px] leading-5 text-zinc-600">
+                          Complete or correct the Primary Driver information.
+                        </p>
+                      }
+
+                      @case ('vehicle') {
+                        <h3 class="mt-1 text-sm font-semibold text-[var(--color-ink)]">
+                          Review Vehicles
+                        </h3>
+
+                        <p class="mt-1 text-[11px] leading-5 text-zinc-600">
+                          At least one Vehicle must satisfy the Vehicle readiness requirements.
+                        </p>
+                      }
+
+                      @case ('complete') {
+                        <h3 class="mt-1 text-sm font-semibold text-green-800">
+                          Ready for Quote evaluation
+                        </h3>
+
+                        <p class="mt-1 text-[11px] leading-5 text-zinc-600">
+                          Current Customer, Driver, and Vehicle information satisfies the
+                          preparation requirements.
+                        </p>
+                      }
+
+                      @default {
+                        <h3 class="mt-1 text-sm font-semibold text-[var(--color-ink)]">
+                          Checking readiness
+                        </h3>
+
+                        <p class="mt-1 text-[11px] leading-5 text-zinc-600">
+                          Current preparation state is being loaded.
+                        </p>
+                      }
+                    }
+                  </div>
+
+                  @if (blockingStage() === 'driver') {
+                    <button
+                      type="button"
+                      (click)="selectTab('driver')"
+                      class="w-fit shrink-0 rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[var(--color-primary-dark)]"
+                    >
+                      Open Driver
+                    </button>
+                  }
+
+                  @if (blockingStage() === 'vehicle') {
+                    <button
+                      type="button"
+                      (click)="selectTab('vehicles')"
+                      class="w-fit shrink-0 rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[var(--color-primary-dark)]"
+                    >
+                      Open Vehicles
+                    </button>
+                  }
+                </div>
+              }
+            </section>
+          }
+
+          <!-- =========================================== -->
+          <!-- PROFILE -->
+          <!-- =========================================== -->
+
+          @if (activeTab() === 'profile') {
+            <section class="mt-6">
+              <div class="grid gap-5 lg:grid-cols-2">
+                <!-- Identity -->
+                <article
+                  class="rounded-xl border border-[var(--color-border)] bg-white p-5 shadow-sm"
+                >
+                  <div class="flex items-start gap-4">
+                    <div
+                      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-[var(--color-primary)]"
+                    >
+                      {{ customerInitials() }}
+                    </div>
+
+                    <div class="min-w-0">
+                      <p
+                        class="text-[9px] font-semibold uppercase tracking-[0.11em] text-[var(--color-primary)]"
+                      >
+                        Identity
+                      </p>
+
+                      <h2 class="mt-1 text-base font-semibold text-[var(--color-ink)]">
+                        {{ customerDisplayName() }}
+                      </h2>
+
+                      @if (currentCustomer.email) {
+                        <p class="mt-1 truncate text-xs text-zinc-500">
+                          {{ currentCustomer.email }}
+                        </p>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="mt-5 border-t border-[var(--color-border)] pt-4">
+                    <p class="text-[10px] leading-5 text-zinc-400">
+                      Name and email are provided by IdentityService and are read-only in this
+                      workspace.
+                    </p>
+                  </div>
+                </article>
+
+                <!-- Personal -->
+                <article
+                  class="rounded-xl border border-[var(--color-border)] bg-white p-5 shadow-sm"
+                >
+                  <p
+                    class="text-[9px] font-semibold uppercase tracking-[0.11em] text-[var(--color-primary)]"
+                  >
+                    Personal
+                  </p>
+
+                  <h2 class="mt-1 text-base font-semibold text-[var(--color-ink)]">
+                    Customer details
+                  </h2>
+
+                  <dl class="mt-5 grid gap-5 sm:grid-cols-2">
+                    <div>
+                      <dt
+                        class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                      >
+                        Date of Birth
+                      </dt>
+
+                      <dd class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                        @if (currentCustomer.dateOfBirth) {
+                          {{ currentCustomer.dateOfBirth | date: 'dd MMM yyyy' }}
+                        } @else {
+                          Not available
+                        }
+                      </dd>
+                    </div>
+
+                    <div>
+                      <dt
+                        class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                      >
+                        Phone
+                      </dt>
+
+                      <dd class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                        {{ currentCustomer.phone }}
+                      </dd>
+                    </div>
+
+                    <div>
+                      <dt
+                        class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                      >
+                        Area Type
+                      </dt>
+
+                      <dd class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                        {{ currentCustomer.areaType }}
+                      </dd>
+                    </div>
+
+                    <div>
+                      <dt
+                        class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                      >
+                        Profile
+                      </dt>
+
+                      <dd class="mt-1 text-xs font-semibold text-green-700">
+                        {{ currentCustomer.profileStatus }}
+                      </dd>
+                    </div>
+                  </dl>
+                </article>
+
+                <!-- Address -->
+                <article
+                  class="rounded-xl border border-[var(--color-border)] bg-white p-5 shadow-sm lg:col-span-2"
+                >
+                  <p
+                    class="text-[9px] font-semibold uppercase tracking-[0.11em] text-[var(--color-primary)]"
+                  >
+                    Address
+                  </p>
+
+                  <h2 class="mt-1 text-base font-semibold text-[var(--color-ink)]">
+                    Current address
+                  </h2>
+
+                  <dl class="mt-5 grid gap-5 sm:grid-cols-3">
+                    <div class="sm:col-span-2">
+                      <dt
+                        class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                      >
+                        Address
+                      </dt>
+
+                      <dd class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                        {{ currentCustomer.addressLine1 }}
+
+                        @if (currentCustomer.addressLine2) {
+                          <span>
+                            ,
+                            {{ currentCustomer.addressLine2 }}
+                          </span>
+                        }
+                      </dd>
+                    </div>
+
+                    <div>
+                      <dt
+                        class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                      >
+                        City
+                      </dt>
+
+                      <dd class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                        {{ currentCustomer.city }}
+                      </dd>
+                    </div>
+
+                    <div>
+                      <dt
+                        class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                      >
+                        State
+                      </dt>
+
+                      <dd class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                        {{ currentCustomer.state }}
+                      </dd>
+                    </div>
+
+                    <div>
+                      <dt
+                        class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                      >
+                        Postal Code
+                      </dt>
+
+                      <dd class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                        {{ currentCustomer.postalCode }}
+                      </dd>
+                    </div>
+
+                    <div>
+                      <dt
+                        class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                      >
+                        Completed
+                      </dt>
+
+                      <dd class="mt-1 text-xs font-semibold text-[var(--color-ink)]">
+                        @if (currentCustomer.profileCompletedAtUtc) {
+                          {{ currentCustomer.profileCompletedAtUtc | date: 'dd MMM yyyy' }}
+                        } @else {
+                          Not available
+                        }
+                      </dd>
+                    </div>
+                  </dl>
+                </article>
+              </div>
+            </section>
+          }
+
+          <!-- =========================================== -->
+          <!-- DRIVER -->
+          <!-- =========================================== -->
+
+          @if (activeTab() === 'driver') {
+            <section class="mt-6">
+              @if (isLoadingDriver()) {
+                <article
+                  class="rounded-xl border border-[var(--color-border)] bg-white p-6 shadow-sm"
+                >
+                  <div class="h-5 w-40 animate-pulse rounded bg-zinc-200"></div>
+
+                  <div class="mt-6 grid gap-5 sm:grid-cols-2">
+                    @for (item of [1, 2, 3, 4]; track item) {
+                      <div class="h-14 animate-pulse rounded-lg bg-zinc-100"></div>
+                    }
+                  </div>
+                </article>
+              } @else {
+                @if (driverErrorMessage()) {
+                  <div
+                    role="alert"
+                    class="mb-5 flex items-start justify-between gap-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3"
+                  >
+                    <p class="text-xs leading-5 text-[var(--color-danger)]">
+                      {{ driverErrorMessage() }}
+                    </p>
+
+                    @if (!isEditingDriver()) {
+                      <button
+                        type="button"
+                        (click)="retryDriver()"
+                        class="text-xs font-semibold text-[var(--color-danger)]"
+                      >
+                        Retry
+                      </button>
+                    }
+                  </div>
+                }
+
+                @if (driverSuccessMessage()) {
+                  <div
+                    role="status"
+                    class="mb-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-xs font-semibold text-green-700"
+                  >
+                    {{ driverSuccessMessage() }}
+                  </div>
+                }
+
+                @if (isEditingDriver()) {
+                  <article
+                    class="rounded-xl border border-[var(--color-border)] bg-white p-5 shadow-sm sm:p-6"
+                  >
+                    <p
+                      class="text-[9px] font-semibold uppercase tracking-[0.11em] text-[var(--color-primary)]"
+                    >
+                      Primary Driver
+                    </p>
+
+                    <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink)]">
+                      @if (driver()) {
+                        Edit Driver
+                      } @else {
+                        Add Primary Driver
+                      }
+                    </h2>
+
+                    <form [formGroup]="driverForm" (ngSubmit)="saveDriver()" class="mt-5">
+                      <div class="grid gap-5 sm:grid-cols-2">
+                        <div>
+                          <label for="licenceNumber" class="mb-1.5 block text-xs font-medium">
+                            Licence Number
+                          </label>
+
+                          <input
+                            id="licenceNumber"
+                            type="text"
+                            formControlName="licenceNumber"
+                            class="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2.5 text-xs outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+                          />
+                        </div>
+
+                        <div>
+                          <label for="licenceState" class="mb-1.5 block text-xs font-medium">
+                            Licence State
+                          </label>
+
+                          <input
+                            id="licenceState"
+                            type="text"
+                            formControlName="licenceState"
+                            class="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2.5 text-xs outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-blue-100"
+                          />
+                        </div>
+
+                        <div>
+                          <label for="licenceIssueDate" class="mb-1.5 block text-xs font-medium">
+                            Issue Date
+                          </label>
+
+                          <input
+                            id="licenceIssueDate"
+                            type="date"
+                            formControlName="licenceIssueDate"
+                            class="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2.5 text-xs outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label for="licenceExpiryDate" class="mb-1.5 block text-xs font-medium">
+                            Expiry Date
+                          </label>
+
+                          <input
+                            id="licenceExpiryDate"
+                            type="date"
+                            formControlName="licenceExpiryDate"
+                            class="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2.5 text-xs outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div
+                        class="mt-6 flex justify-end gap-2.5 border-t border-[var(--color-border)] pt-5"
+                      >
+                        <button
+                          type="button"
+                          (click)="cancelDriverForm()"
+                          [disabled]="isSavingDriver()"
+                          class="rounded-lg border border-[var(--color-border)] bg-white px-4 py-2.5 text-xs font-semibold text-zinc-600 disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+
+                        <button
+                          type="submit"
+                          [disabled]="driverForm.invalid || isSavingDriver()"
+                          class="rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-xs font-semibold text-white disabled:opacity-50"
+                        >
+                          @if (isSavingDriver()) {
+                            Saving...
+                          } @else {
+                            Save Driver
+                          }
+                        </button>
+                      </div>
+                    </form>
+                  </article>
+                } @else if (!driver()) {
+                  <article
+                    class="rounded-xl border border-[var(--color-border)] bg-white px-6 py-12 text-center shadow-sm"
+                  >
+                    <div
+                      class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 font-bold text-[var(--color-primary)]"
+                    >
+                      +
+                    </div>
+
+                    <h2 class="mt-4 text-base font-semibold text-[var(--color-ink)]">
+                      Primary Driver not configured
+                    </h2>
+
+                    <p class="mx-auto mt-2 max-w-lg text-[11px] leading-5 text-zinc-500">
+                      Add licence information to configure the Customer's Primary Driver.
+                    </p>
+
+                    <button
+                      type="button"
+                      (click)="startDriverForm()"
+                      class="mt-5 rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-xs font-semibold text-white"
+                    >
+                      Add Primary Driver
+                    </button>
+                  </article>
+                } @else if (driver(); as currentDriver) {
+                  <div class="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
+                    <article
+                      class="rounded-xl border border-[var(--color-border)] bg-white p-5 shadow-sm"
+                    >
+                      <div class="flex items-start justify-between gap-4">
+                        <div>
+                          <p
+                            class="text-[9px] font-semibold uppercase tracking-[0.11em] text-[var(--color-primary)]"
+                          >
+                            Primary Driver
+                          </p>
+
+                          <h2 class="mt-1 text-base font-semibold text-[var(--color-ink)]">
+                            Licence information
+                          </h2>
+                        </div>
+
+                        @if (currentDriver.ready) {
+                          <span
+                            class="rounded-full bg-green-50 px-2.5 py-1 text-[9px] font-semibold text-green-700"
+                          >
+                            Ready
+                          </span>
+                        } @else {
+                          <span
+                            class="rounded-full bg-amber-50 px-2.5 py-1 text-[9px] font-semibold text-amber-700"
+                          >
+                            Needs Attention
+                          </span>
+                        }
+                      </div>
+
+                      <dl class="mt-5 grid gap-5 sm:grid-cols-2">
+                        <div>
+                          <dt
+                            class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                          >
+                            Licence Number
+                          </dt>
+
+                          <dd class="mt-1 text-xs font-semibold">
+                            {{ currentDriver.licenceNumber }}
+                          </dd>
+                        </div>
+
+                        <div>
+                          <dt
+                            class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                          >
+                            Licence State
+                          </dt>
+
+                          <dd class="mt-1 text-xs font-semibold">
+                            {{ currentDriver.licenceState }}
+                          </dd>
+                        </div>
+
+                        <div>
+                          <dt
+                            class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                          >
+                            Issue Date
+                          </dt>
+
+                          <dd class="mt-1 text-xs font-semibold">
+                            {{ currentDriver.licenceIssueDate | date: 'dd MMM yyyy' }}
+                          </dd>
+                        </div>
+
+                        <div>
+                          <dt
+                            class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                          >
+                            Expiry Date
+                          </dt>
+
+                          <dd class="mt-1 text-xs font-semibold">
+                            {{ currentDriver.licenceExpiryDate | date: 'dd MMM yyyy' }}
+                          </dd>
+                        </div>
+                      </dl>
+
+                      <div class="mt-5 border-t border-[var(--color-border)] pt-4">
+                        <button
+                          type="button"
+                          (click)="startDriverForm()"
+                          class="rounded-lg border border-blue-200 bg-white px-4 py-2.5 text-xs font-semibold text-[var(--color-primary)] hover:bg-blue-50"
+                        >
+                          Edit Driver
+                        </button>
+                      </div>
+                    </article>
+
+                    <article
+                      class="rounded-xl border border-[var(--color-border)] bg-white p-5 shadow-sm"
+                    >
+                      <p
+                        class="text-[9px] font-semibold uppercase tracking-[0.11em] text-[var(--color-primary)]"
+                      >
+                        Driver Status
+                      </p>
+
+                      <h2 class="mt-1 text-base font-semibold text-[var(--color-ink)]">
+                        Readiness details
+                      </h2>
+
+                      <div class="mt-5 grid grid-cols-3 gap-3">
+                        <div class="rounded-lg bg-zinc-50 p-3">
+                          <p class="text-[8px] font-semibold uppercase text-zinc-400">Age</p>
+
+                          <p class="mt-1 text-lg font-semibold">
+                            {{ currentDriver.age }}
+                          </p>
+                        </div>
+
+                        <div class="rounded-lg bg-zinc-50 p-3">
+                          <p class="text-[8px] font-semibold uppercase text-zinc-400">Experience</p>
+
+                          <p class="mt-1 text-lg font-semibold">
+                            {{ currentDriver.drivingExperienceYears }}
+                          </p>
+                        </div>
+
+                        <div class="rounded-lg bg-zinc-50 p-3">
+                          <p class="text-[8px] font-semibold uppercase text-zinc-400">Licence</p>
+
+                          <p
+                            class="mt-1 text-xs font-semibold"
+                            [class.text-green-700]="currentDriver.licenceValid"
+                            [class.text-red-600]="!currentDriver.licenceValid"
+                          >
+                            @if (currentDriver.licenceValid) {
+                              Valid
+                            } @else {
+                              Expired
+                            }
+                          </p>
+                        </div>
+                      </div>
+
+                      @if (currentDriver.readinessIssues.length > 0) {
+                        <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                          @for (issue of currentDriver.readinessIssues; track issue) {
+                            <p class="text-[10px] leading-5 text-amber-800">
+                              {{ issue }}
+                            </p>
+                          }
+                        </div>
+                      }
+                    </article>
+                  </div>
+                }
+              }
+            </section>
+          }
+
+          <!-- =========================================== -->
+          <!-- VEHICLES -->
+          <!-- =========================================== -->
+
+          @if (activeTab() === 'vehicles') {
+            <section class="mt-6">
+              @if (isLoadingVehicles()) {
+                <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                  @for (item of [1, 2, 3]; track item) {
+                    <article
+                      class="overflow-hidden rounded-xl border border-[var(--color-border)] bg-white"
+                    >
+                      <div class="h-36 animate-pulse bg-zinc-100"></div>
+
+                      <div class="p-5">
+                        <div class="h-5 w-32 animate-pulse rounded bg-zinc-200"></div>
+                      </div>
+                    </article>
+                  }
+                </div>
+              } @else {
+                @if (vehiclesErrorMessage()) {
+                  <div
+                    role="alert"
+                    class="mb-5 flex items-start justify-between gap-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3"
+                  >
+                    <p class="text-xs leading-5 text-[var(--color-danger)]">
+                      {{ vehiclesErrorMessage() }}
+                    </p>
+
+                    <button
+                      type="button"
+                      (click)="retryVehicles()"
+                      class="text-xs font-semibold text-[var(--color-danger)]"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                }
+
+                <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+                  <div>
+                    <p
+                      class="text-[9px] font-semibold uppercase tracking-[0.11em] text-[var(--color-primary)]"
+                    >
+                      Garage
+                    </p>
+
+                    <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink)]">
+                      Customer Vehicles
+                    </h2>
+
+                    <p class="mt-1 max-w-2xl text-[11px] leading-5 text-zinc-600">
+                      Manage Vehicles associated with this Customer's current insurance profile.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    (click)="addVehicle()"
+                    class="w-fit rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[var(--color-primary-dark)]"
+                  >
+                    + Add Vehicle
+                  </button>
+                </div>
+
+                @if (!vehiclesErrorMessage() && vehicles().length === 0) {
+                  <article
+                    class="mt-5 rounded-xl border border-[var(--color-border)] bg-white px-6 py-12 text-center shadow-sm"
+                  >
+                    <div
+                      class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 font-bold text-[var(--color-primary)]"
+                    >
+                      +
+                    </div>
+
+                    <h3 class="mt-4 text-base font-semibold text-[var(--color-ink)]">
+                      No Vehicles added
+                    </h3>
+
+                    <p class="mx-auto mt-2 max-w-lg text-[11px] leading-5 text-zinc-500">
+                      Add the Customer's first Vehicle to begin Vehicle preparation.
+                    </p>
+
+                    <button
+                      type="button"
+                      (click)="addVehicle()"
+                      class="mt-5 rounded-lg bg-[var(--color-primary)] px-4 py-2.5 text-xs font-semibold text-white"
+                    >
+                      Add Vehicle
+                    </button>
+                  </article>
+                }
+
+                @if (vehicles().length > 0) {
+                  <div class="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                    @for (vehicle of vehicles(); track vehicle.id) {
+                      <article
+                        class="overflow-hidden rounded-xl border border-[var(--color-border)] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                      >
+                        <div
+                          class="flex h-36 items-center justify-center bg-gradient-to-br from-zinc-100 to-zinc-50"
+                        >
+                          @if (vehicle.hasImage) {
+                            <div class="text-center">
+                              <div
+                                class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-white text-[9px] font-bold text-[var(--color-primary)] shadow-sm"
+                              >
+                                IMG
+                              </div>
+
+                              <p class="mt-2 text-[9px] text-zinc-400">Image available</p>
+                            </div>
+                          } @else {
+                            <div class="text-center">
+                              <div
+                                class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-white text-base font-semibold text-zinc-400 shadow-sm"
+                              >
+                                +
+                              </div>
+
+                              <p class="mt-2 text-[9px] text-zinc-400">No image</p>
+                            </div>
+                          }
+                        </div>
+
+                        <div class="p-5">
+                          <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                              <h3 class="truncate text-base font-semibold text-[var(--color-ink)]">
+                                {{ vehicle.make }}
+                                {{ vehicle.model }}
+                              </h3>
+
+                              <p class="mt-1 text-[10px] text-zinc-500">
+                                {{ vehicle.manufacturingYear }}
+                                Â·
+                                {{ vehicle.vehicleType }}
+                              </p>
+                            </div>
+
+                            @if (vehicle.ready) {
+                              <span
+                                class="shrink-0 rounded-full bg-green-50 px-2.5 py-1 text-[9px] font-semibold text-green-700"
+                              >
+                                Ready
+                              </span>
+                            } @else {
+                              <span
+                                class="shrink-0 rounded-full bg-amber-50 px-2.5 py-1 text-[9px] font-semibold text-amber-700"
+                              >
+                                Attention
+                              </span>
+                            }
+                          </div>
+
+                          <dl class="mt-4 grid grid-cols-2 gap-4">
+                            <div>
+                              <dt
+                                class="text-[8px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                              >
+                                Registration
+                              </dt>
+
+                              <dd class="mt-1 text-[11px] font-semibold">
+                                {{ vehicle.registrationNumber }}
+                              </dd>
+                            </div>
+
+                            <div>
+                              <dt
+                                class="text-[8px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                              >
+                                Age
+                              </dt>
+
+                              <dd class="mt-1 text-[11px] font-semibold">
+                                {{ vehicle.vehicleAge }}
+                                years
+                              </dd>
+                            </div>
+
+                            <div>
+                              <dt
+                                class="text-[8px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                              >
+                                Fuel
+                              </dt>
+
+                              <dd class="mt-1 text-[11px] font-semibold">
+                                {{ vehicle.fuelType }}
+                              </dd>
+                            </div>
+
+                            <div>
+                              <dt
+                                class="text-[8px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+                              >
+                                Ownership
+                              </dt>
+
+                              <dd class="mt-1 text-[11px] font-semibold">
+                                {{ vehicle.ownershipType }}
+                              </dd>
+                            </div>
+                          </dl>
+
+                          @if (!vehicle.ready && vehicle.readinessIssues.length > 0) {
+                            <div
+                              class="mt-4 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2.5"
+                            >
+                              <p class="text-[10px] leading-4 text-amber-800">
+                                {{ vehicle.readinessIssues[0] }}
+                              </p>
+                            </div>
+                          }
+
+                          <button
+                            type="button"
+                            (click)="openVehicle(vehicle)"
+                            class="mt-5 w-full rounded-lg border border-[var(--color-border)] bg-white px-4 py-2.5 text-xs font-semibold text-[var(--color-primary)] hover:border-blue-200 hover:bg-blue-50"
+                          >
+                            View Vehicle
+                          </button>
+                        </div>
+                      </article>
+                    }
+                  </div>
+                }
+              }
+            </section>
+          }
+        }
+      </div>
+    </main>
+  </div>
+</div>

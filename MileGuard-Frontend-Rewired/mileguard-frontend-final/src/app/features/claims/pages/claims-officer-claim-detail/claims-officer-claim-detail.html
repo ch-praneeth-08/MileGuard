@@ -1,0 +1,1030 @@
+<div
+  class="min-h-screen bg-[var(--color-warm-white)]"
+>
+  <main>
+    <div
+      class="mx-auto max-w-[1100px] px-5 py-8 sm:px-8 lg:px-10 lg:py-10"
+    >
+      <button
+        type="button"
+        (click)="returnToQueue()"
+        class="text-xs font-semibold text-[var(--color-primary)] transition hover:text-[var(--color-primary-dark)]"
+      >
+        â† Back to My Assigned Claims
+      </button>
+
+      @if (isLoading()) {
+        <section
+          class="mt-8 space-y-5"
+          aria-label="Loading Claim"
+        >
+          <div
+            class="h-44 animate-pulse rounded-2xl border border-[var(--color-border)] bg-white"
+          ></div>
+
+          <div
+            class="h-64 animate-pulse rounded-2xl border border-[var(--color-border)] bg-white"
+          ></div>
+
+          <div
+            class="h-52 animate-pulse rounded-2xl border border-[var(--color-border)] bg-white"
+          ></div>
+        </section>
+      }
+
+      @if (
+        !isLoading() &&
+        errorMessage()
+      ) {
+        <section
+          role="alert"
+          class="mt-8 rounded-2xl border border-red-200 bg-white p-6 shadow-sm"
+        >
+          <h1
+            class="text-xl font-semibold text-[var(--color-ink)]"
+          >
+            Claim unavailable
+          </h1>
+
+          <p
+            class="mt-2 text-sm leading-6 text-zinc-600"
+          >
+            {{ errorMessage() }}
+          </p>
+
+          <div
+            class="mt-5 flex flex-wrap gap-3"
+          >
+            <button
+              type="button"
+              (click)="retry()"
+              class="rounded-xl bg-[var(--color-primary)] px-5 py-2.5 text-xs font-semibold text-white"
+            >
+              Retry
+            </button>
+
+            <button
+              type="button"
+              (click)="returnToQueue()"
+              class="rounded-xl border border-[var(--color-border)] bg-white px-5 py-2.5 text-xs font-semibold text-zinc-700"
+            >
+              Back
+            </button>
+          </div>
+        </section>
+      }
+
+      @if (
+        !isLoading() &&
+        !errorMessage() &&
+        claim();
+        as currentClaim
+      ) {
+        <section class="mt-7">
+          <p
+            class="text-xs font-semibold uppercase tracking-[0.14em] text-zinc-400"
+          >
+            Claims Officer / Claims / Detail
+          </p>
+
+          <div
+            class="mt-3 flex flex-col justify-between gap-5 sm:flex-row sm:items-start"
+          >
+            <div>
+              <p
+                class="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-primary)]"
+              >
+                Insurance Claim
+              </p>
+
+              <h1
+                class="mt-1 text-4xl font-semibold tracking-[-0.04em] text-[var(--color-ink)]"
+              >
+                {{ currentClaim.claimNumber }}
+              </h1>
+
+              <p
+                class="mt-3 max-w-2xl text-sm leading-6 text-zinc-600"
+              >
+                Review the submitted Claim and perform
+                the action permitted by its current
+                lifecycle state.
+              </p>
+            </div>
+
+            <span
+              class="w-fit rounded-full px-3 py-1.5 text-xs font-semibold"
+              [class]="
+                statusClasses(
+                  currentClaim.status
+                )
+              "
+            >
+              {{
+                statusLabel(
+                  currentClaim.status
+                )
+              }}
+            </span>
+          </div>
+        </section>
+
+        @if (actionError()) {
+          <section
+            role="alert"
+            class="mt-6 rounded-xl border border-red-200 bg-red-50 p-4"
+          >
+            <p
+              class="text-xs leading-5 text-red-700"
+            >
+              {{ actionError() }}
+            </p>
+
+            <button
+              type="button"
+              (click)="retry()"
+              class="mt-3 text-xs font-semibold text-red-700 underline"
+            >
+              Reload Claim
+            </button>
+          </section>
+        }
+
+        @if (successMessage()) {
+          <section
+            role="status"
+            class="mt-6 rounded-xl border border-green-200 bg-green-50 p-4"
+          >
+            <p
+              class="text-xs font-medium text-green-700"
+            >
+              {{ successMessage() }}
+            </p>
+          </section>
+        }
+
+        <section
+          class="mt-7 rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-sm"
+        >
+          <div
+            class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
+          >
+            <div>
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+              >
+                Claim Type
+              </p>
+
+              <p
+                class="mt-2 text-sm font-semibold text-[var(--color-ink)]"
+              >
+                {{
+                  claimTypeLabel(
+                    currentClaim.claimType
+                  )
+                }}
+              </p>
+            </div>
+
+            <div>
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+              >
+                Estimated Loss
+              </p>
+
+              <p
+                class="mt-2 text-sm font-semibold text-[var(--color-ink)]"
+              >
+                â‚¹{{
+                  currentClaim.estimatedLossAmount
+                    | number:
+                      '1.0-0'
+                }}
+              </p>
+            </div>
+
+            <div>
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+              >
+                Incident
+              </p>
+
+              <p
+                class="mt-2 text-xs font-medium text-zinc-700"
+              >
+                {{
+                  currentClaim.incidentAtUtc
+                    | date:
+                      'dd MMM yyyy, h:mm a'
+                }}
+              </p>
+            </div>
+
+            <div>
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.1em] text-zinc-400"
+              >
+                Submitted
+              </p>
+
+              <p
+                class="mt-2 text-xs font-medium text-zinc-700"
+              >
+                {{
+                  currentClaim.submittedAtUtc
+                    | date:
+                      'dd MMM yyyy, h:mm a'
+                }}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="mt-5 rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-sm"
+        >
+          <p
+            class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-primary)]"
+          >
+            Incident
+          </p>
+
+          <h2
+            class="mt-1 text-lg font-semibold text-[var(--color-ink)]"
+          >
+            Incident Details
+          </h2>
+
+          <div
+            class="mt-5 grid gap-5 sm:grid-cols-2"
+          >
+            <div>
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+              >
+                Location
+              </p>
+
+              <p
+                class="mt-2 text-sm font-medium text-zinc-700"
+              >
+                {{ currentClaim.incidentLocation }}
+              </p>
+            </div>
+
+            <div>
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+              >
+                Customer
+              </p>
+
+              <p
+                class="mt-2 break-all text-xs font-medium text-zinc-700"
+              >
+                {{ currentClaim.customerProfileId }}
+              </p>
+            </div>
+          </div>
+
+          <div
+            class="mt-5 grid gap-5 sm:grid-cols-2"
+          >
+            <div>
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+              >
+                Policy
+              </p>
+
+              <p
+                class="mt-2 break-all text-xs font-medium text-zinc-700"
+              >
+                {{ currentClaim.policyId }}
+              </p>
+            </div>
+
+            <div>
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+              >
+                Vehicle
+              </p>
+
+              <p
+                class="mt-2 break-all text-xs font-medium text-zinc-700"
+              >
+                {{ currentClaim.vehicleId }}
+              </p>
+            </div>
+          </div>
+
+          <div
+            class="mt-5 border-t border-[var(--color-border)] pt-5"
+          >
+            <p
+              class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+            >
+              Description
+            </p>
+
+            <p
+              class="mt-2 whitespace-pre-line text-sm leading-6 text-zinc-700"
+            >
+              {{ currentClaim.incidentDescription }}
+            </p>
+          </div>
+        </section>
+
+        <section
+          class="mt-5 rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-sm"
+        >
+          <p
+            class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-primary)]"
+          >
+            Lifecycle
+          </p>
+
+          <h2
+            class="mt-1 text-lg font-semibold text-[var(--color-ink)]"
+          >
+            Claim Processing
+          </h2>
+
+          <div
+            class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+          >
+            <div
+              class="rounded-xl border border-[var(--color-border)] p-4"
+            >
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+              >
+                Assigned
+              </p>
+
+              <p
+                class="mt-1 text-xs font-semibold text-zinc-700"
+              >
+                @if (
+                  currentClaim.assignedAtUtc
+                ) {
+                  {{
+                    currentClaim.assignedAtUtc
+                      | date:
+                        'dd MMM yyyy, h:mm a'
+                  }}
+                } @else {
+                  Not available
+                }
+              </p>
+            </div>
+
+            <div
+              class="rounded-xl border border-[var(--color-border)] p-4"
+            >
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+              >
+                Review Started
+              </p>
+
+              <p
+                class="mt-1 text-xs font-semibold text-zinc-700"
+              >
+                @if (
+                  currentClaim.reviewStartedAtUtc
+                ) {
+                  {{
+                    currentClaim.reviewStartedAtUtc
+                      | date:
+                        'dd MMM yyyy, h:mm a'
+                  }}
+                } @else {
+                  Not started
+                }
+              </p>
+            </div>
+
+            <div
+              class="rounded-xl border border-[var(--color-border)] p-4"
+            >
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+              >
+                Decision
+              </p>
+
+              <p
+                class="mt-1 text-xs font-semibold text-zinc-700"
+              >
+                @if (
+                  currentClaim.decidedAtUtc
+                ) {
+                  {{
+                    currentClaim.decidedAtUtc
+                      | date:
+                        'dd MMM yyyy, h:mm a'
+                  }}
+                } @else {
+                  Pending
+                }
+              </p>
+            </div>
+
+            <div
+              class="rounded-xl border border-[var(--color-border)] p-4"
+            >
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+              >
+                Settlement
+              </p>
+
+              <p
+                class="mt-1 text-xs font-semibold text-zinc-700"
+              >
+                @if (
+                  currentClaim.approvedAmount !==
+                  null
+                ) {
+                  â‚¹{{
+                    currentClaim.approvedAmount
+                      | number:
+                        '1.0-0'
+                  }}
+                } @else {
+                  Not recorded
+                }
+              </p>
+            </div>
+          </div>
+
+          @if (
+            currentClaim.decisionReason
+          ) {
+            <div
+              class="mt-5 rounded-xl border border-[var(--color-border)] p-5"
+            >
+              <p
+                class="text-[9px] font-semibold uppercase tracking-[0.08em] text-zinc-400"
+              >
+                Decision Reason
+              </p>
+
+              <p
+                class="mt-2 whitespace-pre-line text-sm leading-6 text-zinc-700"
+              >
+                {{ currentClaim.decisionReason }}
+              </p>
+            </div>
+          }
+        </section>
+
+        <section
+          class="mt-5 rounded-2xl border border-[var(--color-border)] bg-white p-6 shadow-sm"
+        >
+          <p
+            class="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-primary)]"
+          >
+            Actions
+          </p>
+
+          <h2
+            class="mt-1 text-lg font-semibold text-[var(--color-ink)]"
+          >
+            Available Action
+          </h2>
+
+          @if (isSubmitted()) {
+            <div
+              class="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-5"
+            >
+              <p
+                class="text-sm font-semibold text-[var(--color-ink)]"
+              >
+                Begin Claim review
+              </p>
+
+              <p
+                class="mt-1 text-xs leading-5 text-zinc-600"
+              >
+                Starting review moves the Claim from
+                Submitted to In Review and records you
+                as the reviewing Claims Officer.
+              </p>
+
+              <button
+                type="button"
+                (click)="openStartReview()"
+                class="mt-5 rounded-xl bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-white"
+              >
+                Start Review
+              </button>
+            </div>
+          }
+
+          @if (isInReview()) {
+            <div
+              class="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-5"
+            >
+              <p
+                class="text-sm font-semibold text-[var(--color-ink)]"
+              >
+                Make a Claim decision
+              </p>
+
+              <p
+                class="mt-1 text-xs leading-5 text-zinc-600"
+              >
+                Approve the Claim to proceed toward
+                settlement or reject it with a clear
+                decision reason.
+              </p>
+
+              <div
+                class="mt-5 flex flex-col gap-3 sm:flex-row"
+              >
+                <button
+                  type="button"
+                  (click)="openApprove()"
+                  class="rounded-xl bg-green-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-800"
+                >
+                  Approve Claim
+                </button>
+
+                <button
+                  type="button"
+                  (click)="openReject()"
+                  class="rounded-xl border border-red-200 bg-white px-5 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-50"
+                >
+                  Reject Claim
+                </button>
+              </div>
+            </div>
+          }
+
+          @if (isApproved()) {
+            <div
+              class="mt-5 rounded-xl border border-green-200 bg-green-50 p-5"
+            >
+              <p
+                class="text-sm font-semibold text-[var(--color-ink)]"
+              >
+                Claim approved
+              </p>
+
+              <p
+                class="mt-1 text-xs leading-5 text-zinc-600"
+              >
+                Record the approved settlement amount
+                to move the Claim to Settled.
+              </p>
+
+              <button
+                type="button"
+                (click)="openSettle()"
+                class="mt-5 rounded-xl bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-white"
+              >
+                Settle Claim
+              </button>
+            </div>
+          }
+
+          @if (
+            isSettled() ||
+            isRejected()
+          ) {
+            <div
+              class="mt-5 rounded-xl border border-zinc-200 bg-zinc-50 p-5"
+            >
+              <p
+                class="text-sm font-semibold text-[var(--color-ink)]"
+              >
+                Claim ready for closure
+              </p>
+
+              <p
+                class="mt-1 text-xs leading-5 text-zinc-600"
+              >
+                The processing workflow is complete.
+                Close the Claim to finish its lifecycle.
+              </p>
+
+              <button
+                type="button"
+                (click)="openClose()"
+                class="mt-5 rounded-xl bg-[var(--color-ink)] px-5 py-3 text-sm font-semibold text-white"
+              >
+                Close Claim
+              </button>
+            </div>
+          }
+
+          @if (isClosed()) {
+            <div
+              class="mt-5 rounded-xl border border-zinc-200 bg-zinc-50 p-5"
+            >
+              <p
+                class="text-sm font-semibold text-zinc-700"
+              >
+                Claim closed
+              </p>
+
+              <p
+                class="mt-1 text-xs leading-5 text-zinc-500"
+              >
+                This Claim has completed its lifecycle.
+                No further processing actions are
+                available.
+              </p>
+
+              @if (
+                currentClaim.closedAtUtc
+              ) {
+                <p
+                  class="mt-3 text-[10px] font-medium text-zinc-500"
+                >
+                  Closed
+                  {{
+                    currentClaim.closedAtUtc
+                      | date:
+                        'dd MMM yyyy, h:mm a'
+                  }}
+                </p>
+              }
+            </div>
+          }
+        </section>
+      }
+    </div>
+  </main>
+
+  @if (
+    activeDialog() === 'start-review'
+  ) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+      >
+        <h2
+          class="text-2xl font-semibold text-[var(--color-ink)]"
+        >
+          Start Claim review?
+        </h2>
+
+        <p
+          class="mt-3 text-sm leading-6 text-zinc-600"
+        >
+          The Claim will move from Submitted to In
+          Review and your account will become the
+          reviewing Claims Officer.
+        </p>
+
+        <div
+          class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
+        >
+          <button
+            type="button"
+            (click)="closeDialog()"
+            [disabled]="isProcessing()"
+            class="rounded-xl border border-[var(--color-border)] px-5 py-3 text-sm font-semibold text-zinc-700"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            (click)="confirmStartReview()"
+            [disabled]="isProcessing()"
+            class="rounded-xl bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            @if (isProcessing()) {
+              Starting...
+            } @else {
+              Start Review
+            }
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+
+  @if (
+    activeDialog() === 'approve'
+  ) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+      >
+        <h2
+          class="text-2xl font-semibold text-[var(--color-ink)]"
+        >
+          Approve Claim
+        </h2>
+
+        <p
+          class="mt-3 text-sm leading-6 text-zinc-600"
+        >
+          Record the reason supporting this approval.
+          Settlement is handled separately after
+          approval.
+        </p>
+
+        <label
+          for="approvalReason"
+          class="mt-5 block text-xs font-semibold text-zinc-700"
+        >
+          Decision Reason
+        </label>
+
+        <textarea
+          id="approvalReason"
+          rows="5"
+          [formControl]="approvalReason"
+          class="mt-2 w-full rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm outline-none focus:border-[var(--color-primary)]"
+        ></textarea>
+
+        @if (
+          approvalReason.touched &&
+          approvalReason.invalid
+        ) {
+          <p
+            class="mt-2 text-xs text-red-600"
+          >
+            Decision reason is required.
+          </p>
+        }
+
+        <div
+          class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
+        >
+          <button
+            type="button"
+            (click)="closeDialog()"
+            [disabled]="isProcessing()"
+            class="rounded-xl border border-[var(--color-border)] px-5 py-3 text-sm font-semibold text-zinc-700"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            (click)="confirmApprove()"
+            [disabled]="
+              approvalReason.invalid ||
+              isProcessing()
+            "
+            class="rounded-xl bg-green-700 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            @if (isProcessing()) {
+              Approving...
+            } @else {
+              Confirm Approval
+            }
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+
+  @if (
+    activeDialog() === 'reject'
+  ) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+      >
+        <h2
+          class="text-2xl font-semibold text-[var(--color-ink)]"
+        >
+          Reject Claim
+        </h2>
+
+        <p
+          class="mt-3 text-sm leading-6 text-zinc-600"
+        >
+          A rejection reason is required and will be
+          visible in the Claim's decision information.
+        </p>
+
+        <label
+          for="rejectionReason"
+          class="mt-5 block text-xs font-semibold text-zinc-700"
+        >
+          Rejection Reason
+        </label>
+
+        <textarea
+          id="rejectionReason"
+          rows="5"
+          [formControl]="rejectionReason"
+          class="mt-2 w-full rounded-xl border border-[var(--color-border)] px-4 py-3 text-sm outline-none focus:border-red-400"
+        ></textarea>
+
+        @if (
+          rejectionReason.touched &&
+          rejectionReason.invalid
+        ) {
+          <p
+            class="mt-2 text-xs text-red-600"
+          >
+            Rejection reason is required.
+          </p>
+        }
+
+        <div
+          class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
+        >
+          <button
+            type="button"
+            (click)="closeDialog()"
+            [disabled]="isProcessing()"
+            class="rounded-xl border border-[var(--color-border)] px-5 py-3 text-sm font-semibold text-zinc-700"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            (click)="confirmReject()"
+            [disabled]="
+              rejectionReason.invalid ||
+              isProcessing()
+            "
+            class="rounded-xl bg-red-700 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            @if (isProcessing()) {
+              Rejecting...
+            } @else {
+              Confirm Rejection
+            }
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+
+  @if (
+    activeDialog() === 'settle'
+  ) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+      >
+        <h2
+          class="text-2xl font-semibold text-[var(--color-ink)]"
+        >
+          Settle Claim
+        </h2>
+
+        <p
+          class="mt-3 text-sm leading-6 text-zinc-600"
+        >
+          Enter the final approved settlement amount.
+          Recording the amount moves the Claim to
+          Settled.
+        </p>
+
+        <label
+          for="approvedAmount"
+          class="mt-5 block text-xs font-semibold text-zinc-700"
+        >
+          Approved Amount
+        </label>
+
+        <div
+          class="relative mt-2"
+        >
+          <span
+            class="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-zinc-500"
+          >
+            â‚¹
+          </span>
+
+          <input
+            id="approvedAmount"
+            type="number"
+            min="0.01"
+            step="0.01"
+            [formControl]="approvedAmount"
+            class="w-full rounded-xl border border-[var(--color-border)] py-3 pl-9 pr-4 text-sm outline-none focus:border-[var(--color-primary)]"
+          />
+        </div>
+
+        @if (
+          approvedAmount.touched &&
+          approvedAmount.invalid
+        ) {
+          <p
+            class="mt-2 text-xs text-red-600"
+          >
+            Enter an approved amount greater than zero.
+          </p>
+        }
+
+        <div
+          class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
+        >
+          <button
+            type="button"
+            (click)="closeDialog()"
+            [disabled]="isProcessing()"
+            class="rounded-xl border border-[var(--color-border)] px-5 py-3 text-sm font-semibold text-zinc-700"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            (click)="confirmSettle()"
+            [disabled]="
+              approvedAmount.invalid ||
+              isProcessing()
+            "
+            class="rounded-xl bg-[var(--color-primary)] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            @if (isProcessing()) {
+              Settling...
+            } @else {
+              Confirm Settlement
+            }
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+
+  @if (
+    activeDialog() === 'close'
+  ) {
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+      >
+        <h2
+          class="text-2xl font-semibold text-[var(--color-ink)]"
+        >
+          Close Claim?
+        </h2>
+
+        <p
+          class="mt-3 text-sm leading-6 text-zinc-600"
+        >
+          Closing the Claim completes its processing
+          lifecycle. No further Claims Officer actions
+          will be available after closure.
+        </p>
+
+        <div
+          class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
+        >
+          <button
+            type="button"
+            (click)="closeDialog()"
+            [disabled]="isProcessing()"
+            class="rounded-xl border border-[var(--color-border)] px-5 py-3 text-sm font-semibold text-zinc-700"
+          >
+            Keep Open
+          </button>
+
+          <button
+            type="button"
+            (click)="confirmClose()"
+            [disabled]="isProcessing()"
+            class="rounded-xl bg-[var(--color-ink)] px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            @if (isProcessing()) {
+              Closing...
+            } @else {
+              Close Claim
+            }
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</div>

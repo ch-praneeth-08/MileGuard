@@ -1,0 +1,4 @@
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+
+@Component({ selector:'mg-empty-state', standalone:true, template:'<section class="empty-state"><div class="icon">{{ icon }}</div><h2>{{ title }}</h2><p>{{ message }}</p><ng-content /></section>', styles:[`.empty-state{text-align:center;border:1px solid var(--mg-border-light);border-radius:1.25rem;background:white;padding:3rem 1.5rem}.icon{margin:0 auto;display:flex;width:3rem;height:3rem;align-items:center;justify-content:center;border-radius:.85rem;background:var(--mg-bg-soft);color:var(--mg-green-900);font-weight:800}.empty-state h2{margin:1rem 0 .35rem;font-size:1.05rem;font-weight:700}.empty-state p{margin:0 auto;max-width:34rem;color:var(--mg-text-secondary);font-size:.85rem;line-height:1.5}`], changeDetection:ChangeDetectionStrategy.OnPush })
+export class EmptyState { @Input() title='Nothing here yet'; @Input() message='There is no information to display yet.'; @Input() icon='—'; }
