@@ -1,0 +1,117 @@
+# GAMMA PROMPT — Auto Insurance Management Platform Project Review
+
+Create a professional, university project-review presentation for an **Auto Insurance Management Platform**. The audience is a project review panel that may ask both business and technical questions. The deck must tell a clear end-to-end story, be visually polished and spacious, and avoid crammed slides.
+
+## Output and design requirements
+- Create **18 slides maximum**, preferably 16–18. Use 16:9 widescreen.
+- Visual style: premium enterprise software / insurance technology. Use a restrained palette of deep navy, slate, muted teal and white, with one warm accent. Keep contrast high and typography clean.
+- Use short slide titles, one central message per slide, no more than 3–5 concise bullets per slide, and generous whitespace. Do not paste paragraphs from documentation onto slides.
+- Prefer process timelines, service maps, simple diagrams, role cards and small tables over walls of text. Use consistent iconography and alignment. Avoid decorative stock photos unless subtle and relevant.
+- Put detailed explanation in speaker notes where available, not on the slide canvas. Use plain, natural language. No fabricated metrics, ROI, adoption figures, test results, regulatory certifications or production claims.
+- Keep implementation status honest: say “implemented in the code structure / source-visible” where appropriate and “testing/integration in progress” where applicable.
+- Include placeholders on the demo slide for real screenshots, API responses or logs. Do not invent screenshots or claim execution happened.
+
+## Project context
+The platform is a role-based vehicle-insurance workflow. The Angular client connects through an API-gateway base URL (the project uses/targets Ocelot; exact gateway configuration must be verified separately) to ASP.NET Core Web APIs. The backend is split into six service domains, each with its own EF Core context/database:
+1. IdentityService — registration, login, roles, JWT, refresh sessions, 2FA and internal-user administration.
+2. CustomerVehicleService — customer profiles, readiness, driver/vehicle records, agent assignment, risk summary and vehicle-image metadata/storage.
+3. QuoteRatingService — plan/coverage/add-on catalogue, rating rules, quote configuration/calculation/snapshots and admin pricing configuration.
+4. UnderwritingService — application snapshots, assignment, four review sections, decisions and status history.
+5. PolicyBillingService — purchase acceptance, first-payment attempts, policy issuance, schedules/installments, documents, cancellation and renewal.
+6. ClaimsService — Agent claim submission, Admin assignment, Claims Officer review/decision/settlement/closure and customer claim views.
+
+Roles represented in the UI are Customer, Agent, Admin, Underwriter and Claims Officer. Identity currently defines `Claims Adjuster` while ClaimsService controller authorization uses `ClaimsOfficer`; this should be shown as an integration issue to resolve, not hidden.
+
+## Required slide sequence
+
+### 1. Title
+**Auto Insurance Management Platform**
+Subtitle: “End-to-end vehicle insurance workflow using Angular and ASP.NET Core microservices.” Include a clean, minimal product mark and space for student/team, guide and institution details (use editable placeholders rather than inventing names).
+
+### 2. Business problem
+Show that vehicle insurance requires multiple hand-offs among customer data, quote pricing, risk evaluation, policy issuance, billing and claims. Explain the risk of disconnected manual processes: fragmented records, unclear ownership, weak status visibility and difficult traceability. Avoid unsupported claims about the insurance industry’s size or financial losses.
+
+### 3. Proposed solution
+One shared role-based platform with six service-owned domains. Visualize the principle: “one customer journey, clear service ownership, controlled hand-offs.”
+
+### 4. Functional scope at a glance
+Show compact module tiles: Identity & Access; Customer/Driver/Vehicle; Agent Assignment; Quotes & Pricing; Underwriting; Purchase/Policy/Billing; Claims; Admin Operations. Use one short phrase per tile.
+
+### 5. User roles and responsibilities
+Five role cards: Customer, Agent, Admin, Underwriter, Claims Officer. Make it obvious who provides data, who assists with quotes, who assigns work, who assesses risk and who handles claims. Add a small note that role-string alignment for Claims Officer is being verified.
+
+### 6. End-to-end customer → insurance journey
+Use one horizontal/vertical process timeline with 8–10 short steps: Register → Complete profile/driver/vehicle details → Admin assigns Agent → Agent creates/configures quote → Quote finalized → Underwriter assigned and reviews risk → Offer decision → Customer accepts/configures and makes first payment → Policy issued with document/schedule → Ongoing policy servicing/renewal/claims. Keep each label short. Add a small gate marker where validation or approval occurs.
+
+### 7. Quotes and pricing
+Show the quote inputs/catalogue: customer/vehicle risk context, plan, coverages/limits, deductibles, add-ons and rating rules. Show that quote calculation/configuration can be revised and finalized, and snapshots preserve the values. Admin can configure pricing categories. Do not invent the exact rating formula; show it as “configurable rating rules / calculation factors.”
+
+### 8. Underwriting workflow
+Diagram: finalized quote → underwriting application snapshot → Admin assignment → Underwriter reviews Driver, Vehicle, Insurance Quote and Overall Risk → Approve/Reject → customer offer/purchase path. Mention status history/decision records. Do not present unverified customer endpoints as fully integrated.
+
+### 9. Purchase, policy and billing
+Show accepted offer → purchase configuration → first-payment attempt → policy issuance on a successful validated path → policy snapshot, policy document metadata and payment schedule/installments. Call payment behavior **simulated in the supplied implementation** unless an external gateway has been added and demonstrated. Include payments/history, document retrieval, cancellation request and renewal as servicing capabilities.
+
+### 10. Claims lifecycle
+Use a compact state journey: Agent submits for customer → Admin sees unassigned claim and assigns officer → Claims Officer starts review → Approves or rejects → Approved claim can be settled → claim can be closed → Customer sees own claim status. Include claim data examples: incident, type, estimated loss, decision reason and approved/settled information.
+
+### 11. Microservices architecture
+Draw a clear architecture diagram: Browser (Angular SPA) → Ocelot API Gateway → six ASP.NET Core services → six separate databases/contexts. Show service-to-service links: CustomerVehicle ↔ Identity eligibility; QuoteRating → CustomerVehicle risk and Underwriting application creation; Underwriting → Identity eligible Underwriters; PolicyBilling → Underwriting offer, CustomerVehicle profile/assignment and QuoteRating renewal quote; Claims → Identity/CustomerVehicle/PolicyBilling lookups. Add local file storage for vehicle images and policy documents, and separate central SQL log sink for Claims. The Ocelot configuration was not part of the supplied code dump, so do not claim its exact mappings have been validated.
+
+### 12. Technology stack
+Organize as frontend, gateway, backend, data, integration/observability and testing:
+- Frontend: Angular, TypeScript, standalone components, Angular Router/guards, Reactive Forms, RxJS, Tailwind CSS.
+- Gateway: Ocelot API Gateway (configuration verification outstanding).
+- Backend: C# / .NET 8 / ASP.NET Core Web API, layered API/Application/Domain/Infrastructure projects, dependency injection, DTOs and validation.
+- Persistence: EF Core; SQL Server LocalDB in supplied development settings; one core database/context per service.
+- Auth: ASP.NET Core Identity, JWT bearer token, refresh cookie/session and internal 2FA flow.
+- Integration/logging: typed HttpClient, request timeouts/error mapping, correlation IDs; Serilog console/file/SQL sink in ClaimsService.
+- Tests: backend tests and frontend browser tests are in progress.
+
+### 13. Authentication and authorization
+Show login → access JWT → bearer token on protected requests → role and ownership checks at APIs → cookie-based refresh on an eligible 401 → retry. Mention configured access-token lifetime of 15 minutes and refresh session lifetime of 7 days, if the panel wants configuration detail. State that route guards improve client navigation but backend authorization is the security boundary. Never expose development bootstrap credentials.
+
+### 14. Data ownership / database design
+Show a simplified database map, not a giant ERD:
+- IdentityDb: ASP.NET Identity tables + RefreshSessions.
+- CustomerVehicleDb: customer profiles, drivers, vehicles, agent assignments (physical mappings need checking because Infrastructure dump was not included).
+- QuoteRating database/context (exact database name and connection string not supplied): Plans, Coverages, AddOns, RatingRules, Quotes, calculations, selections, snapshots and PricingAudits.
+- UnderwritingDb: Applications, ApplicationSnapshots, review sections, decisions, status history and outcomes.
+- PolicyBillingDb: Purchases, Policies, snapshots, schedules, Installments, PaymentTransactions, PolicyDocuments, histories, Renewals.
+- ClaimsDb: Claims.
+- AutoInsuranceLoggingDb: Logs table configured for Claims Serilog.
+Explain IDs are used across services; avoid implying a single shared schema or cross-database foreign keys.
+
+### 15. Resilience and controls
+Represent real mechanisms only: validation; role/ownership/assignment checks; explicit 400/401/403/404/409/503 paths where returned; downstream HTTP/timeout handling via typed clients; quote/underwriting/policy snapshots; claim/policy/status history and claim pricing audit records; correlation/logging. Do not claim Polly/circuit-breaker, distributed transactions, message queue or automatic retry infrastructure unless verified.
+
+### 16. Testing status
+Use a truthful status board:
+- Backend unit/integration testing: **in progress**. xUnit projects are visible in the supplied source; some QuoteRating test files are placeholders, and the dumps do not prove complete end-to-end pass status.
+- Frontend test work: **in progress**; Playwright is part of the project testing plan/notes, but a Playwright config/suite was not included in the reviewed dump.
+- NUnit: include only if the current branch actually has an NUnit test project; it was not visible in the supplied files.
+- SQLite for isolated testing: include as **test-only if confirmed in the current test harness**. The supplied source dumps register SQL Server/LocalDB contexts and an Identity SQL Server integration-test database, with no visible `UseSqlite` reference. Do not blur testing DB choice with production database choice.
+- Add a small “evidence we will show” footer: actual test output, request/response, UI screenshot or DB record—only after captured.
+
+### 17. Live demo / execution evidence
+Make this a deliberately open slide with 3 large editable placeholders:
+1. “Frontend workflow screenshot”
+2. “API request / response or service log”
+3. “Persisted database record / test output”
+Suggested demo: role login → Agent workspace → quote/underwriting hand-off → purchase/policy or claim workflow. Add an environment/build label field. Do not fabricate evidence; placeholders must be easy to replace.
+
+### 18. Current gaps and future enhancements
+Split into two columns:
+**Close before release:** reconcile `Claims Adjuster` vs `ClaimsOfficer`; validate Ocelot routes/cookie handling; verify QuoteRating server contract and customer-offer endpoints; confirm CustomerVehicle schema and customer write boundaries; finish meaningful integration/browser tests; confirm SQLite/NUnit/Playwright wiring; replace LocalDB/placeholder secrets for production; keep simulated payment clearly labelled.
+**Future enhancement candidates:** real payment provider + idempotency/reconciliation; notifications for state changes; richer monitoring/health checks; production backups/restore and RPO/RTO; performance and accessibility targets; broader automated regression coverage.
+Finish with one closing sentence: “The platform links each stage of the insurance lifecycle while keeping domain ownership and review responsibilities explicit.” Add “Questions” as a restrained footer, not a separate crowded final slide.
+
+## Speaker notes request
+For every slide, add 2–4 speaker-note sentences that explain the key point, transition to the next slide and flag when a detail is source-visible versus pending verification. The notes should help the presenter answer “why did you design it this way?” without copying the slide bullets word-for-word.
+
+## Final quality check before creating the deck
+- No slide has more than one main diagram or more than 5 short bullets.
+- Use one consistent diagram grammar for service boxes, databases and role actors.
+- Never show all service endpoints or all database columns on a presentation slide.
+- Do not state that testing passed, external payment is live, SQLite is wired, Ocelot mappings are verified, or full end-to-end deployment is complete unless evidence is supplied.
+- Use editable titles, text, shapes and placeholder frames so the presenter can tailor the deck after generation.
